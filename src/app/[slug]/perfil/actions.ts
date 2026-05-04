@@ -1,0 +1,76 @@
+'use server'
+
+import { createClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache'
+
+export async function updateProfile(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autorizado' }
+
+  const fullName = formData.get('full_name') as string
+  const phone = formData.get('phone') as string
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ 
+      full_name: fullName, 
+      phone: phone 
+    })
+    .eq('id', user.id)
+    .select()
+    .single()
+
+  if (error) return { error: 'Error al actualizar perfil: ' + error.message }
+  
+  revalidatePath('/[slug]/perfil')
+  return { success: true, data }
+}
+
+export async function hideHistoryItem(type: 'reservation' | 'challenge', id: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autorizado' }
+
+  const table = type === 'reservation' ? 'reservations' : 'challenges'
+  
+  const { error } = await supabase
+    .from(table)
+    .update({ hidden_by_customer: true })
+    .eq('id', id)
+    .eq(type === 'reservation' ? 'customer_id' : 'creator_id', user.id)
+
+  if (error) return { error: 'Error al ocultar: ' + error.message }
+
+  revalidatePath('/[slug]/perfil')
+  return { success: true }
+}
+
+export async function clearAllHistory(businessId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autorizado' }
+
+  const today = new Date().toISOString().split('T')[0]
+
+  // Ocultar todas las reservas no vigentes (canceladas, completadas o pasadas)
+  const { error: resError } = await supabase
+    .from('reservations')
+    .update({ hidden_by_customer: true })
+    .eq('customer_id', user.id)
+    .eq('business_id', businessId)
+    .or(`status.in.(cancelled,completed),reservation_date.lt.${today}`)
+
+  // Ocultar retos no vigentes
+  const { error: chalError } = await supabase
+    .from('challenges')
+    .update({ hidden_by_customer: true })
+    .eq('creator_id', user.id)
+    .eq('business_id', businessId)
+    .or(`status.in.(cancelled,completed),and(status.eq.confirmed,challenge_date.lt.${today})`)
+
+  if (resError || chalError) return { error: 'Error al limpiar historial.' }
+
+  revalidatePath('/[slug]/perfil')
+  return { success: true }
+}
