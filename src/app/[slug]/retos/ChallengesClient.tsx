@@ -29,7 +29,7 @@ export default function ChallengesClient({
   const [challenges, setChallenges] = useState(initialChallenges)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [pending, setPending] = useState(false)
-  const [selectedCourt, setSelectedCourt] = useState<string>('')
+  const [selectedCourt, setSelectedCourt] = useState<string | undefined>(undefined)
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false)
   const router = useRouter()
 
@@ -41,9 +41,15 @@ export default function ChallengesClient({
       return
     }
 
+    if (!selectedCourt) {
+      toast.error('Por favor, selecciona una cancha.')
+      return
+    }
+
     setPending(true)
     const formData = new FormData(e.currentTarget)
     formData.append('business_id', businessId)
+    formData.append('court_id', selectedCourt)
 
     const result = await createChallenge(formData)
     setPending(false)
@@ -112,7 +118,12 @@ export default function ChallengesClient({
               <div className="grid gap-6 py-6">
                 <div className="grid gap-2">
                   <Label htmlFor="court_id" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Seleccionar Cancha</Label>
-                    <Select name="court_id" required value={selectedCourt} onValueChange={setSelectedCourt}>
+                    <Select 
+                      name="court_id" 
+                      required 
+                      value={selectedCourt} 
+                      onValueChange={(v) => setSelectedCourt(v || undefined)}
+                    >
                       <SelectTrigger className="bg-zinc-900 border-zinc-800 h-12 font-bold">
                         <SelectValue placeholder="¿En qué cancha?">
                           {courts.find(c => c.id === selectedCourt)?.name || '¿En qué cancha?'}
