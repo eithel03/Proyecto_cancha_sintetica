@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { MapPin, Phone, Flag, Clock, CalendarCheck, ImageIcon, Swords, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { BusinessHeaderActions } from '@/components/BusinessHeaderActions'
+import { getUserFavorites } from '../cliente/actions'
 
 type PageProps = {
   params: Promise<{ slug: string }>
@@ -46,16 +48,22 @@ export default async function PublicBusinessPage({ params }: PageProps) {
 
   const refererPath = `/${business.slug}`
 
-  // Solo forzamos el login a clientes normales. Los admins/owners pueden verla (se les muestra un banner)
+  // Ya no forzamos el login aquí para permitir el acceso como invitado
+  // La validación se hará a nivel de acción (favoritos, reservas, etc.)
+  /*
   if (!isCustomer && !isAdmin) {
     redirect(`/cliente/login?redirectTo=${encodeURIComponent(refererPath)}`)
   }
+  */
 
   const { data: courts } = await supabase
     .from('courts')
     .select('*')
     .eq('business_id', business.id)
     .eq('is_active', true)
+
+  const favorites = await getUserFavorites()
+  const isInitialFavorite = favorites.includes(business.id)
 
   return (
     <div className="min-h-screen bg-background flex flex-col selection:bg-primary/30">
@@ -66,7 +74,11 @@ export default async function PublicBusinessPage({ params }: PageProps) {
       )}
       
       {/* Header Público */}
-      <header className="relative bg-zinc-950/80 border-b border-white/10 p-8 text-center overflow-hidden">
+      <header className="relative bg-zinc-950/80 border-b border-white/10 p-12 md:p-20 text-center overflow-hidden">
+        <BusinessHeaderActions 
+          businessId={business.id} 
+          isInitialFavorite={isInitialFavorite} 
+        />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background -z-10" />
         <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent drop-shadow-md">
           {business.name}
@@ -74,12 +86,12 @@ export default async function PublicBusinessPage({ params }: PageProps) {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 mt-4">
           {business.location && (
             <p className="text-muted-foreground flex items-center justify-center gap-1 bg-white/5 px-3 py-1 rounded-full text-sm backdrop-blur-sm">
-              <MapPin className="w-4 h-4 text-primary" /> {business.location}
+              <MapPin className="w-4 h-4 text-white" /> {business.location}
             </p>
           )}
           {business.phone && (
             <p className="text-muted-foreground flex items-center justify-center gap-1 bg-white/5 px-3 py-1 rounded-full text-sm backdrop-blur-sm">
-              <Phone className="w-4 h-4 text-primary" /> {business.phone}
+              <Phone className="w-4 h-4 text-white" /> {business.phone}
             </p>
           )}
         </div>
@@ -134,7 +146,7 @@ export default async function PublicBusinessPage({ params }: PageProps) {
                       <img src={court.image_url} className="w-full h-full object-cover" alt={court.name} />
                     ) : (
                       <div className="flex items-center justify-center h-full">
-                        <ImageIcon className="w-12 h-12 text-white/10" />
+                        <ImageIcon className="w-12 h-12 text-white" />
                       </div>
                     )}
                   </div>

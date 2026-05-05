@@ -12,6 +12,8 @@ import { Input } from '@/components/ui/input'
 import { Swords, Calendar, Clock, MapPin, AlertCircle, CheckCircle2, User, XCircle } from 'lucide-react'
 import { createChallenge, acceptChallenge, cancelChallenge } from './actions'
 import { toast } from 'sonner'
+import { AuthPromptDialog } from '@/components/AuthPromptDialog'
+import { useRouter } from 'next/navigation'
 
 export default function ChallengesClient({ 
   initialChallenges, 
@@ -27,9 +29,18 @@ export default function ChallengesClient({
   const [challenges, setChallenges] = useState(initialChallenges)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [pending, setPending] = useState(false)
+  const [selectedCourt, setSelectedCourt] = useState<string>('')
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false)
+  const router = useRouter()
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    
+    if (!userId) {
+      setIsAuthDialogOpen(true)
+      return
+    }
+
     setPending(true)
     const formData = new FormData(e.currentTarget)
     formData.append('business_id', businessId)
@@ -47,7 +58,10 @@ export default function ChallengesClient({
   }
 
   async function handleAccept(challengeId: string) {
-    if (!userId) return toast.error('Debes iniciar sesión para aceptar un reto.')
+    if (!userId) {
+      setIsAuthDialogOpen(true)
+      return
+    }
     if (!confirm('¿Deseas aceptar este reto? El administrador deberá confirmar el partido después.')) return
 
     setPending(true)
@@ -98,10 +112,12 @@ export default function ChallengesClient({
               <div className="grid gap-6 py-6">
                 <div className="grid gap-2">
                   <Label htmlFor="court_id" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Seleccionar Cancha</Label>
-                  <Select name="court_id" required>
-                    <SelectTrigger className="bg-zinc-900 border-zinc-800 h-12 font-bold">
-                      <SelectValue placeholder="¿En qué cancha?" />
-                    </SelectTrigger>
+                    <Select name="court_id" required value={selectedCourt} onValueChange={setSelectedCourt}>
+                      <SelectTrigger className="bg-zinc-900 border-zinc-800 h-12 font-bold">
+                        <SelectValue placeholder="¿En qué cancha?">
+                          {courts.find(c => c.id === selectedCourt)?.name || '¿En qué cancha?'}
+                        </SelectValue>
+                      </SelectTrigger>
                     <SelectContent className="bg-zinc-900 border-zinc-800">
                       {courts.map(court => (
                         <SelectItem key={court.id} value={court.id} className="font-bold">{court.name}</SelectItem>
@@ -112,7 +128,7 @@ export default function ChallengesClient({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="date" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Fecha</Label>
-                    <Input id="date" name="date" type="date" required className="bg-zinc-900 border-zinc-800 h-12 font-bold" min={new Date().toISOString().split('T')[0]} />
+                    <Input id="date" name="date" type="date" required className="bg-zinc-900 border-zinc-800 h-12 font-bold" min={new Date().toLocaleDateString('sv-SE')} />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="time" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Hora de inicio</Label>
@@ -164,13 +180,13 @@ export default function ChallengesClient({
                         <div>
                           <p className="text-xl font-black tracking-tighter uppercase italic">{reto.customer_name}</p>
                           <div className="flex items-center gap-3 text-xs text-zinc-500 font-bold uppercase tracking-widest">
-                            <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-emerald-500" /> {reto.courts?.name}</span>
+                            <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-white" /> {reto.courts?.name}</span>
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="flex items-center gap-2 text-emerald-500 font-black text-sm italic">
-                          <Clock className="w-4 h-4" /> {reto.challenge_time.substring(0, 5)}
+                        <div className="flex items-center gap-2 text-white font-black text-sm italic">
+                          <Clock className="w-4 h-4 text-white" /> {reto.challenge_time.substring(0, 5)}
                         </div>
                         <div className="text-[10px] text-zinc-500 font-black uppercase tracking-tighter">
                           {reto.challenge_date}
@@ -226,6 +242,13 @@ export default function ChallengesClient({
           })}
         </div>
       )}
+      <AuthPromptDialog 
+        isOpen={isAuthDialogOpen} 
+        onOpenChange={setIsAuthDialogOpen} 
+        title="¡Únete al desafío!"
+        description="Para publicar tus propios retos o aceptar el de otros equipos, necesitas iniciar sesión."
+        redirectTo={typeof window !== 'undefined' ? window.location.pathname : '/'}
+      />
     </div>
   )
 }

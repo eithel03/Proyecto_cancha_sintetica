@@ -83,20 +83,20 @@ export default function ReservationsClient({ initialReservations }: { initialRes
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 text-sm">
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="w-4 h-4 text-primary" />
-                        <span className="font-medium text-foreground">{res.reservation_date}</span>
+                        <Calendar className="w-4 h-4 text-zinc-100" />
+                        <span className="font-medium text-zinc-100">{res.reservation_date}</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <Clock className="w-4 h-4 text-primary" />
-                        <span className="font-medium text-foreground">{res.start_time.substring(0, 5)} - {res.end_time.substring(0, 5)}</span>
+                        <Clock className="w-4 h-4 text-zinc-100" />
+                        <span className="font-medium text-zinc-100">{res.start_time.substring(0, 5)} - {res.end_time.substring(0, 5)}</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <Phone className="w-4 h-4 text-primary" />
-                        <span className="font-medium text-foreground">{res.customer?.phone || res.customer_phone}</span>
+                        <Phone className="w-4 h-4 text-zinc-100" />
+                        <span className="font-medium text-zinc-100">{res.customer?.phone || res.customer_phone}</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <Mail className="w-4 h-4 text-primary" />
-                        <span className="font-medium text-foreground truncate max-w-[150px]">{res.customer_email || 'No disponible'}</span>
+                        <Mail className="w-4 h-4 text-zinc-100" />
+                        <span className="font-medium text-zinc-100 truncate max-w-[150px]">{res.customer_email || 'No disponible'}</span>
                       </div>
                     </div>
 
@@ -110,9 +110,10 @@ export default function ReservationsClient({ initialReservations }: { initialRes
 
                   {/* Actions Section */}
                   <div className="bg-zinc-900/30 p-6 flex flex-col justify-center gap-2 border-t md:border-t-0 md:border-l border-white/5 min-w-[200px]">
-                    {(res.customer?.phone || res.customer_phone) !== 'Sin teléfono' && (
+                    {/* El botón de WhatsApp solo se muestra cuando la reserva NO está pendiente (ya fue confirmada) */}
+                    {res.status !== 'pending' && (res.customer?.phone || res.customer_phone) !== 'Sin teléfono' && (
                       <a 
-                        href={getWhatsAppLink({ ...res, customer_phone: res.customer?.phone || res.customer_phone }, res.status === 'pending' ? 'confirm' : 'general') || '#'} 
+                        href={getWhatsAppLink({ ...res, customer_phone: res.customer?.phone || res.customer_phone }, res.status === 'confirmed' ? 'confirm' : 'general') || '#'} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="w-full"

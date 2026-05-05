@@ -12,7 +12,7 @@ export async function checkAvailability(courtId: string, date: string) {
     .select('start_time, end_time, status, notes')
     .eq('court_id', courtId)
     .eq('reservation_date', date)
-    .in('status', ['pending', 'confirmed'])
+    .in('status', ['pending', 'confirmed', 'completed'])
 
   if (resError) {
     console.error('Error fetching availability (reservations):', resError)

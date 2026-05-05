@@ -110,3 +110,76 @@ export async function registerCustomer(formData: FormData) {
     message: 'Cuenta creada con éxito. Por favor, revisa tu correo para confirmar tu cuenta antes de iniciar sesión.' 
   }
 }
+
+export async function getBusinesses() {
+  const supabase = await createClient()
+  const { data, error, count } = await supabase
+    .from('businesses')
+    .select('*', { count: 'exact' })
+    .eq('is_active', true)
+    .order('name')
+
+  if (error) {
+    console.error('Error fetching businesses:', error)
+    return { businesses: [], count: 0 }
+  }
+
+  return { businesses: data || [], count: count || 0 }
+}
+
+export async function getUserFavorites() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return []
+
+  const { data, error } = await supabase
+    .from('user_favorites')
+    .select('business_id')
+    .eq('user_id', user.id)
+
+  if (error) {
+    console.error('Error fetching favorites:', error)
+    return []
+  }
+
+  return data.map(f => f.business_id)
+}
+
+export async function toggleFavorite(businessId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: 'authentication_required' }
+  }
+
+  // Verificar si ya es favorito
+  const { data: existing } = await supabase
+    .from('user_favorites')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('business_id', businessId)
+    .maybeSingle()
+
+  if (existing) {
+    // Eliminar
+    const { error } = await supabase
+      .from('user_favorites')
+      .delete()
+      .eq('id', existing.id)
+    
+    if (error) return { error: error.message }
+    revalidatePath('/')
+    return { success: true, action: 'removed' }
+  } else {
+    // Agregar
+    const { error } = await supabase
+      .from('user_favorites')
+      .insert({ user_id: user.id, business_id: businessId })
+
+    if (error) return { error: error.message }
+    revalidatePath('/')
+    return { success: true, action: 'added' }
+  }
+}

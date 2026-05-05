@@ -128,3 +128,10 @@
     @apply font-sans;
   }
 }
+
+/* FIX: Asegurar que los iconos de calendario (fecha) y reloj (hora) sean blancos */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(2);
+    cursor: pointer;
+}

@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { createReservation, checkAvailability, acceptChallenge } from './actions'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import { CheckCircle2, Loader2 } from 'lucide-react'
+import { CheckCircle2, Loader2, User, Flag, Calendar, Clock } from 'lucide-react'
+import { AuthPromptDialog } from '@/components/AuthPromptDialog'
+import { useRouter } from 'next/navigation'
 
 // Generar bloques de 8:00 AM a 10:00 PM (22:00)
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 8)
@@ -27,9 +29,11 @@ export default function BookingClient({
 }) {
   const [pending, setPending] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false)
+  const router = useRouter()
 
   const [selectedCourt, setSelectedCourt] = useState<string>(preselectedCourtId || (courts.length > 0 ? courts[0].id : ''))
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toLocaleDateString('sv-SE'))
   
   const [occupiedSlots, setOccupiedSlots] = useState<{start_time: string, end_time: string, id?: string, type?: string}[]>([])
   const [loadingSlots, setLoadingSlots] = useState(false)
@@ -52,16 +56,26 @@ export default function BookingClient({
 
   const getSlotOccupancy = (hour: number) => {
     // block is hour:00 to (hour+1):00
-    const startT = `${hour.toString().padStart(2, '0')}:00:00`
-    const endT = `${(hour + 1).toString().padStart(2, '0')}:00:00`
+    const startT = `${hour.toString().padStart(2, '0')}:00`
+    const endT = `${(hour + 1).toString().padStart(2, '0')}:00`
 
     return occupiedSlots.find((res: any) => {
-      return res.start_time < endT && res.end_time > startT
+      // Normalizamos eliminando segundos para la comparación si es necesario
+      const resStart = res.start_time.substring(0, 5)
+      const resEnd = res.end_time.substring(0, 5)
+      return resStart < endT && resEnd > startT
     })
   }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
+    
+    // Si no hay perfil de cliente (modo invitado), abrir diálogo de login
+    if (!customerProfile) {
+      setIsAuthDialogOpen(true)
+      return
+    }
+
     if (!selectedSlot) return toast.error('Debes seleccionar una hora disponible.')
 
     setPending(true)
@@ -151,7 +165,7 @@ export default function BookingClient({
                 name="date" 
                 type="date" 
                 required 
-                min={new Date().toISOString().split('T')[0]} 
+                min={new Date().toLocaleDateString('sv-SE')} 
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
               />
@@ -193,7 +207,7 @@ export default function BookingClient({
                           ? 'bg-amber-500/30 text-amber-500 border-amber-500/50 border-dashed font-bold animate-pulse'
                           : isOpenChallenge
                           ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30 border-dashed font-black'
-                          : (isOccupied ? 'opacity-50 line-through' : '')
+                          : (isOccupied ? 'opacity-40 line-through decoration-zinc-100 decoration-[3px] shadow-inner bg-zinc-900/50 border-zinc-800' : '')
                       }`}
                       disabled={isOccupied && !isOpenChallenge}
                       onClick={() => {
@@ -211,8 +225,8 @@ export default function BookingClient({
             )}
             {!loadingSlots && (
               <div className="flex flex-wrap gap-4 mt-4 text-[10px] font-black uppercase tracking-widest p-4 bg-black/20 rounded-xl border border-white/5">
-                <span className="flex items-center gap-1.5 text-zinc-500">
-                  <div className="w-3 h-3 bg-zinc-800 rounded-sm" /> Reservado
+                <span className="flex items-center gap-1.5 text-zinc-300">
+                  <div className="w-3 h-3 bg-zinc-700 line-through decoration-zinc-100 decoration-1 rounded-sm" /> Reservado
                 </span>
                 <span className="flex items-center gap-1.5 text-emerald-500">
                   <div className="w-3 h-3 border-2 border-dashed border-emerald-500 rounded-sm" /> Reto Abierto
@@ -232,18 +246,48 @@ export default function BookingClient({
               <h3 className={`font-bold text-lg ${selectedChallengeId ? 'text-emerald-500' : 'text-primary'}`}>
                 {selectedChallengeId ? '¡Matchmaking Detectado!' : 'Resumen de tu Reserva'}
               </h3>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="col-span-2 text-zinc-400 mb-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div className="col-span-2 text-zinc-400 mb-2 p-3 bg-white/5 rounded-xl border border-white/5 italic">
                   {selectedChallengeId 
-                    ? 'En este horario hay un reto abierto. Al confirmar, estarás aceptando el desafío del otro equipo.' 
-                    : 'Estás solicitando una reserva normal para jugar.'}
+                    ? '⚠️ Matchmaking: Al confirmar, estarás aceptando el desafío de otro equipo.' 
+                    : '⚽ Estás solicitando una reserva normal para jugar.'}
                 </div>
-                <div><strong>A nombre de:</strong> {customerProfile?.full_name || 'Cliente'}</div>
-                <div><strong>Cancha:</strong> {courtObj?.name}</div>
-                <div><strong>Fecha:</strong> {selectedDate}</div>
-                <div><strong>Horario:</strong> {selectedSlot}</div>
-                <div className="col-span-2 text-lg font-bold mt-2">
-                  Precio por persona: ₡{courtObj?.price_per_person?.toLocaleString()}
+                
+                <div className="flex items-center gap-3 bg-zinc-900/50 p-3 rounded-xl border border-white/10 group transition-all hover:border-primary/30">
+                  <User className="w-5 h-5 text-white shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase text-zinc-500 font-bold tracking-widest">Cliente</span>
+                    <span className="text-zinc-100 font-bold">{customerProfile?.full_name || 'Invitado'}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 bg-zinc-900/50 p-3 rounded-xl border border-white/10 group transition-all hover:border-primary/30">
+                  <Flag className="w-5 h-5 text-white shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase text-zinc-500 font-bold tracking-widest">Cancha</span>
+                    <span className="text-zinc-100 font-bold">{courtObj?.name}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 bg-zinc-900/50 p-3 rounded-xl border border-white/10 group transition-all hover:border-primary/30">
+                  <Calendar className="w-5 h-5 text-white shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase text-zinc-500 font-bold tracking-widest">Fecha</span>
+                    <span className="text-zinc-100 font-bold">{selectedDate}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 bg-zinc-900/50 p-3 rounded-xl border border-white/10 group transition-all hover:border-primary/30">
+                  <Clock className="w-5 h-5 text-white shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase text-zinc-500 font-bold tracking-widest">Horario</span>
+                    <span className="text-zinc-100 font-bold">{selectedSlot}</span>
+                  </div>
+                </div>
+
+                <div className="col-span-2 text-xl font-black mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+                  <span className="text-zinc-400 text-sm font-bold uppercase tracking-widest">Total a pagar:</span>
+                  <span className="text-primary text-3xl tracking-tighter">₡{courtObj?.price_per_person?.toLocaleString()}</span>
                 </div>
               </div>
               
@@ -255,6 +299,13 @@ export default function BookingClient({
 
         </form>
       </CardContent>
+      <AuthPromptDialog 
+        isOpen={isAuthDialogOpen} 
+        onOpenChange={setIsAuthDialogOpen} 
+        title="¡Casi lo tienes!"
+        description="Para confirmar tu reserva y asegurar tu espacio en la cancha, necesitas iniciar sesión o crear una cuenta."
+        redirectTo={typeof window !== 'undefined' ? (window.location.pathname + window.location.search) : '/'}
+      />
     </Card>
   )
 }

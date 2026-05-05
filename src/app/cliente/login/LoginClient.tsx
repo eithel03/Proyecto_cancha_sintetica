@@ -14,6 +14,12 @@ export default function LoginClient() {
   const [pending, setPending] = useState(false)
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') || '/'
+  
+  // Si el destino original era el perfil (donde no se puede ser invitado),
+  // el botón de invitado debe redirigir a la vista de reservas del local
+  const guestRedirectTo = redirectTo.endsWith('/perfil') 
+    ? redirectTo.replace('/perfil', '') 
+    : redirectTo
 
   async function onSubmit(formData: FormData) {
     setPending(true)
@@ -54,6 +60,21 @@ export default function LoginClient() {
           <Button type="submit" className="w-full" disabled={pending}>
             {pending ? 'Iniciando sesión...' : 'Entrar'}
           </Button>
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-muted" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">O también</span>
+            </div>
+          </div>
+
+          <Link href={guestRedirectTo} className="w-full block">
+            <Button type="button" variant="outline" className="w-full border-primary/20 hover:bg-primary/5 hover:border-primary/50 transition-all">
+              Continuar como invitado
+            </Button>
+          </Link>
         </form>
       </CardContent>
       <CardFooter className="flex flex-col text-sm text-center text-muted-foreground gap-2">

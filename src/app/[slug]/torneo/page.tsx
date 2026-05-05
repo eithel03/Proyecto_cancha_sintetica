@@ -37,10 +37,12 @@ export default async function PublicTournamentPage({ params }: PageProps) {
 
   const refererPath = `/${business.slug}/torneo`
 
+  // Ya no redirigimos aquí. Dejamos que el usuario vea la información del torneo.
+  /*
   if (!isCustomer) {
-    // Si no es cliente (o no está logueado), redirigir directamente al login
     redirect(`/cliente/login?redirectTo=${encodeURIComponent(refererPath)}`)
   }
+  */
 
   // Fetch Tournament Data
   const { data: matches } = await supabase

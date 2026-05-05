@@ -40,7 +40,7 @@ export default async function BookingPage({ params, searchParams }: PageProps) {
 
   const refererPath = `/${business.slug}/reservar${courtId ? `?courtId=${courtId}` : ''}`
 
-  // 3. Auth Check - Redirect if not customer
+  // 3. Auth Check
   const { data: { user } } = await supabase.auth.getUser()
   let isCustomer = false
   let profileData = null
@@ -57,10 +57,12 @@ export default async function BookingPage({ params, searchParams }: PageProps) {
     }
   }
 
+  // Ya no redirigimos aquí. Dejamos que el usuario vea la interfaz de reserva.
+  /*
   if (!isCustomer) {
-    // Si no es cliente (o no está logueado), redirigir directamente al login
     redirect(`/cliente/login?redirectTo=${encodeURIComponent(refererPath)}`)
   }
+  */
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 flex flex-col">
