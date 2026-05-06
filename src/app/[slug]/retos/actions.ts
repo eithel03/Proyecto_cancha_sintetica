@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { notifyAdminNewReservation, notifyUserChallengeConfirmed } from '@/lib/notifications'
 
 export async function createChallenge(formData: FormData) {
   const supabase = await createClient()
@@ -65,6 +66,10 @@ export async function createChallenge(formData: FormData) {
 
   if (error) return { error: 'Error al publicar reto: ' + error.message }
 
+  // Notificar al administrador
+  const { data: biz } = await supabase.from('businesses').select('name').eq('id', businessId).single()
+  await notifyAdminNewReservation(biz?.name || 'Tu local', profile?.full_name || 'Un cliente', date, time)
+
   revalidatePath('/[slug]/retos', 'page')
   revalidatePath('/[slug]/reservar', 'page')
   return { success: true }
@@ -75,7 +80,6 @@ export async function acceptChallenge(challengeId: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Debes iniciar sesión para aceptar un reto.' }
 
-  // 1. Validar que no sea el mismo creador
   const { data: challenge } = await supabase
     .from('challenges')
     .select('creator_id, status')
@@ -86,7 +90,6 @@ export async function acceptChallenge(challengeId: string) {
   if (challenge.creator_id === user.id) return { error: 'No puedes aceptar tu propio reto.' }
   if (challenge.status !== 'open') return { error: 'Este reto ya no está disponible.' }
 
-  // 2. Actualizar a aceptado
   const { error } = await supabase
     .from('challenges')
     .update({
@@ -95,7 +98,7 @@ export async function acceptChallenge(challengeId: string) {
       accepted_at: new Date().toISOString()
     })
     .eq('id', challengeId)
-    .eq('status', 'open') // Protección contra concurrencia
+    .eq('status', 'open')
 
   if (error) return { error: 'Error al aceptar reto: ' + error.message }
 
@@ -110,7 +113,6 @@ export async function cancelChallenge(challengeId: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado.' }
 
-  // Solo el creador, el oponente (para "des-aceptar") o el admin pueden cancelar
   const { error } = await supabase
     .from('challenges')
     .update({ status: 'cancelled' })
@@ -132,13 +134,13 @@ export async function confirmChallenge(challengeId: string) {
   // 1. Obtener datos del reto
   const { data: challenge, error: fetchError } = await supabase
     .from('challenges')
-    .select('*, profiles!challenges_creator_id_fkey(full_name, phone, id)')
+    .select('*, businesses(name), creator:profiles!challenges_creator_id_fkey(full_name), opponent:profiles!challenges_opponent_id_fkey(full_name)')
     .eq('id', challengeId)
     .single()
 
   if (fetchError || !challenge) return { error: 'Reto no encontrado.' }
 
-  // 2. Intentar crear la reserva oficial PRIMERO (ATÓMICO)
+  // 2. Intentar crear la reserva oficial
   const startT = challenge.challenge_time
   const [h, m] = startT.split(':')
   const endT = `${(parseInt(h) + 1).toString().padStart(2, '0')}:${m}:00`
@@ -165,7 +167,7 @@ export async function confirmChallenge(challengeId: string) {
     return { error: 'Error al crear la reserva: ' + resError.message }
   }
 
-  // 3. Solo si la reserva tuvo éxito, actualizamos el estado del reto
+  // 3. Actualizar estado del reto
   const { error: updateError } = await supabase
     .from('challenges')
     .update({
@@ -177,6 +179,14 @@ export async function confirmChallenge(challengeId: string) {
   if (updateError) {
     return { error: 'Reserva creada pero no se pudo actualizar el estado del reto: ' + updateError.message }
   }
+
+  // Notificar a ambos jugadores
+  await notifyUserChallengeConfirmed(
+    challenge.creator?.full_name || 'Jugador', 
+    challenge.opponent?.full_name || 'Oponente', 
+    challenge.challenge_date, 
+    challenge.challenge_time.substring(0, 5)
+  )
 
   revalidatePath('/[slug]/retos', 'page')
   revalidatePath('/dashboard/retos', 'page')

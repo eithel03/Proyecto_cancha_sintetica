@@ -34,16 +34,17 @@ USING (is_active = true);
 
 -- 3. Políticas para 'reservations' (Reservas)
 -- Los dueños pueden ver TODAS las reservas hechas en sus canchas.
--- Los clientes (customers) SOLO pueden ver y gestionar sus propias reservas.
+-- Los clientes (customers) pueden ver todas las reservas para saber qué horas están ocupadas,
+-- pero SOLO pueden gestionar (update/insert) las suyas.
 CREATE POLICY "Dueños ven reservas de su negocio" 
 ON public.reservations
 FOR ALL 
 USING (business_id IN (SELECT id FROM public.businesses WHERE owner_id = auth.uid()));
 
-CREATE POLICY "Clientes ven sus propias reservas" 
+CREATE POLICY "Cualquiera puede ver disponibilidad de reservas" 
 ON public.reservations
 FOR SELECT 
-USING (customer_id = auth.uid());
+USING (true); -- Permitimos ver todas las reservas para la funcionalidad de 'tachar' horas ocupadas.
 
 CREATE POLICY "Clientes pueden crear sus propias reservas" 
 ON public.reservations

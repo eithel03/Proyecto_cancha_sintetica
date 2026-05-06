@@ -16,6 +16,7 @@ export async function upsertTeam(formData: FormData) {
     captain_name: formData.get('captain_name') as string,
     captain_phone: formData.get('captain_phone') as string,
     logo_url: formData.get('logo_url') as string,
+    gender: formData.get('gender') as string || 'masculino',
   }
 
   let error
@@ -95,9 +96,63 @@ export async function upsertMatch(formData: FormData) {
     match_date: formData.get('match_date') as string,
     match_time: formData.get('match_time') as string,
     status,
+    gender: formData.get('gender') as string || 'masculino',
     home_score: parseInt(formData.get('home_score') as string) || 0,
     away_score: parseInt(formData.get('away_score') as string) || 0,
     current_minute: parseInt(formData.get('current_minute') as string) || 0,
+  }
+
+  // VALIDACIÓN DE CHOQUE DE HORARIOS
+  if (data.court_id && data.match_date && data.match_time && (status === 'scheduled' || status === 'live')) {
+    const matchTime = data.match_time.substring(0, 5)
+    // Asumimos 1 hora de duración para el chequeo
+    const nextHour = (parseInt(matchTime.split(':')[0]) + 1).toString().padStart(2, '0')
+    const matchEndTime = `${nextHour}:${matchTime.split(':')[1] || '00'}:00`
+    const matchStartTime = `${matchTime}:00`
+
+    // 1. Revisar Reservas
+    const { data: conflictingRes } = await supabase
+      .from('reservations')
+      .select('id')
+      .eq('court_id', data.court_id)
+      .eq('reservation_date', data.match_date)
+      .in('status', ['pending', 'confirmed'])
+      .filter('start_time', 'lt', `${(parseInt(matchTime.split(':')[0]) + 1).toString().padStart(2, '0')}:${matchTime.split(':')[1] || '00'}:00`)
+      .filter('end_time', 'gt', `${matchTime}:00`)
+
+    if (conflictingRes && conflictingRes.length > 0) {
+      return { error: 'Ya existe una reserva en este horario y cancha.' }
+    }
+
+    // 2. Revisar otros partidos de torneo
+    let matchQuery = supabase
+      .from('tournament_matches')
+      .select('id')
+      .eq('court_id', data.court_id)
+      .eq('match_date', data.match_date)
+      .in('status', ['scheduled', 'live', 'halftime'])
+      .filter('match_time', 'eq', data.match_time)
+    
+    if (id) matchQuery = matchQuery.neq('id', id)
+    
+    const { data: conflictingMatches } = await matchQuery
+    if (conflictingMatches && conflictingMatches.length > 0) {
+      return { error: 'Ya existe otro partido de torneo programado a esta misma hora.' }
+    }
+
+    // 3. Revisar retos (Cualquiera: abierto, aceptado o confirmado)
+    const { data: conflictingChallenges } = await supabase
+      .from('challenges')
+      .select('id, status')
+      .eq('court_id', data.court_id)
+      .eq('challenge_date', data.match_date)
+      .in('status', ['open', 'accepted', 'confirmed'])
+      .filter('challenge_time', 'eq', data.match_time)
+
+    if (conflictingChallenges && conflictingChallenges.length > 0) {
+      const statusLabel = conflictingChallenges[0].status === 'confirmed' ? 'confirmado' : 'pendiente';
+      return { error: `Existe un reto ${statusLabel} en este horario. Debes cancelarlo o usar otra cancha/hora.` }
+    }
   }
 
   let error

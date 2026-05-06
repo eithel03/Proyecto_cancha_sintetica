@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { BusinessCard } from './BusinessCard'
 import { Input } from '@/components/ui/input'
-import { Search, Trophy, MapPin, LayoutGrid, Sparkles } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Search, Trophy, MapPin, LayoutGrid, Sparkles, Navigation } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { toast } from 'sonner'
 
 interface BusinessDirectoryProps {
   businesses: any[]
@@ -14,11 +16,55 @@ interface BusinessDirectoryProps {
 
 export function BusinessDirectory({ businesses, favorites, totalCount }: BusinessDirectoryProps) {
   const [searchTerm, setSearchTerm] = useState('')
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null)
+  const [isLocating, setIsLocating] = useState(false)
 
-  const filteredBusinesses = businesses.filter(b => 
-    b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (b.location && b.location.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
+  const handleNearMe = () => {
+    if (!navigator.geolocation) {
+      toast.error('Tu navegador no soporta geolocalización')
+      return
+    }
+
+    setIsLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        setIsLocating(false)
+        toast.success('Ordenando por cercanía')
+      },
+      (err) => {
+        setIsLocating(false)
+        toast.error('No se pudo obtener tu ubicación')
+      }
+    )
+  }
+
+  const deg2rad = (deg: number) => deg * (Math.PI / 180)
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371
+    const dLat = deg2rad(lat2 - lat1)
+    const dLon = deg2rad(lon2 - lon1)
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    return R * c
+  }
+
+  const filteredBusinesses = businesses
+    .filter(b => 
+      b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (b.location && b.location.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
+    .sort((a, b) => {
+      if (!userLocation) return 0
+      if (!a.latitude || !a.longitude) return 1
+      if (!b.latitude || !b.longitude) return -1
+      
+      const distA = calculateDistance(userLocation.lat, userLocation.lng, a.latitude, a.longitude)
+      const distB = calculateDistance(userLocation.lat, userLocation.lng, b.latitude, b.longitude)
+      return distA - distB
+    })
 
   return (
     <section className="w-full py-20 relative overflow-hidden" id="directorio">
@@ -42,9 +88,17 @@ export function BusinessDirectory({ businesses, favorites, totalCount }: Busines
             </p>
           </div>
           
-          <div className="relative w-full md:w-96 group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary/50 to-emerald-500/50 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-            <div className="relative">
+          <div className="relative w-full md:w-auto flex flex-col sm:flex-row gap-4 group">
+            <Button 
+              variant="outline" 
+              className={`h-14 rounded-2xl border-white/10 bg-card/80 backdrop-blur-xl px-6 font-bold flex items-center gap-2 transition-all ${userLocation ? 'border-primary text-primary' : 'hover:border-primary/50'}`}
+              onClick={handleNearMe}
+              disabled={isLocating}
+            >
+              <Navigation className={`h-4 w-4 ${isLocating ? 'animate-spin' : ''}`} />
+              {userLocation ? 'Cerca de mí' : 'Buscar Cerca'}
+            </Button>
+            <div className="relative flex-1 md:w-80">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <Input 
                 placeholder="Buscar por nombre o ciudad..." 
@@ -68,6 +122,10 @@ export function BusinessDirectory({ businesses, favorites, totalCount }: Busines
                 <BusinessCard 
                   business={business} 
                   isFavorite={favorites.includes(business.id)}
+                  distance={userLocation && business.latitude && business.longitude 
+                    ? calculateDistance(userLocation.lat, userLocation.lng, business.latitude, business.longitude)
+                    : undefined
+                  }
                 />
               </motion.div>
             ))}

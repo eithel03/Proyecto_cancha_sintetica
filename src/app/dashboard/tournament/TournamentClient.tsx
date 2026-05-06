@@ -17,6 +17,9 @@ import { upsertTeam, deleteTeam, upsertPlayer, deletePlayer, upsertMatch, delete
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 
+import { ConfirmationDialog } from '@/components/ConfirmationDialog'
+import { cn } from '@/lib/utils'
+
 export default function TournamentClient({ 
   businessId, 
   initialTeams, 
@@ -31,13 +34,19 @@ export default function TournamentClient({
   courts: any[]
 }) {
   const [activeTab, setActiveTab] = useState('teams')
+  const [selectedGender, setSelectedGender] = useState('masculino')
   
-  // Estados para búsqueda y filtrado de jugadores
   const [playerSearch, setPlayerSearch] = useState('')
+  const [teamSearch, setTeamSearch] = useState('')
   const [teamFilter, setTeamFilter] = useState('all')
-
-  // Estado para partidos (para manejar el temporizador visual)
+  const [matchStatusFilter, setMatchStatusFilter] = useState('all')
+  const [matchDateSort, setMatchDateSort] = useState('desc')
   const [matches, setMatches] = useState(initialMatches)
+
+  // Sincronizar estado cuando cambian las props iniciales (por revalidatePath)
+  useEffect(() => {
+    setMatches(initialMatches)
+  }, [initialMatches])
   
   const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false)
   const [isPlayerDialogOpen, setIsPlayerDialogOpen] = useState(false)
@@ -52,6 +61,24 @@ export default function TournamentClient({
 
   const [isUploading, setIsUploading] = useState(false)
   const [logoUrl, setLogoUrl] = useState('')
+
+  // Estado para Diálogo de Confirmación
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean,
+    title: string,
+    description: string,
+    onConfirm: () => void,
+    variant?: 'danger' | 'primary'
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    onConfirm: () => {}
+  })
+
+  const showConfirm = (title: string, description: string, onConfirm: () => void, variant: 'danger' | 'primary' = 'primary') => {
+    setConfirmConfig({ isOpen: true, title, description, onConfirm, variant })
+  }
 
   // Temporizador para partidos en vivo
   useEffect(() => {
@@ -88,7 +115,10 @@ export default function TournamentClient({
             if (payload.eventType === 'UPDATE') {
               setMatches(prev => prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } : m))
             } else if (payload.eventType === 'INSERT') {
-              setMatches(prev => [payload.new, ...prev])
+              setMatches(prev => {
+                if (prev.some(m => m.id === payload.new.id)) return prev
+                return [payload.new, ...prev]
+              })
             } else if (payload.eventType === 'DELETE') {
               setMatches(prev => prev.filter(m => m.id !== payload.old.id))
             }
@@ -104,12 +134,37 @@ export default function TournamentClient({
     setupRealtime()
   }, [businessId])
 
-  // Filtrado de jugadores
+  // Filtrado de jugadores por GÉNERO
   const filteredPlayers = initialPlayers.filter(player => {
+    const matchesGender = (player.tournament_teams?.gender || 'masculino') === selectedGender
     const matchesSearch = `${player.first_name} ${player.last_name}`.toLowerCase().includes(playerSearch.toLowerCase())
     const matchesTeam = teamFilter === 'all' || player.team_id === teamFilter
-    return matchesSearch && matchesTeam
+    return matchesGender && matchesSearch && matchesTeam
   })
+
+  // Filtrado de equipos por GÉNERO
+  const filteredTeams = initialTeams.filter(team => {
+    const matchesGender = (team.gender || 'masculino') === selectedGender
+    const searchLower = teamSearch.toLowerCase()
+    return (
+      matchesGender &&
+      (team.name.toLowerCase().includes(searchLower) || 
+       (team.captain_name && team.captain_name.toLowerCase().includes(searchLower)))
+    )
+  })
+
+  // Filtrado de partidos por GÉNERO
+  const filteredMatches = matches
+    .filter(match => {
+      const matchesGender = (match.gender || 'masculino') === selectedGender
+      const matchesStatus = matchStatusFilter === 'all' || match.status === matchStatusFilter
+      return matchesGender && matchesStatus
+    })
+    .sort((a, b) => {
+      const dateA = new Date(`${a.match_date}T${a.match_time}`).getTime()
+      const dateB = new Date(`${b.match_date}T${b.match_time}`).getTime()
+      return matchDateSort === 'desc' ? dateB - dateA : dateA - dateB
+    })
 
   // --- HANDLERS EQUIPOS ---
   async function handleTeamSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -124,13 +179,6 @@ export default function TournamentClient({
     toast.success(editingTeam ? 'Equipo actualizado' : 'Equipo creado')
     setIsTeamDialogOpen(false)
     setEditingTeam(null)
-  }
-
-  async function handleDeleteTeam(id: string) {
-    if (!confirm('¿Estás seguro de eliminar este equipo?')) return
-    const res = await deleteTeam(id)
-    if (res.error) return toast.error(res.error)
-    toast.success('Equipo eliminado')
   }
 
   // --- HANDLERS JUGADORES ---
@@ -148,13 +196,6 @@ export default function TournamentClient({
     setEditingPlayer(null)
   }
 
-  async function handleDeletePlayer(id: string) {
-    if (!confirm('¿Estás seguro de eliminar este jugador?')) return
-    const res = await deletePlayer(id)
-    if (res.error) return toast.error(res.error)
-    toast.success('Jugador eliminado')
-  }
-
   // --- HANDLERS PARTIDOS ---
   async function handleMatchSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -170,11 +211,43 @@ export default function TournamentClient({
     setEditingMatch(null)
   }
 
+  async function handleDeleteTeam(id: string) {
+    showConfirm(
+      'Eliminar Equipo',
+      '¿Estás seguro de eliminar este equipo? Se borrarán sus jugadores y registros asociados.',
+      async () => {
+        const res = await deleteTeam(id)
+        if (res.error) return toast.error(res.error)
+        toast.success('Equipo eliminado')
+      },
+      'danger'
+    )
+  }
+
+  async function handleDeletePlayer(id: string) {
+    showConfirm(
+      'Eliminar Jugador',
+      '¿Estás seguro de eliminar este jugador?',
+      async () => {
+        const res = await deletePlayer(id)
+        if (res.error) return toast.error(res.error)
+        toast.success('Jugador eliminado')
+      },
+      'danger'
+    )
+  }
+
   async function handleDeleteMatch(id: string) {
-    if (!confirm('¿Estás seguro de eliminar este partido?')) return
-    const res = await deleteMatch(id)
-    if (res.error) return toast.error(res.error)
-    toast.success('Partido eliminado')
+    showConfirm(
+      'Eliminar Partido',
+      '¿Estás seguro de eliminar este partido? Esta acción no se puede deshacer.',
+      async () => {
+        const res = await deleteMatch(id)
+        if (res.error) return toast.error(res.error)
+        toast.success('Partido eliminado')
+      },
+      'danger'
+    )
   }
 
   // --- HANDLER EVENTOS ---
@@ -203,25 +276,70 @@ export default function TournamentClient({
   }
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="teams" className="gap-2"><Users className="w-4 h-4" /> Equipos</TabsTrigger>
-        <TabsTrigger value="players" className="gap-2"><UserPlus className="w-4 h-4" /> Jugadores</TabsTrigger>
-        <TabsTrigger value="matches" className="gap-2"><Calendar className="w-4 h-4" /> Jornadas</TabsTrigger>
-      </TabsList>
+    <div className="space-y-6">
+      {/* Selector de Torneo (Género) */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-3xl bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-md">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+            <Trophy className="w-5 h-5 text-emerald-500" />
+          </div>
+          <div>
+            <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">Torneo Activo</h2>
+            <p className="text-lg font-black italic uppercase tracking-tighter text-white">
+              {selectedGender === 'masculino' ? '🏆 Rama Masculina' : '🏆 Rama Femenina'}
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex p-1 bg-zinc-950 rounded-2xl border border-zinc-800">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => setSelectedGender('masculino')}
+            className={cn(
+              "rounded-xl gap-2 font-bold px-4",
+              selectedGender === 'masculino' ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-900/20" : "text-zinc-500 hover:text-zinc-300"
+            )}
+          >
+            🚹 Masculino
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => setSelectedGender('femenino')}
+            className={cn(
+              "rounded-xl gap-2 font-bold px-4",
+              selectedGender === 'femenino' ? "bg-pink-600 text-white hover:bg-pink-700 shadow-lg shadow-pink-900/20" : "text-zinc-500 hover:text-zinc-300"
+            )}
+          >
+            🚺 Femenino
+          </Button>
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3 bg-zinc-900/50 p-1 border border-zinc-800/40 rounded-2xl h-12">
+          <TabsTrigger value="teams" className="gap-2 rounded-xl data-[state=active]:bg-zinc-800 data-[state=active]:text-white transition-all"><Users className="w-4 h-4" /> Equipos</TabsTrigger>
+          <TabsTrigger value="players" className="gap-2 rounded-xl data-[state=active]:bg-zinc-800 data-[state=active]:text-white transition-all"><UserPlus className="w-4 h-4" /> Jugadores</TabsTrigger>
+          <TabsTrigger value="matches" className="gap-2 rounded-xl data-[state=active]:bg-zinc-800 data-[state=active]:text-white transition-all"><Calendar className="w-4 h-4" /> Jornadas</TabsTrigger>
+        </TabsList>
 
       {/* --- TAB EQUIPOS --- */}
       <TabsContent value="teams">
         <Card className="border-zinc-800/60 bg-[#0a0a0a]/80 backdrop-blur-xl shadow-2xl overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-800/60 bg-zinc-950/50">
-            <div>
-              <CardTitle>Equipos del Torneo</CardTitle>
-              <CardDescription>Gestiona los equipos inscritos en tu campeonato.</CardDescription>
-            </div>
-            <Dialog open={isTeamDialogOpen} onOpenChange={(val) => { setIsTeamDialogOpen(val); if(!val) { setEditingTeam(null); setLogoUrl(''); } }}>
-              <DialogTrigger render={<Button className="gap-2"><Plus className="w-4 h-4" /> Nuevo Equipo</Button>} />
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <Input 
+                placeholder="Buscar equipo o capitán..." 
+                value={teamSearch}
+                onChange={(e) => setTeamSearch(e.target.value)}
+                className="w-full sm:w-64 bg-zinc-900/50 border-zinc-800"
+              />
+              <Dialog open={isTeamDialogOpen} onOpenChange={(val) => { setIsTeamDialogOpen(val); if(!val) { setEditingTeam(null); setLogoUrl(''); } }}>
+                <DialogTrigger render={<Button className="gap-2 shrink-0"><Plus className="w-4 h-4" /> Nuevo Equipo</Button>} />
               <DialogContent>
-                <form onSubmit={handleTeamSubmit}>
+                <div key={editingTeam?.id || 'new-team'}>
+                  <form onSubmit={handleTeamSubmit}>
                   <DialogHeader>
                     <DialogTitle>{editingTeam ? 'Editar Equipo' : 'Nuevo Equipo'}</DialogTitle>
                     <DialogDescription>Completa los datos del equipo para el torneo.</DialogDescription>
@@ -238,6 +356,20 @@ export default function TournamentClient({
                     <div className="space-y-2">
                       <Label htmlFor="captain_phone">Teléfono del Capitán</Label>
                       <Input id="captain_phone" name="captain_phone" defaultValue={editingTeam?.captain_phone} placeholder="Ej: 8888-9999" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Rama (Género)</Label>
+                      <Select name="gender" defaultValue={editingTeam?.gender || 'masculino'} required>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Género">
+                            {(val: any) => val === 'femenino' ? '🚺 Femenino' : '🚹 Masculino'}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="masculino">🚹 Masculino</SelectItem>
+                          <SelectItem value="femenino">🚺 Femenino</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="logo_url">Logo del Equipo</Label>
@@ -298,24 +430,26 @@ export default function TournamentClient({
                     </Button>
                   </DialogFooter>
                 </form>
-              </DialogContent>
-            </Dialog>
+              </div>
+            </DialogContent>
+          </Dialog>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">Logo</TableHead>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Capitán</TableHead>
-                  <TableHead>Teléfono</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+              <TableHeader className="bg-zinc-900/30">
+                <TableRow className="border-zinc-800/60">
+                  <TableHead className="w-16 px-6 font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Logo</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Nombre</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Capitán</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Teléfono</TableHead>
+                  <TableHead className="text-right px-6 font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {initialTeams.map((team) => (
-                  <TableRow key={team.id}>
-                    <TableCell>
+                {filteredTeams.map((team) => (
+                  <TableRow key={team.id} className="border-zinc-800/40 hover:bg-white/[0.02] transition-colors group">
+                    <TableCell className="px-6">
                       <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded-full border flex items-center justify-center overflow-hidden">
                         {team.logo_url ? (
                           <img src={team.logo_url} className="w-full h-full object-contain" alt={team.name} />
@@ -337,10 +471,13 @@ export default function TournamentClient({
                     </TableCell>
                   </TableRow>
                 ))}
-                {initialTeams.length === 0 && (
+                {filteredTeams.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                      No hay equipos registrados.
+                    <TableCell colSpan={5} className="text-center py-20 text-muted-foreground bg-zinc-900/10">
+                      <div className="flex flex-col items-center gap-3">
+                        <Shield className="w-10 h-10 opacity-10" />
+                        <p className="font-bold uppercase italic tracking-tighter text-lg">No se encontraron equipos</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
@@ -381,7 +518,8 @@ export default function TournamentClient({
               <Dialog open={isPlayerDialogOpen} onOpenChange={(val) => { setIsPlayerDialogOpen(val); if(!val) setEditingPlayer(null); }}>
                 <DialogTrigger render={<Button className="gap-2"><Plus className="w-4 h-4" /> Nuevo Jugador</Button>} />
                 <DialogContent>
-                  <form onSubmit={handlePlayerSubmit}>
+                  <div key={editingPlayer?.id || 'new-player'}>
+                    <form onSubmit={handlePlayerSubmit}>
                     <DialogHeader>
                       <DialogTitle>{editingPlayer ? 'Editar Jugador' : 'Nuevo Jugador'}</DialogTitle>
                     </DialogHeader>
@@ -436,8 +574,9 @@ export default function TournamentClient({
                       <Button type="submit">{editingPlayer ? 'Actualizar' : 'Crear'}</Button>
                     </DialogFooter>
                   </form>
-                </DialogContent>
-              </Dialog>
+                </div>
+              </DialogContent>
+            </Dialog>
             </div>
           </CardHeader>
           <CardContent>
@@ -485,14 +624,53 @@ export default function TournamentClient({
       <TabsContent value="matches">
         <Card className="border-zinc-800/60 bg-[#0a0a0a]/80 backdrop-blur-xl shadow-2xl overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-800/60 bg-zinc-950/50">
-            <div>
-              <CardTitle>Jornadas / Partidos</CardTitle>
-              <CardDescription>Programa encuentros y registra resultados.</CardDescription>
-            </div>
-            <Dialog open={isMatchDialogOpen} onOpenChange={(val) => { setIsMatchDialogOpen(val); if(!val) setEditingMatch(null); }}>
-              <DialogTrigger render={<Button className="gap-2"><Plus className="w-4 h-4" /> Nuevo Partido</Button>} />
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+              <Select value={matchStatusFilter} onValueChange={setMatchStatusFilter}>
+                <SelectTrigger className="w-full sm:w-44 bg-zinc-900/50 border-zinc-800 h-10 text-xs font-bold uppercase tracking-widest">
+                  <SelectValue placeholder="Estado">
+                    {(val: any) => {
+                      const statusMap: Record<string, string> = { 
+                        all: 'Todos los estados', 
+                        scheduled: 'Programado', 
+                        live: 'En Vivo', 
+                        halftime: 'Entretiempo', 
+                        finished: 'Finalizado', 
+                        cancelled: 'Cancelado' 
+                      };
+                      return statusMap[val] || 'Estado';
+                    }}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-950 border-zinc-800">
+                  <SelectItem value="all" className="text-xs font-bold uppercase">Todos los estados</SelectItem>
+                  <SelectItem value="scheduled" className="text-xs font-bold uppercase">Programado</SelectItem>
+                  <SelectItem value="live" className="text-xs font-bold uppercase text-red-500">En Vivo</SelectItem>
+                  <SelectItem value="halftime" className="text-xs font-bold uppercase text-amber-500">Entretiempo</SelectItem>
+                  <SelectItem value="finished" className="text-xs font-bold uppercase text-emerald-500">Finalizado</SelectItem>
+                  <SelectItem value="cancelled" className="text-xs font-bold uppercase text-zinc-500">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={matchDateSort} onValueChange={setMatchDateSort}>
+                <SelectTrigger className="w-full sm:w-48 bg-zinc-900/50 border-zinc-800 h-10 text-xs font-bold uppercase tracking-widest">
+                  <div className="flex items-center gap-2">
+                    <Timer className="w-3.5 h-3.5" />
+                    <SelectValue placeholder="Orden Fecha">
+                      {(val: any) => val === 'desc' ? 'Más reciente primero' : 'Más antiguo primero'}
+                    </SelectValue>
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-950 border-zinc-800">
+                  <SelectItem value="desc" className="text-xs font-bold uppercase">Más reciente primero</SelectItem>
+                  <SelectItem value="asc" className="text-xs font-bold uppercase">Más antiguo primero</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Dialog open={isMatchDialogOpen} onOpenChange={(val) => { setIsMatchDialogOpen(val); if(!val) setEditingMatch(null); }}>
+                <DialogTrigger render={<Button className="gap-2 shrink-0"><Plus className="w-4 h-4" /> Nuevo Partido</Button>} />
               <DialogContent className="max-w-md">
-                <form onSubmit={handleMatchSubmit}>
+                <div key={editingMatch?.id || 'new-match'}>
+                  <form onSubmit={handleMatchSubmit}>
                   <DialogHeader>
                     <DialogTitle>{editingMatch ? 'Editar Partido' : 'Programar Partido'}</DialogTitle>
                   </DialogHeader>
@@ -535,6 +713,21 @@ export default function TournamentClient({
                         <Label htmlFor="match_time">Hora</Label>
                         <Input id="match_time" name="match_time" type="time" defaultValue={editingMatch?.match_time} required />
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Rama (Género)</Label>
+                      <Select name="gender" defaultValue={editingMatch?.gender || 'masculino'} required>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Género">
+                            {(val: any) => val === 'femenino' ? '🚺 Femenino' : '🚹 Masculino'}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="masculino">🚹 Masculino</SelectItem>
+                          <SelectItem value="femenino">🚺 Femenino</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="space-y-2">
@@ -593,25 +786,29 @@ export default function TournamentClient({
                     <Button type="submit">{editingMatch ? 'Actualizar' : 'Programar'}</Button>
                   </DialogFooter>
                 </form>
-              </DialogContent>
-            </Dialog>
+              </div>
+            </DialogContent>
+          </Dialog>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fecha / Hora</TableHead>
-                  <TableHead>Encuentro</TableHead>
-                  <TableHead>Resultado</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+              <TableHeader className="bg-zinc-900/30">
+                <TableRow className="border-zinc-800/60">
+                  <TableHead className="px-6 font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Fecha / Hora</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Encuentro</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic text-center">Resultado</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Estado</TableHead>
+                  <TableHead className="text-right px-6 font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {matches.map((match) => (
-                  <TableRow key={match.id}>
-                    <TableCell>
-                      <div className="font-medium">{new Date(match.match_date).toLocaleDateString()}</div>
+                {filteredMatches.map((match) => (
+                  <TableRow key={match.id} className="border-zinc-800/40 hover:bg-white/[0.02] transition-colors group">
+                    <TableCell className="px-6">
+                      <div className="font-medium">
+                        {match.match_date.split('-').reverse().join('/')}
+                      </div>
                       <div className="text-xs text-muted-foreground">{match.match_time}</div>
                     </TableCell>
                     <TableCell>
@@ -661,10 +858,13 @@ export default function TournamentClient({
                     </TableCell>
                   </TableRow>
                 ))}
-                {matches.length === 0 && (
+                {filteredMatches.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      No hay partidos programados.
+                    <TableCell colSpan={5} className="text-center py-20 text-muted-foreground bg-zinc-900/10">
+                      <div className="flex flex-col items-center gap-3">
+                        <Calendar className="w-10 h-10 opacity-10" />
+                        <p className="font-bold uppercase italic tracking-tighter text-lg">No hay partidos con estos filtros</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
@@ -760,6 +960,15 @@ export default function TournamentClient({
           )}
         </DialogContent>
       </Dialog>
-    </Tabs>
+      <ConfirmationDialog 
+        isOpen={confirmConfig.isOpen}
+        onOpenChange={(open) => setConfirmConfig(prev => ({ ...prev, isOpen: open }))}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        description={confirmConfig.description}
+        variant={confirmConfig.variant}
+      />
+      </Tabs>
+    </div>
   )
 }

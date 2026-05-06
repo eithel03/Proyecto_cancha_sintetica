@@ -28,6 +28,8 @@ export async function createBusinessWithUser(formData: FormData) {
   const bPhone = formData.get('b_phone') as string
   const bWhatsapp = formData.get('b_whatsapp') as string
   const bDescription = formData.get('b_description') as string
+  const bLatitude = formData.get('b_latitude') as string
+  const bLongitude = formData.get('b_longitude') as string
 
   // User Data
   const uName = formData.get('u_name') as string
@@ -68,6 +70,8 @@ export async function createBusinessWithUser(formData: FormData) {
       phone: bPhone,
       whatsapp: bWhatsapp,
       description: bDescription,
+      latitude: bLatitude ? parseFloat(bLatitude) : null,
+      longitude: bLongitude ? parseFloat(bLongitude) : null,
       owner_id: newUserId,
       is_active: true
     })

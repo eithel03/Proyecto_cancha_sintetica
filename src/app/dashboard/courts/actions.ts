@@ -83,3 +83,34 @@ export async function deleteCourt(id: string) {
   revalidatePath('/dashboard/courts')
   return { success: true }
 }
+
+export async function createPricingRule(data: { court_id: string, day_of_week: number, start_time: string, end_time: string, price: number }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autorizado' }
+
+  const { data: newRule, error } = await supabase
+    .from('court_pricing_rules')
+    .insert(data)
+    .select()
+    .single()
+
+  if (error) return { error: 'Error al crear regla de precio: ' + error.message }
+  
+  return { success: true, data: newRule }
+}
+
+export async function deletePricingRule(id: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autorizado' }
+
+  const { error } = await supabase
+    .from('court_pricing_rules')
+    .delete()
+    .eq('id', id)
+
+  if (error) return { error: 'Error al eliminar regla de precio: ' + error.message }
+  
+  return { success: true }
+}

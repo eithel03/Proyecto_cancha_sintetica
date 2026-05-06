@@ -10,11 +10,70 @@ import { createBusinessWithUser } from './actions'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { MapPin, Search, Map as MapIcon } from 'lucide-react'
+import { MapPicker } from '@/components/MapPicker'
 
 export default function NewBusinessClient() {
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [slugPreview, setSlugPreview] = useState('')
+  const [coords, setCoords] = useState({ lat: '', lng: '' })
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isMapOpen, setIsMapOpen] = useState(false)
+
+  const searchAddress = async () => {
+    if (!searchQuery) {
+      toast.error('Ingresa una dirección para buscar')
+      return
+    }
+    
+    setPending(true)
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`)
+      const data = await res.json()
+      
+      if (data && data.length > 0) {
+        setCoords({
+          lat: data[0].lat.toString(),
+          lng: data[0].lon.toString()
+        })
+        toast.success('Ubicación encontrada')
+      } else {
+        toast.error('No se encontraron resultados')
+      }
+    } catch (error) {
+      toast.error('Error al buscar ubicación')
+    } finally {
+      setPending(false)
+    }
+  }
+
+  const captureLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('La geolocalización no es soportada por tu navegador')
+      return
+    }
+
+    toast.promise(
+      new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setCoords({
+              lat: position.coords.latitude.toString(),
+              lng: position.coords.longitude.toString()
+            })
+            resolve(position)
+          },
+          (err) => reject(err)
+        )
+      }),
+      {
+        loading: 'Obteniendo ubicación...',
+        success: '¡Ubicación capturada correctamente!',
+        error: 'No se pudo obtener la ubicación.'
+      }
+    )
+  }
 
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
@@ -86,6 +145,43 @@ export default function NewBusinessClient() {
                 <Label htmlFor="b_description">Descripción</Label>
                 <Textarea id="b_description" name="b_description" />
               </div>
+              <div className="space-y-4 md:col-span-2 border-t pt-4">
+                <Label className="text-primary font-bold">Localización GPS</Label>
+                
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input 
+                      placeholder="Busca por dirección (ej: Alajuela, Costa Rica)" 
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), searchAddress())}
+                    />
+                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
+                  </div>
+                  <Button type="button" onClick={searchAddress} variant="secondary">
+                    Buscar
+                  </Button>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <Input name="b_latitude" value={coords.lat} onChange={(e) => setCoords({...coords, lat: e.target.value})} placeholder="Latitud" />
+                  </div>
+                  <div className="flex-1">
+                    <Input name="b_longitude" value={coords.lng} onChange={(e) => setCoords({...coords, lng: e.target.value})} placeholder="Longitud" />
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <Button type="button" onClick={() => setIsMapOpen(true)} variant="outline" className="flex-1 border-blue-500/50 text-blue-500 hover:bg-blue-500/10">
+                      <MapIcon className="w-4 h-4 mr-2" /> Mapa
+                    </Button>
+                    <Button type="button" onClick={captureLocation} variant="outline" className="flex-1 border-primary/50 text-primary hover:bg-primary/10">
+                      <MapPin className="w-4 h-4 mr-2" /> GPS
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-[10px] text-zinc-500 italic mt-1">Busca el lugar o captura las coordenadas si estás ahí.</p>
+              </div>
             </div>
           </div>
 
@@ -120,6 +216,13 @@ export default function NewBusinessClient() {
               {pending ? 'Creando sistema...' : 'Crear Negocio y Cuenta'}
             </Button>
           </div>
+          <MapPicker 
+            isOpen={isMapOpen}
+            onOpenChange={setIsMapOpen}
+            onSelect={(lat, lng) => setCoords({ lat, lng })}
+            initialLat={coords.lat}
+            initialLng={coords.lng}
+          />
         </form>
       </CardContent>
     </Card>

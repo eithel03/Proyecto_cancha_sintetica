@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Plus, Pencil, Trash2, Loader2, ImageIcon } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, ImageIcon, Coins, Clock } from 'lucide-react'
 import { createCourt, updateCourt, deleteCourt } from './actions'
 import { toast } from 'sonner'
 import {
@@ -18,6 +18,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
+import { ConfirmationDialog } from '@/components/ConfirmationDialog'
 
 export default function CourtsClient({ initialCourts, businessId }: { initialCourts: any[], businessId: string }) {
   const [open, setOpen] = useState(false)
@@ -25,6 +26,27 @@ export default function CourtsClient({ initialCourts, businessId }: { initialCou
   const [editingCourt, setEditingCourt] = useState<any>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [imageUrl, setImageUrl] = useState('')
+  const [pricingCourt, setPricingCourt] = useState<any>(null)
+  const [pricingRules, setPricingRules] = useState<any[]>([])
+  const [loadingPricing, setLoadingPricing] = useState(false)
+  
+  // Estado para Diálogo de Confirmación
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean,
+    title: string,
+    description: string,
+    onConfirm: () => void,
+    variant?: 'danger' | 'primary'
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    onConfirm: () => {}
+  })
+
+  const showConfirm = (title: string, description: string, onConfirm: () => void, variant: 'danger' | 'primary' = 'primary') => {
+    setConfirmConfig({ isOpen: true, title, description, onConfirm, variant })
+  }
 
   async function onSubmit(formData: FormData) {
     setPending(true)
@@ -52,17 +74,72 @@ export default function CourtsClient({ initialCourts, businessId }: { initialCou
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('¿Estás seguro de eliminar esta cancha?')) return
-    const result = await deleteCourt(id)
-    if (result.error) {
-      toast.error(result.error)
+    showConfirm(
+      'Eliminar Cancha',
+      '¿Estás seguro de eliminar esta cancha? Esta acción borrará permanentemente el registro y no se podrá deshacer.',
+      async () => {
+        const result = await deleteCourt(id)
+        if (result.error) {
+          toast.error(result.error)
+        } else {
+          toast.success('Cancha eliminada')
+        }
+      },
+      'danger'
+    )
+  }
+
+  const loadPricingRules = async (court: any) => {
+    setPricingCourt(court)
+    setLoadingPricing(true)
+    const { createClient } = await import('@/lib/supabase/client')
+    const supabase = createClient()
+    const { data } = await supabase.from('court_pricing_rules').select('*').eq('court_id', court.id).order('day_of_week').order('start_time')
+    setPricingRules(data || [])
+    setLoadingPricing(false)
+  }
+
+  const addPricingRule = async (formData: FormData) => {
+    setPending(true)
+    const { createPricingRule } = await import('./actions')
+    const result = await createPricingRule({
+      court_id: pricingCourt.id,
+      day_of_week: parseInt(formData.get('day_of_week') as string),
+      start_time: formData.get('start_time') as string,
+      end_time: formData.get('end_time') as string,
+      price: parseFloat(formData.get('price') as string)
+    })
+
+    if (result.success) {
+      setPricingRules([...pricingRules, result.data])
+      toast.success('Regla de precio añadida')
     } else {
-      toast.success('Cancha eliminada')
+      toast.error(result.error)
+    }
+    setPending(false)
+  }
+
+  const deletePricingRule = async (id: string) => {
+    const { deletePricingRule } = await import('./actions')
+    const result = await deletePricingRule(id)
+    if (result.success) {
+      setPricingRules(pricingRules.filter(r => r.id !== id))
+      toast.success('Regla eliminada')
+    } else {
+      toast.error(result.error)
     }
   }
 
   return (
     <>
+      <ConfirmationDialog
+        isOpen={confirmConfig.isOpen}
+        onOpenChange={(val) => setConfirmConfig({ ...confirmConfig, isOpen: val })}
+        title={confirmConfig.title}
+        description={confirmConfig.description}
+        onConfirm={confirmConfig.onConfirm}
+        variant={confirmConfig.variant}
+      />
       <div className="flex justify-end mb-6">
         <Dialog open={open} onOpenChange={(val) => { setOpen(val); if(!val) { setEditingCourt(null); setImageUrl(''); } }}>
           <DialogTrigger
@@ -72,14 +149,14 @@ export default function CourtsClient({ initialCourts, businessId }: { initialCou
               </Button>
             }
           />
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md w-[95vw] rounded-3xl">
             <DialogHeader>
               <DialogTitle>{editingCourt ? 'Editar Cancha' : 'Nueva Cancha'}</DialogTitle>
               <DialogDescription>
                 Completa los detalles de la cancha sintética.
               </DialogDescription>
             </DialogHeader>
-            <form action={onSubmit} className="space-y-4">
+            <form key={editingCourt?.id || 'new'} action={onSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre</Label>
                 <Input id="name" name="name" defaultValue={editingCourt?.name} placeholder="Cancha 1 (Fútbol 5)" required />
@@ -95,8 +172,8 @@ export default function CourtsClient({ initialCourts, businessId }: { initialCou
               
               <div className="space-y-2">
                 <Label>Imagen de la Cancha</Label>
-                <div className="flex items-center gap-4">
-                  <div className="w-24 h-24 bg-zinc-100 dark:bg-zinc-800 rounded-lg border flex items-center justify-center overflow-hidden">
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <div className="w-full sm:w-24 h-40 sm:h-24 bg-zinc-100 dark:bg-zinc-800 rounded-lg border flex items-center justify-center overflow-hidden">
                     {imageUrl || editingCourt?.image_url ? (
                       <img src={imageUrl || editingCourt?.image_url} className="w-full h-full object-cover" alt="Preview" />
                     ) : (
@@ -174,25 +251,34 @@ export default function CourtsClient({ initialCourts, businessId }: { initialCou
                     <ImageIcon className="w-12 h-12 text-zinc-300 dark:text-zinc-700" />
                   </div>
                 )}
-                <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute top-3 right-3 flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 translate-y-0 md:translate-y-2 md:group-hover:translate-y-0 z-20">
                   <Button 
                     variant="secondary" 
                     size="icon" 
-                    className="h-8 w-8"
+                    className="h-9 w-9 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white hover:bg-emerald-500 hover:text-white hover:border-emerald-400 transition-all shadow-xl"
+                    onClick={() => loadPricingRules(court)}
+                    title="Precios Dinámicos"
+                  >
+                    <Coins className="h-4.5 w-4.5" />
+                  </Button>
+                  <Button 
+                    variant="secondary" 
+                    size="icon" 
+                    className="h-9 w-9 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white hover:bg-primary hover:text-white hover:border-primary/50 transition-all shadow-xl"
                     onClick={() => {
                       setEditingCourt(court);
                       setOpen(true);
                     }}
                   >
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="h-4.5 w-4.5" />
                   </Button>
                   <Button 
                     variant="destructive" 
                     size="icon" 
-                    className="h-8 w-8"
+                    className="h-9 w-9 rounded-xl bg-red-500/80 backdrop-blur-xl border border-red-400/20 text-white hover:bg-red-600 transition-all shadow-xl"
                     onClick={() => handleDelete(court.id)}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4.5 w-4.5" />
                   </Button>
                 </div>
               </div>
@@ -217,6 +303,77 @@ export default function CourtsClient({ initialCourts, businessId }: { initialCou
           ))
         )}
       </div>
+
+      <Dialog open={!!pricingCourt} onOpenChange={(val) => { if(!val) setPricingCourt(null) }}>
+        <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Coins className="w-5 h-5 text-emerald-500" /> Precios Dinámicos: {pricingCourt?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Configura tarifas especiales por horario para esta cancha (Precios en ₡).
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form action={addPricingRule} className="grid grid-cols-1 sm:grid-cols-4 gap-4 p-4 bg-zinc-900 rounded-xl border border-white/5">
+            <div className="space-y-1">
+              <Label className="text-[10px] font-black uppercase">Día</Label>
+              <select name="day_of_week" className="w-full h-10 rounded-lg bg-zinc-800 border-white/10 text-xs px-2">
+                <option value="0">Lunes</option>
+                <option value="1">Martes</option>
+                <option value="2">Miércoles</option>
+                <option value="3">Jueves</option>
+                <option value="4">Viernes</option>
+                <option value="5">Sábado</option>
+                <option value="6">Domingo</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-2 sm:contents gap-4">
+              <div className="space-y-1">
+                <Label className="text-[10px] font-black uppercase">Inicio</Label>
+                <Input name="start_time" type="time" required className="bg-zinc-800 h-10" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-black uppercase">Fin</Label>
+                <Input name="end_time" type="time" required className="bg-zinc-800 h-10" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px] font-black uppercase">Precio (₡)</Label>
+              <Input name="price" type="number" required className="bg-zinc-800 h-10" placeholder="2000" />
+            </div>
+            <Button type="submit" className="col-span-full h-10 font-bold" disabled={pending}>
+              {pending ? 'Añadiendo...' : '+ Añadir Regla'}
+            </Button>
+          </form>
+
+          <div className="space-y-2 mt-4 max-h-[300px] overflow-y-auto pr-2">
+            {loadingPricing ? (
+              <div className="text-center py-8"><Loader2 className="animate-spin mx-auto w-6 h-6" /></div>
+            ) : pricingRules.length === 0 ? (
+              <p className="text-center py-8 text-zinc-500 text-xs font-bold uppercase">No hay reglas de precio dinámico.</p>
+            ) : (
+              pricingRules.map((rule) => (
+                <div key={rule.id} className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 border border-white/5">
+                  <div className="flex items-center gap-4">
+                    <Badge variant="outline" className="text-[9px] font-black">
+                      {['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM'][rule.day_of_week]}
+                    </Badge>
+                    <div className="flex items-center gap-2 text-xs">
+                      <Clock className="w-3 h-3 text-zinc-500" />
+                      <span className="font-bold">{rule.start_time.substring(0, 5)} - {rule.end_time.substring(0, 5)}</span>
+                    </div>
+                    <span className="text-emerald-500 font-black">₡{rule.price.toLocaleString()}</span>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => deletePricingRule(rule.id)} className="h-8 w-8 hover:bg-red-500/10 hover:text-red-500">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

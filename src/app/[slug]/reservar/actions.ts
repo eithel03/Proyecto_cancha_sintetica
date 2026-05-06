@@ -30,8 +30,43 @@ export async function checkAvailability(courtId: string, date: string) {
     console.error('Error fetching availability (challenges):', chalError)
   }
 
-  // Combinar resultados
+  // 3. Obtener Partidos de Torneo con sus equipos y género
+  const { data: matches, error: matchError } = await supabase
+    .from('tournament_matches')
+    .select(`
+      id, 
+      match_time, 
+      status,
+      gender,
+      home:home_team_id ( name, logo_url ),
+      away:away_team_id ( name, logo_url )
+    `)
+    .eq('court_id', courtId)
+    .eq('match_date', date)
+    .in('status', ['scheduled', 'live', 'halftime'])
+
+  if (matchError) {
+    console.error('Error fetching availability (matches):', matchError)
+  }
+
   const blocked = [
+    ...(matches || []).map(m => {
+      const parts = m.match_time.split(':')
+      const h = parts[0].padStart(2, '0')
+      const min = parts[1] || '00'
+      const startNormalized = `${h}:${min}:00`
+      const endNormalized = `${(parseInt(h) + 1).toString().padStart(2, '0')}:${min}:00`
+      
+      return {
+        id: m.id,
+        start_time: startNormalized,
+        end_time: endNormalized,
+        type: (m as any).gender === 'femenino' ? 'tournament_female' : 'tournament_male',
+        status: m.status,
+        home: (m as any).home,
+        away: (m as any).away
+      }
+    }),
     ...(reservations || []).map(r => ({
       start_time: r.start_time,
       end_time: r.end_time,
@@ -85,6 +120,21 @@ export async function createReservation(formData: FormData) {
   }
 
   const [start, end] = timeSlot.split('-')
+  const startTime = start + ':00'
+  const endTime = end + ':00'
+
+  // 1. Verificar choques con otros partidos de torneo o retos confirmados
+  const { data: conflictingMatches } = await supabase
+    .from('tournament_matches')
+    .select('id')
+    .eq('court_id', courtId)
+    .eq('match_date', date)
+    .in('status', ['scheduled', 'live', 'halftime'])
+    .filter('match_time', 'eq', start)
+
+  if (conflictingMatches && conflictingMatches.length > 0) {
+    return { error: 'Lo sentimos, este horario ya está reservado para un partido de torneo.' }
+  }
 
   const { error } = await supabase
     .from('reservations')
@@ -108,9 +158,20 @@ export async function createReservation(formData: FormData) {
     return { error: 'Error al procesar reserva: ' + error.message }
   }
 
-  revalidatePath('/[slug]/reservar')
+  // Notificar al administrador
+  const { data: biz } = await supabase.from('businesses').select('name').eq('id', businessId).single()
+  import('@/lib/notifications').then(n => n.notifyAdminNewReservation(
+    biz?.name || 'Tu local',
+    profile.full_name || 'Un cliente',
+    date,
+    start
+  ))
+
+  revalidatePath('/[slug]/reservar', 'page')
+  revalidatePath('/[slug]/perfil', 'page')
   return { success: true }
 }
+
 
 export async function acceptChallenge(challengeId: string) {
   const supabase = await createClient()

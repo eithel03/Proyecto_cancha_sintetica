@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { MapPin, Phone, Trophy, CalendarCheck, Flag, Swords, User } from 'lucide-react'
 import TournamentPublicClient from './TournamentPublicClient'
+import { PublicNav } from '@/components/PublicNav'
 
 type PageProps = {
   params: Promise<{ slug: string }>
@@ -51,16 +52,22 @@ export default async function PublicTournamentPage({ params }: PageProps) {
     .eq('business_id', business.id)
     .order('match_date', { ascending: false })
 
-  const { data: standings } = await supabase
+  const { data: teams } = await supabase
+    .from('tournament_teams')
+    .select('*, players:tournament_players(*)')
+    .eq('business_id', business.id)
+    .eq('is_active', true)
+
+  // Asignamos el género a los standings basándonos en el equipo
+  const { data: rawStandings } = await supabase
     .from('tournament_standings')
     .select('*')
     .eq('business_id', business.id)
 
-  const { data: teams } = await supabase
-    .from('tournament_teams')
-    .select('*')
-    .eq('business_id', business.id)
-    .eq('is_active', true)
+  const standings = (rawStandings || []).map(s => ({
+    ...s,
+    gender: (teams?.find(t => t.id === s.team_id) as any)?.gender || 'masculino'
+  }))
 
   const { data: stats } = await supabase
     .from('tournament_match_events')
@@ -69,55 +76,10 @@ export default async function PublicTournamentPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col selection:bg-primary/30">
-      {/* Header Público */}
-      <header className="relative bg-zinc-950/80 border-b border-white/10 p-8 text-center overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background -z-10" />
-        <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent drop-shadow-md">
-          {business.name}
-        </h1>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 mt-4">
-          {business.location && (
-            <p className="text-muted-foreground flex items-center justify-center gap-1 bg-white/5 px-3 py-1 rounded-full text-sm backdrop-blur-sm">
-              <MapPin className="w-4 h-4 text-primary" /> {business.location}
-            </p>
-          )}
-          {business.phone && (
-            <p className="text-muted-foreground flex items-center justify-center gap-1 bg-white/5 px-3 py-1 rounded-full text-sm backdrop-blur-sm">
-              <Phone className="w-4 h-4 text-primary" /> {business.phone}
-            </p>
-          )}
-        </div>
-      </header>
+      <PublicNav slug={business.slug} businessName={business.name} />
 
       {/* Main Content */}
       <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full space-y-8 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        {/* Navigation Tabs */}
-        <div className="flex justify-center border-b border-white/10 mb-8">
-          <Link 
-            href={`/${business.slug}`} 
-            className="px-6 py-4 border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:border-white/20 transition-all flex items-center gap-2"
-          >
-            <CalendarCheck className="w-4 h-4" /> Reservas
-          </Link>
-          <div 
-            className="px-6 py-4 border-b-2 border-primary text-primary font-bold flex items-center gap-2 cursor-default"
-          >
-            <Flag className="w-4 h-4" /> Torneo
-          </div>
-          <Link 
-            href={`/${business.slug}/retos`} 
-            className="px-6 py-4 border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:border-white/20 transition-all flex items-center gap-2"
-          >
-            <Swords className="w-4 h-4" /> Retos
-          </Link>
-          <Link 
-            href={`/${business.slug}/perfil`} 
-            className="px-6 py-4 border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:border-white/20 transition-all flex items-center gap-2"
-          >
-            <User className="w-4 h-4" /> Mis Reservas
-          </Link>
-        </div>
-
         <TournamentPublicClient 
           matches={matches || []}
           standings={standings || []}

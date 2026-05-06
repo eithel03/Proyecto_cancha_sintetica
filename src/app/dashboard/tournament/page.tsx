@@ -30,14 +30,14 @@ export default async function TournamentPage() {
   // Fetch players (needed for selection)
   const { data: players } = await supabase
     .from('tournament_players')
-    .select('*, tournament_teams(name)')
+    .select('*, tournament_teams(name, gender)')
     .eq('business_id', business.id)
     .order('first_name')
 
   // Fetch matches
   const { data: matches } = await supabase
     .from('tournament_matches')
-    .select('*, home:home_team_id(name), away:away_team_id(name), court:court_id(name)')
+    .select('*, home:home_team_id(name, gender), away:away_team_id(name, gender), court:court_id(name)')
     .eq('business_id', business.id)
     .order('match_date', { ascending: false })
 

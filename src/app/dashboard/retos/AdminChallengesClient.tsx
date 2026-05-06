@@ -9,9 +9,29 @@ import { toast } from 'sonner'
 import { confirmChallenge, cancelChallenge } from '@/app/[slug]/retos/actions'
 import { createClient } from '@/lib/supabase/client'
 
+import { ConfirmationDialog } from '@/components/ConfirmationDialog'
+
 export default function AdminChallengesClient({ initialChallenges }: { initialChallenges: any[] }) {
   const [challenges, setChallenges] = useState(initialChallenges)
   const [pending, setPending] = useState(false)
+
+  // Estado para Diálogo de Confirmación
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean,
+    title: string,
+    description: string,
+    onConfirm: () => void,
+    variant?: 'danger' | 'primary'
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    onConfirm: () => {}
+  })
+
+  const showConfirm = (title: string, description: string, onConfirm: () => void, variant: 'danger' | 'primary' = 'primary') => {
+    setConfirmConfig({ isOpen: true, title, description, onConfirm, variant })
+  }
 
   // Realtime subscription
   useEffect(() => {
@@ -46,33 +66,42 @@ export default function AdminChallengesClient({ initialChallenges }: { initialCh
   }, [])
 
   async function handleConfirm(challengeId: string) {
-    if (!confirm('¿Deseas confirmar este reto? Se creará una reserva automática y se notificará a los jugadores.')) return
-    
-    setPending(true)
-    const result = await confirmChallenge(challengeId)
-    setPending(false)
+    showConfirm(
+      'Confirmar Reto',
+      '¿Deseas confirmar este reto? Se creará una reserva automática y se notificará a los jugadores.',
+      async () => {
+        setPending(true)
+        const result = await confirmChallenge(challengeId)
+        setPending(false)
 
-    if (result.error) {
-      toast.error(result.error, { duration: 5000 })
-    } else {
-      toast.success('Reto confirmado con éxito.')
-      setChallenges(prev => prev.map(c => c.id === challengeId ? { ...c, status: 'confirmed' } : c))
-    }
+        if (result.error) {
+          toast.error(result.error, { duration: 5000 })
+        } else {
+          toast.success('Reto confirmado con éxito.')
+          setChallenges(prev => prev.map(c => c.id === challengeId ? { ...c, status: 'confirmed' } : c))
+        }
+      }
+    )
   }
 
   async function handleCancel(challengeId: string) {
-    if (!confirm('¿Seguro que deseas cancelar este reto?')) return
-    
-    setPending(true)
-    const result = await cancelChallenge(challengeId)
-    setPending(false)
+    showConfirm(
+      'Cancelar Reto',
+      '¿Seguro que deseas cancelar este reto? Esta acción es irreversible.',
+      async () => {
+        setPending(true)
+        const result = await cancelChallenge(challengeId)
+        setPending(false)
 
-    if (result.error) {
-      toast.error(result.error)
-    } else {
-      toast.success('Reto cancelado.')
-      setChallenges(prev => prev.map(c => c.id === challengeId ? { ...c, status: 'cancelled' } : c))
-    }
+        if (result.error) {
+          toast.error(result.error)
+        } else {
+          toast.success('Reto cancelado.')
+          setChallenges(prev => prev.map(c => c.id === challengeId ? { ...c, status: 'cancelled' } : c))
+        }
+      },
+      'danger'
+    )
   }
 
   const acceptedChallenges = challenges.filter(c => c.status === 'accepted')
@@ -248,6 +277,14 @@ export default function AdminChallengesClient({ initialChallenges }: { initialCh
           ))}
         </div>
       </section>
+      <ConfirmationDialog 
+        isOpen={confirmConfig.isOpen}
+        onOpenChange={(open) => setConfirmConfig(prev => ({ ...prev, isOpen: open }))}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        description={confirmConfig.description}
+        variant={confirmConfig.variant}
+      />
     </div>
   )
 }

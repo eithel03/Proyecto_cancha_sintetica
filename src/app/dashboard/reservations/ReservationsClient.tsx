@@ -70,15 +70,20 @@ export default function ReservationsClient({ initialReservations }: { initialRes
                   <div className="flex-1 p-6 space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                        <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold ${res.is_tournament ? 'bg-red-500/10 text-red-500' : 'bg-primary/10 text-primary'}`}>
                           {res.customer_name.charAt(0)}
                         </div>
                         <div>
                           <h3 className="font-bold text-lg leading-none">{res.customer_name}</h3>
-                          <p className="text-sm text-emerald-500 font-medium mt-1">{res.courts?.name}</p>
+                          <p className={`text-sm font-medium mt-1 ${res.is_tournament ? 'text-red-500' : 'text-emerald-500'}`}>
+                            {res.courts?.name} {res.is_tournament && '(Torneo)'}
+                          </p>
                         </div>
                       </div>
-                      {getStatusBadge(res.status)}
+                      <div className="flex items-center gap-2">
+                        {res.is_tournament && <Badge className="bg-red-600">TORNEO</Badge>}
+                        {getStatusBadge(res.status)}
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 text-sm">
@@ -110,45 +115,53 @@ export default function ReservationsClient({ initialReservations }: { initialRes
 
                   {/* Actions Section */}
                   <div className="bg-zinc-900/30 p-6 flex flex-col justify-center gap-2 border-t md:border-t-0 md:border-l border-white/5 min-w-[200px]">
-                    {/* El botón de WhatsApp solo se muestra cuando la reserva NO está pendiente (ya fue confirmada) */}
-                    {res.status !== 'pending' && (res.customer?.phone || res.customer_phone) !== 'Sin teléfono' && (
-                      <a 
-                        href={getWhatsAppLink({ ...res, customer_phone: res.customer?.phone || res.customer_phone }, res.status === 'confirmed' ? 'confirm' : 'general') || '#'} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="w-full"
-                      >
-                        <Button variant="outline" className="w-full border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-500">
-                          <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
-                        </Button>
-                      </a>
-                    )}
-                    
-                    {res.status === 'pending' && (
+                    {res.is_tournament ? (
+                      <div className="text-center py-4">
+                        <Badge variant="outline" className="border-red-500/30 text-red-500/60 uppercase text-[10px] tracking-widest">Gestionado en Torneo</Badge>
+                      </div>
+                    ) : (
                       <>
-                        <Button 
-                          onClick={() => handleStatusChange(res.id, 'confirmed')} 
-                          className="w-full bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-900/20"
-                        >
-                          <CheckCircle className="w-4 h-4 mr-2" /> Confirmar
-                        </Button>
-                        <Button 
-                          onClick={() => handleStatusChange(res.id, 'cancelled')} 
-                          variant="ghost" 
-                          className="w-full text-zinc-400 hover:text-red-400 hover:bg-red-400/10"
-                        >
-                          <XCircle className="w-4 h-4 mr-2" /> Cancelar
-                        </Button>
+                        {/* El botón de WhatsApp solo se muestra cuando la reserva NO está pendiente (ya fue confirmada) */}
+                        {res.status !== 'pending' && (res.customer?.phone || res.customer_phone) !== 'Sin teléfono' && (
+                          <a 
+                            href={getWhatsAppLink({ ...res, customer_phone: res.customer?.phone || res.customer_phone }, res.status === 'confirmed' ? 'confirm' : 'general') || '#'} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="w-full"
+                          >
+                            <Button variant="outline" className="w-full border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-500">
+                              <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
+                            </Button>
+                          </a>
+                        )}
+                        
+                        {res.status === 'pending' && (
+                          <>
+                            <Button 
+                              onClick={() => handleStatusChange(res.id, 'confirmed')} 
+                              className="w-full bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-900/20"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-2" /> Confirmar
+                            </Button>
+                            <Button 
+                              onClick={() => handleStatusChange(res.id, 'cancelled')} 
+                              variant="ghost" 
+                              className="w-full text-zinc-400 hover:text-red-400 hover:bg-red-400/10"
+                            >
+                              <XCircle className="w-4 h-4 mr-2" /> Cancelar
+                            </Button>
+                          </>
+                        )}
+                        
+                        {res.status === 'confirmed' && (
+                          <Button 
+                            onClick={() => handleStatusChange(res.id, 'completed')} 
+                            className="w-full bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-900/20"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2" /> Completar
+                          </Button>
+                        )}
                       </>
-                    )}
-                    
-                    {res.status === 'confirmed' && (
-                      <Button 
-                        onClick={() => handleStatusChange(res.id, 'completed')} 
-                        className="w-full bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-900/20"
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" /> Completar
-                      </Button>
                     )}
                   </div>
                 </div>

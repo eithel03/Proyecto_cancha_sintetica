@@ -1,17 +1,9 @@
-"use client"
+'use client'
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
-
-const dataWeekly = [
-  { name: 'Lun', reservas: 4 },
-  { name: 'Mar', reservas: 6 },
-  { name: 'Mie', reservas: 8 },
-  { name: 'Jue', reservas: 12 },
-  { name: 'Vie', reservas: 18 },
-  { name: 'Sab', reservas: 24 },
-  { name: 'Dom', reservas: 20 },
-]
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, AreaChart, Area } from 'recharts'
+import { Activity, TrendingUp } from 'lucide-react'
+import { useState, useEffect } from 'react'
 
 const dataRevenue = [
   { name: 'Ene', ingresos: 400000 },
@@ -22,65 +14,135 @@ const dataRevenue = [
   { name: 'Jun', ingresos: 700000 },
 ]
 
-export function DashboardCharts() {
+export function DashboardCharts({ data }: { data: any[] }) {
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  if (!isMounted) {
+    return (
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md h-[400px] animate-pulse" />
+        <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md h-[400px] animate-pulse" />
+      </div>
+    )
+  }
+
   return (
-    <div className="grid gap-6 md:grid-cols-2 mt-8">
-      <Card className="border-zinc-800/60 bg-[#0a0a0a]/80 backdrop-blur-xl shadow-2xl overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500/0 via-emerald-500/50 to-emerald-500/0"></div>
-        <CardHeader className="pb-8">
-          <CardTitle className="text-xl font-bold tracking-tight text-white">Reservas por Día</CardTitle>
-          <CardDescription className="text-zinc-400">Distribución de la semana actual</CardDescription>
+    <div className="grid gap-6 md:grid-cols-2">
+      <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md overflow-hidden group">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500/0 via-emerald-500/50 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <CardHeader>
+          <CardTitle className="text-lg font-bold flex items-center gap-2">
+            <Activity className="w-5 h-5 text-primary" /> Volumen Semanal
+          </CardTitle>
+          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Reservas totales vs confirmadas</p>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dataWeekly} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} barSize={32}>
+          <div className="h-[300px] w-full min-w-0">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+              <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="colorReservas" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.8}/>
-                    <stop offset="100%" stopColor="#10b981" stopOpacity={0.2}/>
+                  <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity={0.4} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} dy={10} />
-                <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} dx={-10} />
-                <Tooltip 
-                  cursor={{fill: 'rgba(255,255,255,0.02)'}} 
-                  contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }} 
-                  itemStyle={{ color: '#10b981', fontWeight: 'bold' }}
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="#525252" 
+                  fontSize={10} 
+                  fontWeight="bold"
+                  axisLine={false}
+                  tickLine={false}
                 />
-                <Bar dataKey="reservas" fill="url(#colorReservas)" radius={[6, 6, 0, 0]} />
+                <YAxis 
+                  stroke="#525252" 
+                  fontSize={10} 
+                  fontWeight="bold"
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip 
+                  cursor={{ fill: '#ffffff05' }}
+                  contentStyle={{ 
+                    backgroundColor: '#09090b', 
+                    border: '1px solid #27272a',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: 'bold'
+                  }}
+                />
+                <Bar 
+                  dataKey="reservas" 
+                  fill="url(#barGradient)" 
+                  radius={[6, 6, 0, 0]} 
+                />
+                <Bar 
+                  dataKey="confirmadas" 
+                  fill="#ffffff20" 
+                  radius={[6, 6, 0, 0]} 
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border-zinc-800/60 bg-[#0a0a0a]/80 backdrop-blur-xl shadow-2xl overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500/0 via-blue-500/50 to-blue-500/0"></div>
-        <CardHeader className="pb-8">
-          <CardTitle className="text-xl font-bold tracking-tight text-white">Ingresos Estimados</CardTitle>
-          <CardDescription className="text-zinc-400">Proyección mensual en Colones (₡)</CardDescription>
+      <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md overflow-hidden group">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500/0 via-blue-500/50 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <CardHeader>
+          <CardTitle className="text-lg font-bold flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-blue-500" /> Tendencia Anual
+          </CardTitle>
+          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Crecimiento de ingresos mensual</p>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={dataRevenue} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+          <div className="h-[300px] w-full min-w-0">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+              <AreaChart data={dataRevenue} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} dy={10} />
-                <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₡${value/1000}k`} dx={-10} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
-                  itemStyle={{ color: '#3b82f6', fontWeight: 'bold' }}
-                  formatter={(value: any) => [`₡${Number(value).toLocaleString()}`, 'Ingresos']}
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="#525252" 
+                  fontSize={10} 
+                  fontWeight="bold"
+                  axisLine={false}
+                  tickLine={false}
                 />
-                <Area type="monotone" dataKey="ingresos" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorIngresos)" activeDot={{ r: 6, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }} />
+                <YAxis 
+                  stroke="#525252" 
+                  fontSize={10} 
+                  fontWeight="bold"
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#09090b', 
+                    border: '1px solid #27272a',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: 'bold'
+                  }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="ingresos" 
+                  stroke="#3b82f6" 
+                  strokeWidth={3}
+                  fillOpacity={1} 
+                  fill="url(#areaGradient)" 
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>

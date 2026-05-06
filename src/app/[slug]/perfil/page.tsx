@@ -3,6 +3,12 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Flag, CalendarCheck, Swords, User } from 'lucide-react'
 import ProfileClient from './ProfileClient'
+import { revalidatePath } from 'next/cache'
+import { PublicNav } from '@/components/PublicNav'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 
 type PageProps = {
   params: Promise<{ slug: string }>
@@ -58,32 +64,9 @@ export default async function ProfilePage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col selection:bg-primary/30">
-      {/* Header */}
-      <header className="relative bg-zinc-950/80 border-b border-white/10 p-8 text-center overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background -z-10" />
-        <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent drop-shadow-md">
-          Mi Perfil
-        </h1>
-        <p className="text-muted-foreground mt-2 font-medium tracking-wide uppercase text-xs">{business.name}</p>
-      </header>
+      <PublicNav slug={business.slug} businessName={business.name} />
 
       <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full space-y-8 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        {/* Navigation Tabs */}
-        <div className="flex justify-center border-b border-white/10 mb-8 overflow-x-auto no-scrollbar">
-          <Link href={`/${business.slug}`} className="px-6 py-4 border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:border-white/20 transition-all flex items-center gap-2 whitespace-nowrap">
-            <CalendarCheck className="w-4 h-4" /> Reservas
-          </Link>
-          <Link href={`/${business.slug}/torneo`} className="px-6 py-4 border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:border-white/20 transition-all flex items-center gap-2 whitespace-nowrap">
-            <Flag className="w-4 h-4" /> Torneo
-          </Link>
-          <Link href={`/${business.slug}/retos`} className="px-6 py-4 border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:border-white/20 transition-all flex items-center gap-2 whitespace-nowrap">
-            <Swords className="w-4 h-4" /> Retos
-          </Link>
-          <div className="px-6 py-4 border-b-2 border-primary text-primary font-bold flex items-center gap-2 cursor-default whitespace-nowrap">
-            <User className="w-4 h-4" /> Mis Reservas
-          </div>
-        </div>
-
         <ProfileClient 
           initialProfile={profile} 
           initialReservations={reservations || []} 
