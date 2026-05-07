@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Flag, ArrowRight } from 'lucide-react'
 import { LandingHero, LandingFeatures } from '@/components/LandingClient'
