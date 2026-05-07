@@ -1,5 +1,12 @@
 import Link from 'next/link'
 import { Flag } from 'lucide-react'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Admin - SaaSintética',
+  description: 'Panel de administración de canchas sintéticas',
+  manifest: '/admin.webmanifest',
+}
 
 export default function AuthLayout({
   children,

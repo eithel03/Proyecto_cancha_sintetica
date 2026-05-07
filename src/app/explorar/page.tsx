@@ -3,6 +3,13 @@ import { BusinessDirectory } from '@/components/BusinessDirectory'
 import Link from 'next/link'
 import { Flag, Search, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Explorar - SaaSintética',
+  description: 'Encuentra las mejores canchas sintéticas cerca de ti',
+  manifest: '/explorar.webmanifest',
+}
 
 export default async function ExplorarPage() {
   const { businesses, count } = await getBusinesses()
