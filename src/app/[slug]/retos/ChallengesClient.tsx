@@ -285,7 +285,7 @@ export default function ChallengesClient({
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest ml-1">¿Dónde será el duelo?</Label>
                   <Select name="court_id" required onValueChange={(v) => {
-                    setSelectedCourt(v)
+                    setSelectedCourt(v || '')
                     setError(null)
                   }} value={selectedCourt}>
                     <SelectTrigger type="button" className="bg-zinc-900/50 border-white/10 h-12 sm:h-14 font-bold text-base sm:text-lg rounded-xl sm:rounded-2xl">
@@ -318,7 +318,7 @@ export default function ChallengesClient({
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest ml-1">Hora</Label>
                     <Select name="time" required onValueChange={(v) => {
-                      setSelectedTime(v)
+                      setSelectedTime(v || '')
                       setError(null)
                     }} value={selectedTime}>
                       <SelectTrigger type="button" className="bg-zinc-900/50 border-white/10 h-12 sm:h-14 font-bold text-sm sm:text-lg rounded-xl sm:rounded-2xl text-left">
@@ -343,7 +343,7 @@ export default function ChallengesClient({
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest ml-1">Tipo de Encuentro</Label>
                     <Select value={gender} onValueChange={(v) => {
-                      setGender(v)
+                      setGender(v || '')
                       setError(null)
                     }}>
                       <SelectTrigger type="button" className="bg-zinc-900/50 border-white/10 h-12 sm:h-14 font-bold text-base sm:text-lg rounded-xl sm:rounded-2xl">
