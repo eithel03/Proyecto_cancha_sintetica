@@ -55,7 +55,7 @@ export default function AdminChallengesClient({ initialChallenges }: { initialCh
             toast.info('¡Un reto ha sido aceptado por un oponente!')
             setTimeout(() => window.location.reload(), 1500)
           }
-          setChallenges(prev => prev.map(c => c.id === payload.new.id ? { ...c, ...payload.new } : c))
+          setChallenges((prev: any) => prev.map((c: any) => c.id === payload.new.id ? { ...c, ...payload.new } : c))
         }
       )
       .subscribe()
@@ -78,7 +78,7 @@ export default function AdminChallengesClient({ initialChallenges }: { initialCh
           toast.error(result.error, { duration: 5000 })
         } else {
           toast.success('Reto confirmado con éxito.')
-          setChallenges(prev => prev.map(c => c.id === challengeId ? { ...c, status: 'confirmed' } : c))
+          setChallenges((prev: any) => prev.map((c: any) => c.id === challengeId ? { ...c, status: 'confirmed' } : c))
         }
       }
     )
@@ -97,7 +97,7 @@ export default function AdminChallengesClient({ initialChallenges }: { initialCh
           toast.error(result.error)
         } else {
           toast.success('Reto cancelado.')
-          setChallenges(prev => prev.map(c => c.id === challengeId ? { ...c, status: 'cancelled' } : c))
+          setChallenges((prev: any) => prev.map((c: any) => c.id === challengeId ? { ...c, status: 'cancelled' } : c))
         }
       },
       'danger'
@@ -279,7 +279,7 @@ export default function AdminChallengesClient({ initialChallenges }: { initialCh
       </section>
       <ConfirmationDialog 
         isOpen={confirmConfig.isOpen}
-        onOpenChange={(open) => setConfirmConfig(prev => ({ ...prev, isOpen: open }))}
+        onOpenChange={(open) => setConfirmConfig((prev: any) => ({ ...prev, isOpen: open }))}
         onConfirm={confirmConfig.onConfirm}
         title={confirmConfig.title}
         description={confirmConfig.description}

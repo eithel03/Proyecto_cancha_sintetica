@@ -120,7 +120,7 @@ export default function SettingsClient({ business, initialHours, initialExceptio
   }
 
   const updateBrandingColor = (key: string, value: string) => {
-    setBranding(prev => ({ ...prev, [key]: value }))
+    setBranding((prev: any) => ({ ...prev, [key]: value }))
   }
 
   return (

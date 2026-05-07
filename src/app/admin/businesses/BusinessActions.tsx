@@ -42,7 +42,7 @@ export function BusinessActions({ business }: { business: any }) {
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
+    setFormData((prev: any) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -130,7 +130,7 @@ export function BusinessActions({ business }: { business: any }) {
                   <Switch 
                     id="is_active" 
                     checked={formData.is_active} 
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))} 
+                    onCheckedChange={(checked) => setFormData((prev: any) => ({ ...prev, is_active: checked }))} 
                   />
                   <Label htmlFor="is_active">{formData.is_active ? 'Activo' : 'Inactivo'}</Label>
                 </div>

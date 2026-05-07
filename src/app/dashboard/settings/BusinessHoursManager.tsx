@@ -39,11 +39,11 @@ export default function BusinessHoursManager({ businessId, initialHours }: { bus
   const [pending, setPending] = useState(false)
 
   const handleToggle = (dayIndex: number) => {
-    setHours(prev => prev.map(h => h.day_of_week === dayIndex ? { ...h, is_closed: !h.is_closed } : h))
+    setHours((prev: any) => prev.map((h: any) => h.day_of_week === dayIndex ? { ...h, is_closed: !h.is_closed } : h))
   }
 
   const handleTimeChange = (dayIndex: number, field: 'open_time' | 'close_time', value: string) => {
-    setHours(prev => prev.map(h => h.day_of_week === dayIndex ? { ...h, [field]: value } : h))
+    setHours((prev: any) => prev.map((h: any) => h.day_of_week === dayIndex ? { ...h, [field]: value } : h))
   }
 
   const saveHours = async () => {

@@ -27,7 +27,7 @@ export default function TournamentPublicClient({ businessId, matches: initialMat
   
   useEffect(() => {
     const timer = setInterval(() => {
-      setMatches(prevMatches => 
+      setMatches((prevMatches: any[]) => 
         prevMatches.map(m => {
           if (m.status === 'live' && m.live_started_at) {
             const elapsedSinceStart = Math.floor((Date.now() - new Date(m.live_started_at).getTime()) / 60000)
@@ -59,7 +59,7 @@ export default function TournamentPublicClient({ businessId, matches: initialMat
           { event: '*', schema: 'public', table: 'tournament_matches', filter: `business_id=eq.${businessId}` },
           (payload) => {
             if (payload.eventType === 'UPDATE') {
-              setMatches(prev => prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } : m))
+              setMatches((prev: any) => prev.map((m: any) => m.id === payload.new.id ? { ...m, ...payload.new } : m))
             }
           }
         )

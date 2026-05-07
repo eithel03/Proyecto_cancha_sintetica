@@ -90,7 +90,7 @@ export default function TournamentClient({
 
     const timer = setInterval(() => {
       // 1. Actualizar minutos en vivo en la UI
-      setMatches(prevMatches => 
+      setMatches((prevMatches: any[]) => 
         prevMatches.map(m => {
           if (m.status === 'live' && m.live_started_at) {
             const elapsedSinceStart = Math.floor((Date.now() - new Date(m.live_started_at).getTime()) / 60000)
@@ -123,14 +123,14 @@ export default function TournamentClient({
           { event: '*', schema: 'public', table: 'tournament_matches', filter: `business_id=eq.${businessId}` },
           (payload) => {
             if (payload.eventType === 'UPDATE') {
-              setMatches(prev => prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } : m))
+              setMatches((prev: any) => prev.map((m: any) => m.id === payload.new.id ? { ...m, ...payload.new } : m))
             } else if (payload.eventType === 'INSERT') {
-              setMatches(prev => {
-                if (prev.some(m => m.id === payload.new.id)) return prev
+              setMatches((prev: any) => {
+                if (prev.some((m: any) => m.id === payload.new.id)) return prev
                 return [payload.new, ...prev]
               })
             } else if (payload.eventType === 'DELETE') {
-              setMatches(prev => prev.filter(m => m.id !== payload.old.id))
+              setMatches((prev: any) => prev.filter((m: any) => m.id !== payload.old.id))
             }
           }
         )
@@ -1015,7 +1015,7 @@ export default function TournamentClient({
       </Dialog>
       <ConfirmationDialog 
         isOpen={confirmConfig.isOpen}
-        onOpenChange={(open) => setConfirmConfig(prev => ({ ...prev, isOpen: open }))}
+        onOpenChange={(open: any) => setConfirmConfig((prev: any) => ({ ...prev, isOpen: open }))}
         onConfirm={confirmConfig.onConfirm}
         title={confirmConfig.title}
         description={confirmConfig.description}

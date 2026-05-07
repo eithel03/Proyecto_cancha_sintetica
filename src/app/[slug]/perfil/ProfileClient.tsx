@@ -90,9 +90,9 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
         const result = await hideHistoryItem(type, id)
         if (result.success) {
           if (type === 'reservation') {
-            setReservations(prev => prev.filter(r => r.id !== id))
+            setReservations((prev: any) => prev.filter((r: any) => r.id !== id))
           } else {
-            setChallenges(prev => prev.filter(c => c.id !== id))
+            setChallenges((prev: any) => prev.filter((c: any) => c.id !== id))
           }
           toast.success('Registro ocultado')
         }
@@ -361,7 +361,7 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
       </div>
       <ConfirmationDialog 
         isOpen={confirmConfig.isOpen}
-        onOpenChange={(open) => setConfirmConfig(prev => ({ ...prev, isOpen: open }))}
+        onOpenChange={(open) => setConfirmConfig((prev: any) => ({ ...prev, isOpen: open }))}
         onConfirm={confirmConfig.onConfirm}
         title={confirmConfig.title}
         description={confirmConfig.description}
