@@ -2,16 +2,14 @@ import { Metadata, Viewport } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import DashboardClientLayout from './DashboardClientLayout'
 
-export async function generateViewport(): Promise<Viewport> {
+export async function generateViewport({ params }: { params: Promise<{ slug: string }> }): Promise<Viewport> {
+  const { slug } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
   
-  if (!user) return { themeColor: '#10b981' }
-
   const { data: business } = await supabase
     .from('businesses')
     .select('branding')
-    .eq('owner_id', user.id)
+    .eq('slug', slug)
     .single()
 
   return {
@@ -22,16 +20,14 @@ export async function generateViewport(): Promise<Viewport> {
   }
 }
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) return { title: 'Admin - SaaSintética' }
 
   const { data: business } = await supabase
     .from('businesses')
     .select('name, logo_url')
-    .eq('owner_id', user.id)
+    .eq('slug', slug)
     .single()
 
   if (!business) return { title: 'Admin - SaaSintética' }
@@ -41,7 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
       default: `${business.name} | Admin`,
       template: `%s | ${business.name} Admin`
     },
-    manifest: '/dashboard/manifest.webmanifest',
+    manifest: `/${slug}/admin/manifest.webmanifest`,
     icons: {
       icon: business.logo_url || '/favicon.ico',
       apple: business.logo_url || '/favicon.ico',

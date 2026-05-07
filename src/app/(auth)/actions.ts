@@ -56,7 +56,7 @@ export async function login(formData: FormData) {
   if (profile.role === 'owner') {
     const { data: business } = await supabase
       .from('businesses')
-      .select('id')
+      .select('slug')
       .eq('owner_id', user.id)
       .single()
 
@@ -65,8 +65,8 @@ export async function login(formData: FormData) {
       return { error: 'Tu cuenta aún no tiene un negocio asignado. Contacta al administrador.' }
     }
 
-    revalidatePath('/', 'layout')
-    redirect('/dashboard')
+    revalidatePath(`/${business.slug}/admin`, 'layout')
+    redirect(`/${business.slug}/admin`)
   }
 
   // Si es algún otro rol no contemplado

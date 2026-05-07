@@ -1,7 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
-export async function GET() {
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  const { slug } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -12,7 +16,7 @@ export async function GET() {
   const { data: business } = await supabase
     .from('businesses')
     .select('name, logo_url, branding')
-    .eq('owner_id', user.id)
+    .eq('slug', slug)
     .single()
 
   if (!business) {
@@ -26,7 +30,7 @@ export async function GET() {
     name: name,
     short_name: name,
     description: `Panel de control de ${business.name}`,
-    start_url: '/dashboard',
+    start_url: `/${slug}/admin`,
     display: 'standalone',
     background_color: business.branding?.background || '#09090b',
     theme_color: business.branding?.primary || '#10b981',
