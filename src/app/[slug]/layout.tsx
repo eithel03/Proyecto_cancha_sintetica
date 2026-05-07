@@ -1,6 +1,23 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import { Metadata } from 'next'
+import { Metadata, Viewport } from 'next'
+
+export async function generateViewport({ params }: { params: Promise<{ slug: string }> }): Promise<Viewport> {
+  const { slug } = await params
+  const supabase = await createClient()
+  const { data: business } = await supabase
+    .from('businesses')
+    .select('branding')
+    .eq('slug', slug)
+    .single()
+
+  return {
+    themeColor: business?.branding?.primary || '#10b981',
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+  }
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -25,8 +42,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       icon: business.logo_url || '/favicon.ico',
       apple: business.logo_url || '/favicon.ico',
     },
-    themeColor: business.branding?.primary || '#10b981',
-    viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
     appleWebApp: {
       capable: true,
       statusBarStyle: 'default',
