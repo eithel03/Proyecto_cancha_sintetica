@@ -14,6 +14,7 @@ import { createChallenge, acceptChallenge, cancelChallenge } from '@/app/[slug]/
 import { toast } from 'sonner'
 import { AuthPromptDialog } from '@/components/AuthPromptDialog'
 import { useRouter } from 'next/navigation'
+import { checkAvailability } from '@/app/[slug]/reservar/actions'
 
 import { ConfirmationDialog } from '@/components/ConfirmationDialog'
 
@@ -38,6 +39,13 @@ export default function ChallengesClient({
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false)
   const [minDate, setMinDate] = useState('')
   const [isMounted, setIsMounted] = useState(false)
+  const [gender, setGender] = useState('masculino')
+  const [menCount, setMenCount] = useState('3')
+  const [womenCount, setWomenCount] = useState('2')
+  const [error, setError] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toLocaleDateString('sv-SE'))
+  const [occupiedSlots, setOccupiedSlots] = useState<any[]>([])
+  const [loadingAvailability, setLoadingAvailability] = useState(false)
   const router = useRouter()
 
   // Estado para Diálogo de Confirmación
@@ -62,7 +70,28 @@ export default function ChallengesClient({
     setIsMounted(true)
     const today = new Date().toLocaleDateString('sv-SE')
     setMinDate(today)
+    setSelectedDate(today)
   }, [])
+
+  useEffect(() => {
+    setChallenges(initialChallenges)
+  }, [initialChallenges])
+
+  useEffect(() => {
+    async function checkBusySlots() {
+      if (!selectedCourt || !selectedDate) return
+      setLoadingAvailability(true)
+      try {
+        const busy = await checkAvailability(selectedCourt, selectedDate)
+        setOccupiedSlots(busy)
+      } catch (error) {
+        console.error("Error checking availability:", error)
+      } finally {
+        setLoadingAvailability(false)
+      }
+    }
+    checkBusySlots()
+  }, [selectedCourt, selectedDate])
 
   // Generar opciones de tiempo (cada 30 min) basadas en el horario más amplio del negocio
   const TIME_OPTIONS = useMemo(() => {
@@ -85,10 +114,21 @@ export default function ChallengesClient({
     for (let h = minOpen; h <= maxClose - 1; h += 0.5) {
       const hours = Math.floor(h)
       const mins = h % 1 === 0 ? '00' : '30'
-      options.push(`${hours.toString().padStart(2, '0')}:${mins}`)
+      const time = `${hours.toString().padStart(2, '0')}:${mins}`
+      
+      // Filtrar si ya está ocupado (considerando el rango completo start-end)
+      const isBusy = occupiedSlots.some(slot => {
+        const start = slot.start_time.substring(0, 5)
+        const end = slot.end_time.substring(0, 5)
+        return time >= start && time < end
+      })
+
+      if (!isBusy) {
+        options.push(time)
+      }
     }
     return options
-  }, [businessHours])
+  }, [businessHours, occupiedSlots])
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -99,20 +139,53 @@ export default function ChallengesClient({
     }
 
     if (!selectedCourt || selectedCourt === '') {
-      toast.error('Por favor, selecciona una cancha.')
+      toast.error('Debes seleccionar una cancha para el desafío.')
       return
     }
 
     if (!selectedTime) {
-      toast.error('Por favor, selecciona una hora.')
+      toast.error('Selecciona una hora para el encuentro.')
       return
     }
+
+    // Validación de capacidad
+    const court = courts.find(c => c.id === selectedCourt)
+    if (gender === 'mixto') {
+      const total = parseInt(menCount) + parseInt(womenCount)
+      const capacity = court?.capacity || 5
+      if (total > capacity) {
+        const errorMsg = `Esta cancha tiene una capacidad máxima de ${capacity} jugadores por equipo. Tu selección actual es de ${total} personas.`
+        
+        toast.custom((t) => (
+          <div className={`${t.visible ? 'animate-in fade-in slide-in-from-right-4' : 'animate-out fade-out slide-out-to-right-4'} relative overflow-hidden p-4 rounded-2xl bg-zinc-950 border border-red-500/30 shadow-2xl min-w-[320px] backdrop-blur-xl`}>
+            <div className="absolute -top-10 -right-10 w-24 h-24 bg-red-500/10 blur-[40px] rounded-full" />
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center border border-red-500/20">
+                <AlertCircle className="w-5 h-5 text-red-500 animate-pulse" />
+              </div>
+              <div className="flex-1 space-y-0.5">
+                <p className="text-[10px] font-black uppercase tracking-widest text-red-500/80">Atención Requerida</p>
+                <p className="text-[13px] font-bold text-white leading-tight tracking-tight italic">{errorMsg}</p>
+              </div>
+            </div>
+          </div>
+        ), { duration: 5000, position: 'top-right' })
+        return
+      }
+    }
+
+    setError(null)
 
     setPending(true)
     const formData = new FormData(e.currentTarget)
     formData.append('business_id', businessId)
     formData.append('court_id', selectedCourt)
     formData.append('time', selectedTime)
+    formData.append('gender', gender)
+    if (gender === 'mixto') {
+      formData.append('men_count', menCount)
+      formData.append('women_count', womenCount)
+    }
 
     const result = await createChallenge(formData)
     setPending(false)
@@ -124,6 +197,7 @@ export default function ChallengesClient({
       setIsDialogOpen(false)
       setSelectedCourt('')
       setSelectedTime('')
+      setGender('masculino')
       router.refresh()
     }
   }
@@ -195,13 +269,14 @@ export default function ChallengesClient({
           <DialogTrigger
             render={
               <Button className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-500 text-black font-black px-8 sm:px-10 h-14 sm:h-16 rounded-2xl shadow-xl shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-3 text-xs sm:text-sm tracking-widest uppercase">
-                <Swords className="w-5 h-5" /> Lanzar Desafío
+                <Swords className="w-5 h-5 hidden sm:block" /> Lanzar Desafío
               </Button>
             }
           />
-          <DialogContent className="sm:max-w-[500px] bg-zinc-950 border-white/10 rounded-[32px] sm:rounded-[40px] overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1.5 bg-emerald-500" />
-            <form onSubmit={handleCreate}>
+          <DialogContent className="sm:max-w-[500px] bg-zinc-950 border-white/10 rounded-[32px] sm:rounded-[40px] overflow-hidden max-h-[90vh] flex flex-col p-0">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-emerald-500 z-50" />
+            <form onSubmit={handleCreate} className="flex flex-col h-full overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-6 sm:p-10 no-scrollbar">
               <DialogHeader className="space-y-3 sm:space-y-4">
                 <DialogTitle className="text-2xl sm:text-3xl font-black italic uppercase tracking-tighter text-white text-center">Nuevo Reto</DialogTitle>
                 <DialogDescription className="text-zinc-500 text-center font-medium text-sm">Define las reglas del campo y espera a tu oponente.</DialogDescription>
@@ -209,7 +284,10 @@ export default function ChallengesClient({
               <div className="grid gap-4 sm:gap-6 py-6 sm:py-8">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest ml-1">¿Dónde será el duelo?</Label>
-                  <Select name="court_id" required onValueChange={(v) => setSelectedCourt(v)} value={selectedCourt}>
+                  <Select name="court_id" required onValueChange={(v) => {
+                    setSelectedCourt(v)
+                    setError(null)
+                  }} value={selectedCourt}>
                     <SelectTrigger type="button" className="bg-zinc-900/50 border-white/10 h-12 sm:h-14 font-bold text-base sm:text-lg rounded-xl sm:rounded-2xl">
                       <SelectValue placeholder="Selecciona Cancha">
                         {selectedCourtName || "Selecciona Cancha"}
@@ -227,31 +305,100 @@ export default function ChallengesClient({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest ml-1">Fecha</Label>
-                    <Input name="date" type="date" required className="bg-zinc-900/50 border-white/10 h-12 sm:h-14 font-bold text-sm sm:text-lg rounded-xl sm:rounded-2xl" min={minDate} />
+                    <Input 
+                      name="date" 
+                      type="date" 
+                      required 
+                      className="bg-zinc-900/50 border-white/10 h-12 sm:h-14 font-bold text-sm sm:text-lg rounded-xl sm:rounded-2xl" 
+                      min={minDate} 
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest ml-1">Hora</Label>
-                    <Select name="time" required onValueChange={setSelectedTime} value={selectedTime}>
+                    <Select name="time" required onValueChange={(v) => {
+                      setSelectedTime(v)
+                      setError(null)
+                    }} value={selectedTime}>
                       <SelectTrigger type="button" className="bg-zinc-900/50 border-white/10 h-12 sm:h-14 font-bold text-sm sm:text-lg rounded-xl sm:rounded-2xl text-left">
-                        <SelectValue placeholder="--:--" />
+                        <SelectValue placeholder={loadingAvailability ? "Buscando..." : "--:--"} />
                       </SelectTrigger>
                       <SelectContent className="bg-zinc-950 border-white/10 rounded-2xl max-h-[200px] overflow-y-auto">
-                        {TIME_OPTIONS.map(time => (
-                          <SelectItem key={time} value={time} className="font-bold focus:bg-emerald-500 focus:text-black">
-                            {time}
-                          </SelectItem>
-                        ))}
+                        {TIME_OPTIONS.length === 0 ? (
+                          <div className="p-4 text-center text-xs text-zinc-500 font-bold uppercase tracking-widest">No hay horarios libres</div>
+                        ) : (
+                          TIME_OPTIONS.map(time => (
+                            <SelectItem key={time} value={time} className="font-bold focus:bg-emerald-500 focus:text-black">
+                              {time}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
+
+                <div className="space-y-4 border-t border-white/5 pt-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest ml-1">Tipo de Encuentro</Label>
+                    <Select value={gender} onValueChange={(v) => {
+                      setGender(v)
+                      setError(null)
+                    }}>
+                      <SelectTrigger type="button" className="bg-zinc-900/50 border-white/10 h-12 sm:h-14 font-bold text-base sm:text-lg rounded-xl sm:rounded-2xl">
+                        <SelectValue placeholder="Selecciona Género">
+                          {gender === 'masculino' && 'Masculino'}
+                          {gender === 'femenino' && 'Femenino'}
+                          {gender === 'mixto' && 'Mixto (Hombres y Mujeres)'}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="bg-zinc-950 border-white/10 rounded-2xl">
+                        <SelectItem value="masculino" className="font-bold focus:bg-emerald-500 focus:text-black">Masculino</SelectItem>
+                        <SelectItem value="femenino" className="font-bold focus:bg-emerald-500 focus:text-black">Femenino</SelectItem>
+                        <SelectItem value="mixto" className="font-bold focus:bg-emerald-500 focus:text-black">Mixto (Hombres y Mujeres)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {gender === 'mixto' && (
+                    <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-300">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest ml-1">Hombres</Label>
+                        <Input 
+                          type="number" 
+                          value={menCount} 
+                          onChange={(e) => {
+                            setMenCount(e.target.value)
+                            setError(null)
+                          }} 
+                          className="bg-zinc-900/50 border-white/10 h-12 sm:h-14 font-bold text-center text-lg rounded-xl sm:rounded-2xl" 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest ml-1">Mujeres</Label>
+                        <Input 
+                          type="number" 
+                          value={womenCount} 
+                          onChange={(e) => {
+                            setWomenCount(e.target.value)
+                            setError(null)
+                          }} 
+                          className="bg-zinc-900/50 border-white/10 h-12 sm:h-14 font-bold text-center text-lg rounded-xl sm:rounded-2xl" 
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest ml-1">Mensaje (Opcional)</Label>
                   <Textarea name="notes" placeholder="Ej: Buscamos equipo nivel medio..." className="bg-zinc-900/50 border-white/10 min-h-[100px] sm:min-h-[120px] font-medium rounded-xl sm:rounded-2xl text-base sm:text-lg resize-none" />
                 </div>
               </div>
-              <DialogFooter>
-                <Button type="submit" disabled={pending} className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black h-14 sm:h-16 text-base sm:text-lg rounded-xl sm:rounded-2xl shadow-lg shadow-emerald-500/20">
+            </div>
+              <DialogFooter className="p-6 sm:p-10 pt-0">
+                <Button type="submit" disabled={pending || loadingAvailability} className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black h-14 sm:h-16 text-base sm:text-lg rounded-xl sm:rounded-2xl shadow-lg shadow-emerald-500/20">
                   {pending ? 'CARGANDO...' : 'PUBLICAR RETO'}
                 </Button>
               </DialogFooter>
@@ -285,9 +432,17 @@ export default function ChallengesClient({
                           <User className="w-6 h-6 sm:w-8 sm:h-8" />
                         </div>
                         <div>
-                          <p className="text-xl sm:text-2xl font-black tracking-tighter uppercase italic text-white group-hover:text-emerald-400 transition-colors">{reto.customer_name}</p>
-                          <div className="flex items-center gap-3 text-[9px] sm:text-[10px] text-zinc-500 font-black uppercase tracking-widest mt-0.5 sm:mt-1">
+                          <p className="text-xl sm:text-2xl font-black tracking-tighter uppercase italic text-white group-hover:text-emerald-400 transition-colors truncate max-w-[150px] sm:max-w-none">{reto.customer_name}</p>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] sm:text-[10px] text-zinc-500 font-black uppercase tracking-widest mt-0.5 sm:mt-1">
                             <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-emerald-500" /> {reto.courts?.name}</span>
+                            <span className="w-1 h-1 rounded-full bg-zinc-800 hidden sm:block" />
+                            <span className="flex items-center gap-1.5">
+                              {reto.gender === 'mixto' ? (
+                                <><Users className="w-3.5 h-3.5 text-emerald-500" /> {reto.men_count}H / {reto.women_count}M</>
+                              ) : (
+                                <><User className="w-3.5 h-3.5 text-emerald-500" /> <span className="capitalize">{reto.gender}</span></>
+                              )}
+                            </span>
                           </div>
                         </div>
                       </div>

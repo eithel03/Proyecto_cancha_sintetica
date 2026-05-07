@@ -55,7 +55,7 @@ export default async function PublicBusinessPage({ params }: PageProps) {
   const isInitialFavorite = favorites.includes(business.id)
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col selection:bg-primary/30 font-sans">
+    <div className="flex flex-col font-sans">
       <PublicNav slug={business.slug} businessName={business.name} />
 
       {isAdmin && (
@@ -70,7 +70,7 @@ export default async function PublicBusinessPage({ params }: PageProps) {
       
       {/* Hero Premium Section */}
       <section className="relative py-12 sm:py-24 px-4 sm:px-6 text-center overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(16,185,129,0.1),transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,var(--primary),transparent_70%)] opacity-20" />
         <div className="absolute top-4 sm:top-8 right-4 sm:right-8 z-20">
             <BusinessHeaderActions 
               businessId={business.id} 

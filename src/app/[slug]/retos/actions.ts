@@ -14,6 +14,9 @@ export async function createChallenge(formData: FormData) {
   const date = formData.get('date') as string
   const time = formData.get('time') as string
   const notes = formData.get('notes') as string
+  const gender = formData.get('gender') as string
+  const menCount = formData.get('men_count') ? parseInt(formData.get('men_count') as string) : null
+  const womenCount = formData.get('women_count') ? parseInt(formData.get('women_count') as string) : null
 
   // 1. VALIDACIÓN PREVENTIVA: ¿Está el horario libre?
   const { data: existingReservations } = await supabase
@@ -61,6 +64,9 @@ export async function createChallenge(formData: FormData) {
       challenge_date: date,
       challenge_time: time,
       notes,
+      gender,
+      men_count: menCount,
+      women_count: womenCount,
       status: 'open'
     })
 

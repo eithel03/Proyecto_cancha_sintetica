@@ -8,8 +8,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Trophy, Calendar, Users, BarChart3, User, Shield, Zap, X, ChevronLeft, Activity, Target, ShieldAlert, Clock, MapPin } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { cn } from '@/lib/utils'
+import { autoStartMatches } from '@/app/dashboard/tournament/actions'
 
-export default function TournamentPublicClient({ matches: initialMatches, standings: initialStandings, teams: initialTeams, stats: initialStats }: {
+export default function TournamentPublicClient({ businessId, matches: initialMatches, standings: initialStandings, teams: initialTeams, stats }: {
+  businessId: string,
   matches: any[],
   standings: any[],
   teams: any[],
@@ -70,11 +73,24 @@ export default function TournamentPublicClient({ matches: initialMatches, standi
     setupRealtime()
   }, [matches.length])
 
+  // AUTO-INICIO DE PARTIDOS
+  useEffect(() => {
+    // Verificación inicial
+    autoStartMatches(businessId)
+    
+    // Verificación periódica cada minuto
+    const interval = setInterval(() => {
+      autoStartMatches(businessId)
+    }, 60000)
+
+    return () => clearInterval(interval)
+  }, [businessId])
+
   // FILTROS POR GÉNERO
   const filteredMatches = matches.filter(m => (m.gender || 'masculino') === selectedGender)
   const filteredStandings = initialStandings.filter(s => (s.gender || 'masculino') === selectedGender)
   const filteredTeams = initialTeams.filter(t => (t.gender || 'masculino') === selectedGender)
-  const filteredStats = initialStats.filter(s => (s.team?.gender || 'masculino') === selectedGender)
+  const filteredStats = (stats || []).filter(s => (s.team?.gender || 'masculino') === selectedGender)
 
   const liveMatches = filteredMatches.filter(m => m.status === 'live' || m.status === 'halftime')
   
@@ -90,7 +106,7 @@ export default function TournamentPublicClient({ matches: initialMatches, standi
   const sortedDates = Object.keys(matchesByDate).sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
 
   const scorers = filteredStats
-    .filter(e => e.event_type === 'goal' && (!e.player?.team_id || e.player.team_id === e.team_id))
+    .filter(e => e.event_type === 'goal')
     .reduce((acc: any, event: any) => {
       const playerId = event.player_id
       if (!acc[playerId]) {
@@ -203,7 +219,7 @@ export default function TournamentPublicClient({ matches: initialMatches, standi
         <div className="sticky top-16 sm:top-20 z-30 py-4 bg-zinc-950/80 backdrop-blur-md mb-4 sm:mb-8 px-2">
           <TabsList className="flex w-full max-w-3xl mx-auto h-14 sm:h-16 bg-zinc-900/50 border border-white/5 rounded-[20px] sm:rounded-[24px] p-1 sm:p-1.5 gap-1 sm:gap-1.5 shadow-2xl overflow-x-auto no-scrollbar">
             {[
-              { id: 'jornada', label: 'JORNADA', icon: Calendar },
+              { id: 'jornada', label: 'FECHA', icon: Calendar },
               { id: 'clasificacion', label: 'TABLA', icon: Trophy },
               { id: 'estadisticas', label: 'STATS', icon: BarChart3 },
               { id: 'equipos', label: 'EQUIPOS', icon: Users },
@@ -212,9 +228,9 @@ export default function TournamentPublicClient({ matches: initialMatches, standi
                 key={tab.id}
                 value={tab.id} 
                 data-value={tab.id}
-                className="flex-1 min-w-[80px] sm:min-w-0 rounded-xl sm:rounded-2xl font-black text-[9px] sm:text-xs tracking-[0.1em] data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 transition-all uppercase italic whitespace-nowrap"
+                className="flex-1 min-w-[75px] sm:min-w-0 rounded-xl sm:rounded-2xl font-black text-[9px] sm:text-xs tracking-[0.05em] sm:tracking-[0.1em] data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 transition-all uppercase italic whitespace-nowrap px-2"
               >
-                <tab.icon className="w-3.5 h-3.5 mr-2 hidden md:block" /> {tab.label}
+                <tab.icon className="w-3 h-3 mr-1.5 hidden xs:block md:block" /> {tab.label}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -294,13 +310,13 @@ export default function TournamentPublicClient({ matches: initialMatches, standi
                     <CardContent className="p-5 sm:p-8">
                       <div className="flex items-center justify-between gap-2 sm:gap-6">
                         <div className="flex items-center gap-3 sm:gap-5 flex-1 min-w-0">
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-xl sm:rounded-2xl p-2 shadow-lg border border-white/10 group-hover:scale-110 transition-transform flex-shrink-0">
+                          <div className="w-8 h-8 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-2xl p-1.5 shadow-lg border border-white/10 group-hover:scale-110 transition-transform flex-shrink-0">
                             {match.home?.logo_url ? <img src={match.home.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-full h-full text-zinc-200" />}
                           </div>
-                          <span className="font-black text-xs sm:text-base uppercase tracking-tight text-zinc-300 group-hover:text-white transition-colors truncate">{match.home?.name}</span>
+                          <span className="font-black text-[10px] sm:text-base uppercase tracking-tight text-zinc-300 group-hover:text-white transition-colors">{match.home?.name}</span>
                         </div>
                         
-                        <div className="flex flex-col items-center px-3 sm:px-8 border-x border-white/5 min-w-[70px] sm:min-w-[120px]">
+                        <div className="flex flex-col items-center px-2 sm:px-6 border-x border-white/5 min-w-[60px] sm:min-w-[100px]">
                           {match.status === 'finished' ? (
                             <span className="text-xl sm:text-3xl font-black italic text-primary drop-shadow-sm">{match.home_score} - {match.away_score}</span>
                           ) : (
@@ -312,8 +328,8 @@ export default function TournamentPublicClient({ matches: initialMatches, standi
                         </div>
 
                         <div className="flex items-center gap-3 sm:gap-5 flex-1 justify-end min-w-0">
-                          <span className="font-black text-xs sm:text-base uppercase tracking-tight text-right text-zinc-300 group-hover:text-white transition-colors truncate">{match.away?.name}</span>
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-xl sm:rounded-2xl p-2 shadow-lg border border-white/10 group-hover:scale-110 transition-transform flex-shrink-0">
+                          <span className="font-black text-[10px] sm:text-base uppercase tracking-tight text-right text-zinc-300 group-hover:text-white transition-colors">{match.away?.name}</span>
+                          <div className="w-8 h-8 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-2xl p-1.5 shadow-lg border border-white/10 group-hover:scale-110 transition-transform flex-shrink-0">
                             {match.away?.logo_url ? <img src={match.away.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-full h-full text-zinc-200" />}
                           </div>
                         </div>
@@ -351,11 +367,11 @@ export default function TournamentPublicClient({ matches: initialMatches, standi
                         </span>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-3 sm:gap-5">
-                          <div className="w-8 h-8 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-2xl p-1.5 sm:p-2 shadow-xl border border-white/10 group-hover:scale-110 transition-transform flex-shrink-0">
+                        <div className="flex items-center gap-2 sm:gap-5">
+                          <div className="w-6 h-6 sm:w-12 sm:h-12 bg-white rounded-md sm:rounded-2xl p-1 sm:p-2 shadow-xl border border-white/10 group-hover:scale-110 transition-transform flex-shrink-0">
                             {row.logo_url ? <img src={row.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-full h-full text-zinc-200" />}
                           </div>
-                          <span className="font-black uppercase tracking-tight text-white text-sm sm:text-lg truncate max-w-[100px] sm:max-w-none">{row.team_name}</span>
+                          <span className="font-black uppercase tracking-tight text-white text-[10px] sm:text-lg truncate max-w-[80px] sm:max-w-none">{row.team_name}</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-center font-bold text-zinc-300 text-xs sm:text-sm">{row.pj}</TableCell>
@@ -504,14 +520,27 @@ export default function TournamentPublicClient({ matches: initialMatches, standi
                       return (
                         <div key={idx} className={`flex items-center w-full ${isHome ? 'flex-row' : 'flex-row-reverse'}`}>
                           <div className={`flex-1 ${isHome ? 'text-right pr-10' : 'text-left pl-10'} space-y-1`}>
-                            <p className="font-black text-white uppercase italic tracking-tight">{event.player?.first_name} {event.player?.last_name}</p>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">
-                               {event.event_type === 'goal' ? 'GOAL' : event.event_type.replace('_', ' ')}
+                            <p className={cn(
+                              "font-black uppercase italic tracking-tight",
+                              event.event_type === 'own_goal' ? "text-red-500" : "text-white"
+                            )}>
+                              {event.player?.first_name} {event.player?.last_name}
+                            </p>
+                            <p className={cn(
+                              "text-[10px] font-black uppercase tracking-widest",
+                              event.event_type === 'own_goal' ? "text-red-600" : "text-zinc-600"
+                            )}>
+                               {event.event_type === 'goal' ? 'GOAL' : 
+                                event.event_type === 'own_goal' ? 'AUTOGOL' : 
+                                event.event_type === 'assist' ? 'ASISTENCIA' : 
+                                event.event_type.replace('_', ' ')}
                             </p>
                           </div>
                           
                           <div className="relative z-10 w-12 h-12 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center shadow-xl">
                             {event.event_type === 'goal' && <span className="text-lg">⚽</span>}
+                            {event.event_type === 'own_goal' && <span className="text-lg">⚽❌</span>}
+                            {event.event_type === 'assist' && <span className="text-lg">👟</span>}
                             {event.event_type === 'yellow_card' && <div className="w-3 h-5 bg-yellow-400 rounded-sm shadow-lg shadow-yellow-500/20" />}
                             {event.event_type === 'red_card' && <div className="w-3 h-5 bg-red-600 rounded-sm shadow-lg shadow-red-500/20" />}
                             <span className="absolute -top-2 -right-2 bg-primary text-black text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-lg">{event.minute}'</span>

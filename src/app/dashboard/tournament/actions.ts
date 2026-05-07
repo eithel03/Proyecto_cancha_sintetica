@@ -24,8 +24,27 @@ export async function upsertTeam(formData: FormData) {
     const { error: err } = await supabase.from('tournament_teams').update(data).eq('id', id)
     error = err
   } else {
-    const { error: err } = await supabase.from('tournament_teams').insert(data)
+    const { data: newTeam, error: err } = await supabase.from('tournament_teams').insert(data).select().single()
     error = err
+
+    // Si se creó con éxito y hay nombre de capitán, lo agregamos como jugador automáticamente
+    if (!err && newTeam && data.captain_name) {
+      const captainJersey = parseInt(formData.get('captain_jersey') as string) || null
+      
+      // Intentar separar nombre y apellido
+      const nameParts = data.captain_name.trim().split(' ')
+      const firstName = nameParts[0]
+      const lastName = nameParts.slice(1).join(' ') || '-'
+
+      await supabase.from('tournament_players').insert({
+        business_id,
+        team_id: newTeam.id,
+        first_name: firstName,
+        last_name: lastName,
+        jersey_number: captainJersey,
+        position: null
+      })
+    }
   }
 
   if (error) return { error: error.message }
@@ -286,4 +305,44 @@ export async function deleteFullTournament(business_id: string, gender: string) 
     console.error('Error al eliminar torneo:', error)
     return { error: error.message || 'Error desconocido al eliminar el torneo' }
   }
+}
+
+export async function autoStartMatches(businessId: string) {
+  const supabase = await createClient()
+  const now = new Date()
+  
+  // Ajuste a zona horaria local (asumimos la del servidor/usuario por simplicidad en este paso)
+  const currentDate = now.toLocaleDateString('en-CA') // YYYY-MM-DD
+  const currentTime = now.toTimeString().split(' ')[0]
+
+  const { data: scheduled } = await supabase
+    .from('tournament_matches')
+    .select('id, match_date, match_time')
+    .eq('business_id', businessId)
+    .eq('status', 'scheduled')
+    .lte('match_date', currentDate)
+
+  if (!scheduled || scheduled.length === 0) return { success: true }
+
+  const matchesToStart = scheduled.filter(m => {
+    if (m.match_date < currentDate) return true
+    return m.match_time <= currentTime
+  })
+
+  if (matchesToStart.length === 0) return { success: true }
+
+  const ids = matchesToStart.map(m => m.id)
+  const { error } = await supabase
+    .from('tournament_matches')
+    .update({ 
+      status: 'live',
+      live_started_at: now.toISOString()
+    })
+    .in('id', ids)
+
+  if (error) return { error: error.message }
+  
+  revalidatePath('/dashboard/tournament')
+  revalidatePath(`/[slug]/torneo`, 'page')
+  return { success: true, count: ids.length }
 }

@@ -81,6 +81,7 @@ export default async function PublicTournamentPage({ params }: PageProps) {
       {/* Main Content */}
       <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full space-y-8 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <TournamentPublicClient 
+          businessId={business.id}
           matches={matches || []}
           standings={standings || []}
           teams={teams || []}

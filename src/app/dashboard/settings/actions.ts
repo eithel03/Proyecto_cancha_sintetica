@@ -98,3 +98,22 @@ export async function deleteException(id: string) {
   return { success: true }
 }
 
+export async function updateBranding(businessId: string, branding: any) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autorizado' }
+
+  const { error } = await supabase
+    .from('businesses')
+    .update({ branding })
+    .eq('id', businessId)
+    .eq('owner_id', user.id)
+
+  if (error) return { error: 'Error al actualizar apariencia: ' + error.message }
+
+  revalidatePath('/dashboard/settings')
+  // Revalidamos todos los paths que podrían usar este branding
+  revalidatePath('/', 'layout')
+  return { success: true }
+}
+

@@ -273,7 +273,7 @@ export default function BookingClient({
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
                 {HOURS.map(hour => {
                   const startStr = formatTime(hour)
                   const endStr = formatTime(hour + 1)
@@ -328,17 +328,17 @@ export default function BookingClient({
                         {isTournament && (
                           <div className="flex flex-col items-center gap-0.5">
                             <span className={cn(
-                              "text-[8px] font-black uppercase px-1 rounded text-white",
+                              "text-[7px] sm:text-[8px] font-black uppercase px-1 rounded text-white",
                               isTournamentMale ? "bg-blue-600" : "bg-pink-500"
                             )}>
-                              TORNEO {isTournamentMale ? 'MAS' : 'FEM'}
+                              {isTournamentMale ? 'T. MAS' : 'T. FEM'}
                             </span>
-                            <span className="text-[7px] font-bold opacity-70 truncate max-w-[60px]">
+                            <span className="text-[7px] font-bold opacity-70 truncate max-w-[50px] sm:max-w-[60px] hidden xs:block">
                               {occupancy.home?.name} vs {occupancy.away?.name}
                             </span>
                           </div>
                         )}
-                        {isNormalReservation && <span className="text-[8px] font-black uppercase bg-zinc-600 text-white px-1 rounded">RESERVADO</span>}
+                        {isNormalReservation && <span className="text-[7px] sm:text-[8px] font-black uppercase bg-zinc-600 text-white px-1 rounded">RESERVADO</span>}
                         {hasSpecialPrice && !isOccupied && <span className="text-[8px] font-black uppercase bg-amber-500 text-black px-1 rounded">PROMO</span>}
                       </div>
                       {!isOccupied && <span className="text-[9px] font-bold text-zinc-500">₡{currentPrice.toLocaleString('es-CR')}</span>}

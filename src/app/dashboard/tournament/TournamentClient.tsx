@@ -13,7 +13,7 @@ import {
   Plus, Pencil, Trash2, Trophy, Users, Calendar, UserPlus, Shield, 
   Timer, Goal, Square, Zap, Loader2 
 } from 'lucide-react'
-import { upsertTeam, deleteTeam, upsertPlayer, deletePlayer, upsertMatch, deleteMatch, addMatchEvent, deleteFullTournament } from './actions'
+import { upsertTeam, deleteTeam, upsertPlayer, deletePlayer, upsertMatch, deleteMatch, addMatchEvent, deleteFullTournament, autoStartMatches } from './actions'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 
@@ -39,6 +39,7 @@ export default function TournamentClient({
   const [playerSearch, setPlayerSearch] = useState('')
   const [teamSearch, setTeamSearch] = useState('')
   const [teamFilter, setTeamFilter] = useState('all')
+  const [jerseySearch, setJerseySearch] = useState('')
   const [matchStatusFilter, setMatchStatusFilter] = useState('all')
   const [matchDateSort, setMatchDateSort] = useState('desc')
   const [matches, setMatches] = useState(initialMatches)
@@ -61,6 +62,8 @@ export default function TournamentClient({
 
   const [isUploading, setIsUploading] = useState(false)
   const [logoUrl, setLogoUrl] = useState('')
+  const [selectedEventType, setSelectedEventType] = useState('goal')
+  const [selectedTeamIdForEvent, setSelectedTeamIdForEvent] = useState('')
 
   // Estado para Diálogo de Confirmación
   const [confirmConfig, setConfirmConfig] = useState<{
@@ -80,9 +83,13 @@ export default function TournamentClient({
     setConfirmConfig({ isOpen: true, title, description, onConfirm, variant })
   }
 
-  // Temporizador para partidos en vivo
+  // Temporizador para partidos en vivo y auto-inicio
   useEffect(() => {
+    // Verificación inicial
+    autoStartMatches(businessId)
+
     const timer = setInterval(() => {
+      // 1. Actualizar minutos en vivo en la UI
       setMatches(prevMatches => 
         prevMatches.map(m => {
           if (m.status === 'live' && m.live_started_at) {
@@ -95,10 +102,13 @@ export default function TournamentClient({
           return m
         })
       )
-    }, 10000) // Update UI every 10 seconds for more responsiveness
+
+      // 2. Verificar si algún partido debe iniciar automáticamente
+      autoStartMatches(businessId)
+    }, 30000) 
 
     return () => clearInterval(timer)
-  }, [])
+  }, [businessId])
 
   // Supabase Realtime subscription
   useEffect(() => {
@@ -138,8 +148,9 @@ export default function TournamentClient({
   const filteredPlayers = initialPlayers.filter(player => {
     const matchesGender = (player.tournament_teams?.gender || 'masculino') === selectedGender
     const matchesSearch = `${player.first_name} ${player.last_name}`.toLowerCase().includes(playerSearch.toLowerCase())
+    const matchesJersey = !jerseySearch || player.jersey_number?.toString().includes(jerseySearch)
     const matchesTeam = teamFilter === 'all' || player.team_id === teamFilter
-    return matchesGender && matchesSearch && matchesTeam
+    return matchesGender && matchesSearch && matchesJersey && matchesTeam
   })
 
   // Filtrado de equipos por GÉNERO
@@ -152,6 +163,9 @@ export default function TournamentClient({
        (team.captain_name && team.captain_name.toLowerCase().includes(searchLower)))
     )
   })
+
+  // Equipos del género actual (para selectores)
+  const currentTeams = initialTeams.filter(team => (team.gender || 'masculino') === selectedGender)
 
   // Filtrado de partidos por GÉNERO
   const filteredMatches = matches
@@ -179,6 +193,7 @@ export default function TournamentClient({
     toast.success(editingTeam ? 'Equipo actualizado' : 'Equipo creado')
     setIsTeamDialogOpen(false)
     setEditingTeam(null)
+    setLogoUrl('')
   }
 
   // --- HANDLERS JUGADORES ---
@@ -379,20 +394,14 @@ export default function TournamentClient({
                       <Label htmlFor="captain_phone">Teléfono del Capitán</Label>
                       <Input id="captain_phone" name="captain_phone" defaultValue={editingTeam?.captain_phone} placeholder="Ej: 8888-9999" />
                     </div>
-                    <div className="space-y-2">
-                      <Label>Género</Label>
-                      <Select name="gender" defaultValue={editingTeam?.gender || 'masculino'} required>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Género">
-                            {(val: any) => val === 'femenino' ? 'Femenino' : 'Masculino'}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="masculino">Masculino</SelectItem>
-                          <SelectItem value="femenino">Femenino</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {!editingTeam && (
+                      <div className="space-y-2">
+                        <Label htmlFor="captain_jersey">Dorsal del Capitán (Opcional)</Label>
+                        <Input id="captain_jersey" name="captain_jersey" type="number" placeholder="Ej: 10" />
+                        <p className="text-[10px] text-muted-foreground">Si lo incluyes, el capitán se agregará automáticamente como jugador.</p>
+                      </div>
+                    )}
+                    <input type="hidden" name="gender" value={selectedGender} />
                     <div className="space-y-2">
                       <Label htmlFor="logo_url">Logo del Equipo</Label>
                       <div className="flex items-center gap-4">
@@ -522,17 +531,24 @@ export default function TournamentClient({
                 placeholder="Buscar jugador..." 
                 value={playerSearch}
                 onChange={(e) => setPlayerSearch(e.target.value)}
-                className="w-full sm:w-48"
+                className="w-full sm:w-48 bg-zinc-900/50 border-zinc-800"
+              />
+              <Input 
+                placeholder="Dorsal #" 
+                type="number"
+                value={jerseySearch}
+                onChange={(e) => setJerseySearch(e.target.value)}
+                className="w-full sm:w-24 bg-zinc-900/50 border-zinc-800"
               />
               <Select value={teamFilter} onValueChange={(val) => setTeamFilter(val || 'all')}>
                 <SelectTrigger className="w-full sm:w-40">
                   <SelectValue placeholder="Todos los equipos">
-                    {(val: any) => val === 'all' ? 'Todos los equipos' : initialTeams.find(t => t.id === val)?.name || 'Todos los equipos'}
+                    {(val: any) => val === 'all' ? 'Todos los equipos' : currentTeams.find(t => t.id === val)?.name || 'Todos los equipos'}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos los equipos</SelectItem>
-                  {initialTeams.map(t => (
+                  {currentTeams.map(t => (
                     <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -565,7 +581,7 @@ export default function TournamentClient({
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
-                            {initialTeams.map(t => (
+                            {currentTeams.map(t => (
                               <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                             ))}
                           </SelectContent>
@@ -707,7 +723,7 @@ export default function TournamentClient({
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
-                            {initialTeams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                            {currentTeams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
@@ -720,7 +736,7 @@ export default function TournamentClient({
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
-                            {initialTeams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                            {currentTeams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
@@ -737,20 +753,7 @@ export default function TournamentClient({
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>Género</Label>
-                      <Select name="gender" defaultValue={editingMatch?.gender || 'masculino'} required>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Género">
-                            {(val: any) => val === 'femenino' ? 'Femenino' : 'Masculino'}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="masculino">Masculino</SelectItem>
-                          <SelectItem value="femenino">Femenino</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <input type="hidden" name="gender" value={selectedGender} />
 
                     <div className="space-y-2">
                       <Label>Cancha</Label>
@@ -866,7 +869,12 @@ export default function TournamentClient({
                           variant="outline" 
                           size="sm" 
                           className="text-red-500 border-red-200 bg-red-50 hover:bg-red-100"
-                          onClick={() => { setActiveMatchForEvent(match); setIsEventDialogOpen(true); }}
+                          onClick={() => { 
+                            setActiveMatchForEvent(match); 
+                            setSelectedEventType('goal');
+                            setSelectedTeamIdForEvent('');
+                            setIsEventDialogOpen(true); 
+                          }}
                         >
                           <Zap className="w-3 h-3 mr-1 fill-red-500" /> Evento
                         </Button>
@@ -912,17 +920,26 @@ export default function TournamentClient({
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label>Tipo de Evento</Label>
-                  <Select name="event_type" defaultValue="goal" required>
+                  <Select 
+                    name="event_type" 
+                    value={selectedEventType} 
+                    onValueChange={(val) => {
+                      setSelectedEventType(val);
+                      setSelectedTeamIdForEvent(''); // Reset team when type changes
+                    }} 
+                    required
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Tipo de Evento">
                         {(val: any) => {
-                          const typeMap: Record<string, string> = { goal: '⚽ Gol', assist: '👟 Asistencia', yellow_card: '🟨 Tarjeta Amarilla', red_card: '🟥 Tarjeta Roja' };
+                          const typeMap: Record<string, string> = { goal: '⚽ Gol', own_goal: '⚽❌ Autogol', assist: '👟 Asistencia', yellow_card: '🟨 Tarjeta Amarilla', red_card: '🟥 Tarjeta Roja' };
                           return typeMap[val] || 'Tipo de Evento';
                         }}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="goal">⚽ Gol</SelectItem>
+                      <SelectItem value="own_goal">⚽❌ Autogol</SelectItem>
                       <SelectItem value="assist">👟 Asistencia</SelectItem>
                       <SelectItem value="yellow_card">🟨 Tarjeta Amarilla</SelectItem>
                       <SelectItem value="red_card">🟥 Tarjeta Roja</SelectItem>
@@ -931,8 +948,13 @@ export default function TournamentClient({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Equipo</Label>
-                  <Select name="team_id" required>
+                  <Label>{selectedEventType === 'own_goal' ? 'Equipo que recibe el gol' : 'Equipo'}</Label>
+                  <Select 
+                    name="team_id" 
+                    value={selectedTeamIdForEvent} 
+                    onValueChange={setSelectedTeamIdForEvent}
+                    required
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Selecciona equipo">
                         {(val: any) => val === activeMatchForEvent?.home_team_id ? `${activeMatchForEvent?.home?.name} (Local)` : (val === activeMatchForEvent?.away_team_id ? `${activeMatchForEvent?.away?.name} (Visitante)` : 'Selecciona equipo')}
@@ -946,21 +968,30 @@ export default function TournamentClient({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Jugador</Label>
+                  <Label>{selectedEventType === 'own_goal' ? 'Jugador que anota el autogol' : 'Jugador'}</Label>
                   <Select name="player_id" required>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Selecciona jugador">
                         {(val: any) => {
                           const p = initialPlayers.find(p => p.id === val);
-                          return p ? `${p.first_name} ${p.last_name} (${p.tournament_teams?.name})` : 'Selecciona jugador';
+                          return p ? `${p.first_name} ${p.last_name} ${p.jersey_number ? `#${p.jersey_number}` : ''} (${p.tournament_teams?.name})` : 'Selecciona jugador';
                         }}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {initialPlayers
-                        .filter(p => p.team_id === activeMatchForEvent.home_team_id || p.team_id === activeMatchForEvent.away_team_id)
+                        .filter(p => {
+                          if (!selectedTeamIdForEvent) return false;
+                          if (selectedEventType === 'own_goal') {
+                            // Mostrar solo jugadores del equipo CONTRARIO al seleccionado
+                            return p.team_id !== selectedTeamIdForEvent && 
+                                   (p.team_id === activeMatchForEvent.home_team_id || p.team_id === activeMatchForEvent.away_team_id);
+                          }
+                          // Mostrar solo jugadores del equipo seleccionado
+                          return p.team_id === selectedTeamIdForEvent;
+                        })
                         .map(p => (
-                          <SelectItem key={p.id} value={p.id}>{p.first_name} {p.last_name} ({p.tournament_teams?.name})</SelectItem>
+                          <SelectItem key={p.id} value={p.id}>{p.first_name} {p.last_name} {p.jersey_number ? `#${p.jersey_number}` : ''} ({p.tournament_teams?.name})</SelectItem>
                         ))
                       }
                     </SelectContent>

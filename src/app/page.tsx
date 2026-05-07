@@ -14,6 +14,8 @@ export default async function HomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  const isAdmin = user?.user_metadata?.role === 'admin' || user?.user_metadata?.role === 'owner'
+
   return (
     <div className="min-h-screen flex flex-col bg-background selection:bg-primary/30">
       {/* Navbar Glassmorphism */}
@@ -50,16 +52,18 @@ export default async function HomePage() {
       </header>
 
       <main className="flex-1">
-        <LandingHero />
+        {isAdmin && <LandingHero />}
         
         {/* Business Directory Section */}
-        <BusinessDirectory 
-          businesses={businesses} 
-          favorites={favorites} 
-          totalCount={count} 
-        />
+        <div className={isAdmin ? "" : "pt-12"}>
+          <BusinessDirectory 
+            businesses={businesses} 
+            favorites={favorites} 
+            totalCount={count} 
+          />
+        </div>
 
-        <LandingFeatures />
+        {isAdmin && <LandingFeatures />}
       </main>
 
       <footer className="w-full py-12 border-t border-white/5 bg-zinc-950">
