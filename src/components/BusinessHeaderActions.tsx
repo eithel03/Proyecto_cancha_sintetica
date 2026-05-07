@@ -35,7 +35,7 @@ export function BusinessHeaderActions({ businessId, isInitialFavorite }: Busines
 
   return (
     <div className="flex items-center gap-2 sm:gap-4 absolute top-6 left-6 right-6 justify-between z-20">
-      <Link href="/">
+      <Link href="/explorar">
         <Button 
           variant="outline" 
           size="sm" 

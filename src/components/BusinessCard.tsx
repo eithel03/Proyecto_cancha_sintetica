@@ -20,8 +20,10 @@ interface BusinessCardProps {
     logo_url?: string
     cover_image_url?: string
     description?: string
+    phone?: string
     latitude?: number
     longitude?: number
+    description?: string
   }
   isFavorite: boolean
   distance?: number
@@ -77,17 +79,25 @@ export function BusinessCard({ business, isFavorite, distance }: BusinessCardPro
           
           <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 z-10">
             <h3 className="text-lg sm:text-xl font-black italic uppercase tracking-tighter text-white line-clamp-1 group-hover:text-primary transition-colors">{business.name}</h3>
-            {business.location && (
-              <p className="text-white/80 text-[10px] sm:text-xs font-bold uppercase tracking-widest flex items-center gap-1 mt-0.5 sm:mt-1 truncate">
-                <MapPin className="h-3 w-3 text-primary flex-shrink-0" />
-                {business.location}
-                {distance !== undefined && (
-                  <span className="ml-auto bg-primary/20 text-primary px-1.5 py-0.5 rounded text-[8px]">
-                    {distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`}
-                  </span>
-                )}
-              </p>
-            )}
+            <div className="space-y-1 mt-1">
+              {business.location && (
+                <p className="text-white/80 text-[10px] sm:text-xs font-bold uppercase tracking-widest flex items-center gap-1 truncate">
+                  <MapPin className="h-3 w-3 text-primary flex-shrink-0" />
+                  {business.location}
+                  {distance !== undefined && (
+                    <span className="ml-auto bg-primary/20 text-primary px-1.5 py-0.5 rounded text-[8px]">
+                      {distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`}
+                    </span>
+                  )}
+                </p>
+              )}
+              {business.phone && (
+                <p className="text-white/60 text-[10px] sm:text-[11px] font-medium flex items-center gap-1 truncate">
+                  <span className="text-primary font-bold">W:</span>
+                  {business.phone}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -100,7 +110,7 @@ export function BusinessCard({ business, isFavorite, distance }: BusinessCardPro
         <CardFooter className="p-4 sm:p-5 pt-0 sm:pt-0">
           <Link href={`/${business.slug}`} className="w-full">
             <Button className="w-full h-10 sm:h-11 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] shadow-lg shadow-primary/10 group-hover:shadow-primary/20 transition-all flex items-center justify-center gap-2">
-              Ver Instalaciones
+              Ver Sintética
               <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-transform group-hover:translate-x-1" />
             </Button>
           </Link>
