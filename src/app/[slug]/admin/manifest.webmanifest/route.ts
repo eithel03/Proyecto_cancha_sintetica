@@ -27,10 +27,12 @@ export async function GET(
   const logo = business.logo_url || '/favicon.ico'
 
   return NextResponse.json({
+    id: `/${slug}/admin`,
     name: name,
     short_name: name,
     description: `Panel de control de ${business.name}`,
     start_url: `/${slug}/admin`,
+    scope: `/${slug}/admin`,
     display: 'standalone',
     background_color: business.branding?.background || '#09090b',
     theme_color: business.branding?.primary || '#10b981',
