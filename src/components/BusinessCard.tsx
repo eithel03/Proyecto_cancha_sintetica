@@ -106,14 +106,22 @@ export function BusinessCard({ business, isFavorite, distance }: BusinessCardPro
           </p>
         </CardContent>
 
-        <CardFooter className="p-4 sm:p-5 pt-0 sm:pt-0">
-          <Link href={`/${business.slug}`} className="w-full">
-            <Button className="w-full h-10 sm:h-11 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] shadow-lg shadow-primary/10 group-hover:shadow-primary/20 transition-all flex items-center justify-center gap-2">
-              Ver Sintética
-              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-transform group-hover:translate-x-1" />
+        <CardFooter className="p-4 sm:p-5 pt-0 sm:pt-0 flex flex-col gap-2">
+        <Link href={`/${business.slug}`} className="w-full">
+          <Button className="w-full h-10 sm:h-11 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] shadow-lg shadow-primary/10 group-hover:shadow-primary/20 transition-all flex items-center justify-center gap-2">
+            Ver Sintética
+            <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-transform group-hover:translate-x-1" />
+          </Button>
+        </Link>
+        {business.phone && (
+          <a href={`tel:${business.phone}`} className="w-full">
+            <Button variant="secondary" className="w-full h-10 sm:h-11 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] shadow-md shadow-primary/5 hover:shadow-primary/10 transition-all flex items-center justify-center gap-2">
+              Llamar
+              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
-          </Link>
-        </CardFooter>
+          </a>
+        )}
+      </CardFooter>
       </Card>
 
       <AuthPromptDialog 

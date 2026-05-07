@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { Metadata, Viewport } from 'next'
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt'
 
 export async function generateViewport({ params }: { params: Promise<{ slug: string }> }): Promise<Viewport> {
   const { slug } = await params
@@ -62,7 +63,7 @@ export default async function SlugLayout({
 
   const { data: business } = await supabase
     .from('businesses')
-    .select('branding')
+    .select('name, logo_url, branding')
     .eq('slug', slug)
     .single()
 
@@ -89,6 +90,11 @@ export default async function SlugLayout({
   return (
     <div style={customStyles} className="min-h-screen bg-background text-foreground selection:bg-primary/30">
       {children}
+      <PWAInstallPrompt 
+        businessName={business.name} 
+        businessLogo={business.logo_url || ''} 
+        slug={slug} 
+      />
     </div>
   )
 }

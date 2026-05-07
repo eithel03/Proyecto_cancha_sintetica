@@ -1,21 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Settings, CalendarDays, Flag, LogOut, Trophy, Menu, X, Swords } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
-
-const navigation = [
-  { name: 'Inicio', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Canchas', href: '/dashboard/courts', icon: Flag },
-  { name: 'Reservas', href: '/dashboard/reservations', icon: CalendarDays },
-  { name: 'Retos', href: '/dashboard/retos', icon: Swords },
-  { name: 'Torneo', href: '/dashboard/tournament', icon: Trophy },
-  { name: 'Configuración', href: '/dashboard/settings', icon: Settings },
-]
 
 export default function DashboardLayout({
   children,
@@ -23,9 +13,20 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const params = useParams()
+  const slug = params.slug as string
   const router = useRouter()
   const supabase = createClient()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  const navigation = [
+    { name: 'Inicio', href: `/${slug}/admin`, icon: LayoutDashboard },
+    { name: 'Canchas', href: `/${slug}/admin/courts`, icon: Flag },
+    { name: 'Reservas', href: `/${slug}/admin/reservations`, icon: CalendarDays },
+    { name: 'Retos', href: `/${slug}/admin/retos`, icon: Swords },
+    { name: 'Torneo', href: `/${slug}/admin/tournament`, icon: Trophy },
+    { name: 'Configuración', href: `/${slug}/admin/settings`, icon: Settings },
+  ]
 
   const handleLogout = async () => {
     await supabase.auth.signOut()

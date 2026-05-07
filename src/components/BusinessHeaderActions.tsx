@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Heart, Home, ArrowLeft } from 'lucide-react'
+import { Heart, Home, ArrowLeft, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toggleFavorite } from '@/app/cliente/actions'
 import { toast } from 'sonner'
@@ -12,9 +12,10 @@ import { AuthPromptDialog } from './AuthPromptDialog'
 interface BusinessHeaderActionsProps {
   businessId: string
   isInitialFavorite: boolean
+  businessName?: string
 }
 
-export function BusinessHeaderActions({ businessId, isInitialFavorite }: BusinessHeaderActionsProps) {
+export function BusinessHeaderActions({ businessId, isInitialFavorite, businessName }: BusinessHeaderActionsProps) {
   const router = useRouter()
   const [favorite, setFavorite] = useState(isInitialFavorite)
   const [loading, setLoading] = useState(false)
@@ -33,6 +34,23 @@ export function BusinessHeaderActions({ businessId, isInitialFavorite }: Busines
     setLoading(false)
   }
 
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: businessName || 'Cancha Sintética',
+          text: `Reserva tu cancha en ${businessName || 'esta sintética'} de forma rápida.`,
+          url: window.location.href
+        })
+      } catch (error) {
+        console.error('Error sharing:', error)
+      }
+    } else {
+      await navigator.clipboard.writeText(window.location.href)
+      toast.success('Enlace copiado al portapapeles')
+    }
+  }
+
   return (
     <div className="flex items-center gap-2 sm:gap-4 absolute top-6 left-6 right-6 justify-between z-20">
       <Link href="/explorar">
@@ -42,20 +60,32 @@ export function BusinessHeaderActions({ businessId, isInitialFavorite }: Busines
           className="rounded-full bg-black/40 backdrop-blur-xl border-white/10 hover:bg-primary/20 hover:border-primary/50 text-white gap-2 h-10 px-4 transition-all group"
         >
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-          <span className="font-semibold">Volver al inicio</span>
+          <span className="font-semibold hidden sm:inline">Volver</span>
         </Button>
       </Link>
       
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleToggleFavorite}
-        disabled={loading}
-        className={`rounded-full bg-black/40 backdrop-blur-xl border-white/10 hover:bg-primary/20 hover:border-primary/50 text-white gap-2 h-10 px-4 transition-all ${favorite ? 'border-primary/50 text-primary bg-primary/5' : ''}`}
-      >
-        <Heart className={`h-4 w-4 transition-colors ${favorite ? 'fill-primary text-primary' : ''}`} />
-        <span className="font-semibold">{favorite ? 'En favoritos' : 'Guardar favorito'}</span>
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleShare}
+          className="rounded-full bg-black/40 backdrop-blur-xl border-white/10 hover:bg-primary/20 hover:border-primary/50 text-white gap-2 h-10 px-4 transition-all"
+        >
+          <Share2 className="h-4 w-4" />
+          <span className="font-semibold hidden sm:inline">Compartir</span>
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleToggleFavorite}
+          disabled={loading}
+          className={`rounded-full bg-black/40 backdrop-blur-xl border-white/10 hover:bg-primary/20 hover:border-primary/50 text-white gap-2 h-10 px-4 transition-all ${favorite ? 'border-primary/50 text-primary bg-primary/5' : ''}`}
+        >
+          <Heart className={`h-4 w-4 transition-colors ${favorite ? 'fill-primary text-primary' : ''}`} />
+          <span className="font-semibold hidden sm:inline">{favorite ? 'Favorito' : 'Guardar'}</span>
+        </Button>
+      </div>
 
       <AuthPromptDialog 
         isOpen={isAuthDialogOpen} 

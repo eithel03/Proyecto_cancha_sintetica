@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Calendar, Swords, Clock, TrendingUp, Filter, CalendarDays, CalendarRange } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 
 type FilterType = 'day' | 'week' | 'month'
 
@@ -15,6 +16,8 @@ interface DashboardStatsProps {
 
 export function DashboardStats({ reservations, challenges }: DashboardStatsProps) {
   const [filter, setFilter] = useState<FilterType>('week')
+  const params = useParams()
+  const slug = params.slug as string
 
   const stats = useMemo(() => {
     const now = new Date()
@@ -89,7 +92,7 @@ export function DashboardStats({ reservations, challenges }: DashboardStatsProps
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Card de Reservas */}
-        <Link href="/dashboard/reservations" className="block">
+        <Link href={`/${slug}/admin/reservations`} className="block">
           <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md overflow-hidden group relative h-full">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500/0 via-emerald-500/50 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <CardHeader className="pb-2">
@@ -126,7 +129,7 @@ export function DashboardStats({ reservations, challenges }: DashboardStatsProps
         </Link>
 
         {/* Card de Retos */}
-        <Link href="/dashboard/retos" className="block">
+        <Link href={`/${slug}/admin/retos`} className="block">
           <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md overflow-hidden group relative h-full">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500/0 via-blue-500/50 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <CardHeader className="pb-2">

@@ -61,7 +61,7 @@ export default async function HomePage() {
              {!user && (
                <Link href="/login">
                   <Button className="w-full sm:w-auto h-16 px-12 rounded-[24px] bg-primary hover:bg-primary/90 text-zinc-950 font-black uppercase tracking-widest text-sm shadow-2xl shadow-primary/30 transition-all hover:scale-105 active:scale-95">
-                    Entrar al Panel <ArrowRight className="ml-2 w-5 h-5" />
+                    Iniciar Sesión <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
                </Link>
              )}

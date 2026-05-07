@@ -75,6 +75,7 @@ export default async function PublicBusinessPage({ params }: PageProps) {
             <BusinessHeaderActions 
               businessId={business.id} 
               isInitialFavorite={isInitialFavorite} 
+              businessName={business.name}
             />
         </div>
 

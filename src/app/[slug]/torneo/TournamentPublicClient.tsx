@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Trophy, Calendar, Users, BarChart3, User, Shield, Zap, X, ChevronLeft, Activity, Target, ShieldAlert, Clock, MapPin } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatTime12h } from '@/lib/utils'
-import { autoStartMatches } from '@/app/dashboard/tournament/actions'
+import { autoStartMatches } from '../../dashboard/tournament/actions'
 
 export default function TournamentPublicClient({ businessId, matches: initialMatches, standings: initialStandings, teams: initialTeams, stats }: {
   businessId: string,
