@@ -19,6 +19,13 @@ import {
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { ConfirmationDialog } from '@/components/ConfirmationDialog'
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select'
 
 export default function CourtsClient({ initialCourts, businessId }: { initialCourts: any[], businessId: string }) {
   const [open, setOpen] = useState(false)
@@ -29,6 +36,7 @@ export default function CourtsClient({ initialCourts, businessId }: { initialCou
   const [pricingCourt, setPricingCourt] = useState<any>(null)
   const [pricingRules, setPricingRules] = useState<any[]>([])
   const [loadingPricing, setLoadingPricing] = useState(false)
+  const [selectedCapacity, setSelectedCapacity] = useState("5")
   
   // Estado para Diálogo de Confirmación
   const [confirmConfig, setConfirmConfig] = useState<{
@@ -51,6 +59,7 @@ export default function CourtsClient({ initialCourts, businessId }: { initialCou
   async function onSubmit(formData: FormData) {
     setPending(true)
     formData.append('business_id', businessId)
+    formData.append('capacity', selectedCapacity)
     formData.append('image_url', imageUrl || editingCourt?.image_url || '')
     
     let result;
@@ -141,7 +150,14 @@ export default function CourtsClient({ initialCourts, businessId }: { initialCou
         variant={confirmConfig.variant}
       />
       <div className="flex justify-end mb-6">
-        <Dialog open={open} onOpenChange={(val) => { setOpen(val); if(!val) { setEditingCourt(null); setImageUrl(''); } }}>
+        <Dialog open={open} onOpenChange={(val) => { 
+          setOpen(val); 
+          if(!val) { 
+            setEditingCourt(null); 
+            setImageUrl(''); 
+            setSelectedCapacity("5");
+          } 
+        }}>
           <DialogTrigger
             render={
               <Button>
@@ -164,6 +180,23 @@ export default function CourtsClient({ initialCourts, businessId }: { initialCou
               <div className="space-y-2">
                 <Label htmlFor="price_per_person">Precio por persona (₡)</Label>
                 <Input id="price_per_person" name="price_per_person" type="number" defaultValue={editingCourt?.price_per_person} placeholder="1500" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="capacity">Tipo de Cancha</Label>
+                <Select 
+                  name="capacity" 
+                  value={selectedCapacity} 
+                  onValueChange={setSelectedCapacity}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecciona el tipo de cancha" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-900 border-zinc-800">
+                    <SelectItem value="5">Fútbol 5 (5 vs 5)</SelectItem>
+                    <SelectItem value="6">Fútbol 6 (6 vs 6)</SelectItem>
+                    <SelectItem value="7">Fútbol 7 (7 vs 7)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Descripción (Opcional)</Label>
@@ -267,6 +300,7 @@ export default function CourtsClient({ initialCourts, businessId }: { initialCou
                     className="h-9 w-9 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white hover:bg-primary hover:text-white hover:border-primary/50 transition-all shadow-xl"
                     onClick={() => {
                       setEditingCourt(court);
+                      setSelectedCapacity(court.capacity?.toString() || "5");
                       setOpen(true);
                     }}
                   >
@@ -285,9 +319,14 @@ export default function CourtsClient({ initialCourts, businessId }: { initialCou
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-xl">{court.name}</CardTitle>
-                  <Badge variant={court.is_active ? 'default' : 'secondary'} className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
-                    {court.is_active ? 'Activa' : 'Inactiva'}
-                  </Badge>
+                  <div className="flex flex-col gap-1">
+                    <Badge variant={court.is_active ? 'default' : 'secondary'} className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 w-fit">
+                      {court.is_active ? 'Activa' : 'Inactiva'}
+                    </Badge>
+                    <Badge variant="outline" className="w-fit">
+                      Fútbol {court.capacity || 5}
+                    </Badge>
+                  </div>
                 </div>
                 {court.description && <CardDescription className="line-clamp-2">{court.description}</CardDescription>}
               </CardHeader>

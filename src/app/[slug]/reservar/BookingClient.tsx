@@ -409,7 +409,7 @@ export default function BookingClient({
                   disabled={pending}
                   className={`w-full sm:w-auto h-16 px-12 text-xl font-black italic tracking-tighter shadow-2xl transition-all hover:scale-105 active:scale-95 ${selectedChallengeId ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-900/20' : 'shadow-primary/20'}`}
                 >
-                  {pending ? 'PROCESANDO...' : (selectedChallengeId ? 'ACEPTAR RETO ⚔️' : 'RESERVAR AHORA ⚽')}
+                  {pending ? 'PROCESANDO...' : (selectedChallengeId ? 'ACEPTAR RETO' : 'RESERVAR AHORA')}
                 </Button>
               </div>
             </div>

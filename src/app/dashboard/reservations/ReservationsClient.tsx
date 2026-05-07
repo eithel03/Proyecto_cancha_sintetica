@@ -5,9 +5,66 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { updateReservationStatus } from './actions'
 import { toast } from 'sonner'
-import { MessageCircle, CheckCircle, XCircle, Clock, Calendar, Phone, Mail, StickyNote } from 'lucide-react'
+import { MessageCircle, CheckCircle, XCircle, Clock, Calendar, Phone, Mail, StickyNote, FilterX, Trophy, Filter, SortAsc, SortDesc } from 'lucide-react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { useMemo } from 'react'
+import Link from 'next/link'
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select'
 
 export default function ReservationsClient({ initialReservations }: { initialReservations: any[] }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const statusFilter = searchParams.get('status')
+  const sortFilter = searchParams.get('sort') || 'reciente'
+
+  const filteredReservations = useMemo(() => {
+    let result = initialReservations
+
+    // 1. Filtrado
+    if (statusFilter && statusFilter !== 'todos') {
+      if (statusFilter === 'torneo') {
+        result = result.filter(res => res.is_tournament)
+      } else {
+        const statusMap: Record<string, string> = {
+          'pendientes': 'pending',
+          'confirmados': 'confirmed',
+          'completados': 'completed'
+        }
+        const dbStatus = statusMap[statusFilter] || statusFilter
+        result = result.filter(res => res.status === dbStatus && !res.is_tournament)
+      }
+    }
+
+    // 2. Ordenamiento
+    return [...result].sort((a, b) => {
+      const dateTimeA = new Date(`${a.reservation_date}T${a.start_time}`).getTime()
+      const dateTimeB = new Date(`${b.reservation_date}T${b.start_time}`).getTime()
+      
+      if (sortFilter === 'antiguo') {
+        return dateTimeA - dateTimeB
+      }
+      return dateTimeB - dateTimeA // reciente por defecto
+    })
+  }, [initialReservations, statusFilter, sortFilter])
+
+  const filters = [
+    { id: 'todos', label: 'Todos', icon: Filter },
+    { id: 'pendientes', label: 'Pendientes', icon: Clock },
+    { id: 'confirmados', label: 'Confirmados', icon: CheckCircle },
+    { id: 'completados', label: 'Completados', icon: CheckCircle },
+    { id: 'torneo', label: 'Torneos', icon: Trophy },
+  ]
+
+  const sortOptions = [
+    { id: 'reciente', label: 'Más recientes', icon: SortDesc },
+    { id: 'antiguo', label: 'Más antiguos', icon: SortAsc },
+  ]
 
   async function handleStatusChange(id: string, status: string) {
     const result = await updateReservationStatus(id, status)
@@ -49,20 +106,96 @@ export default function ReservationsClient({ initialReservations }: { initialRes
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h2 className="text-3xl font-bold tracking-tight">Reservas</h2>
-        <p className="text-muted-foreground">Gestiona y confirma las solicitudes de tus clientes.</p>
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-4xl font-black italic uppercase tracking-tighter bg-gradient-to-r from-white to-zinc-500 bg-clip-text text-transparent">Reservas</h2>
+            <p className="text-zinc-500 text-sm font-medium">Gestiona y confirma las solicitudes de tus clientes.</p>
+          </div>
+        </div>
+
+        {/* Barra de Filtros y Orden */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          {/* Filtro por Estado */}
+          <div className="flex items-center gap-3">
+            <div className="bg-zinc-900/50 border border-white/5 p-2 rounded-xl backdrop-blur-md">
+              <Filter className="w-4 h-4 text-zinc-500" />
+            </div>
+            <Select 
+              value={statusFilter || 'todos'} 
+              onValueChange={(val) => {
+                const params = new URLSearchParams(searchParams.toString())
+                if (val === 'todos') params.delete('status')
+                else params.set('status', val)
+                router.push(`?${params.toString()}`)
+              }}
+            >
+              <SelectTrigger className="w-[180px] bg-zinc-900/50 border-white/5 rounded-xl text-xs font-bold uppercase tracking-widest h-10">
+                <SelectValue placeholder="Filtrar por estado" />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-white/10">
+                {filters.map((f) => (
+                  <SelectItem 
+                    key={f.id} 
+                    value={f.id}
+                    className="text-[10px] font-black uppercase tracking-widest focus:bg-primary focus:text-black"
+                  >
+                    <div className="flex items-center gap-2">
+                      <f.icon className="w-3.5 h-3.5" />
+                      {f.label}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Ordenamiento por Fecha */}
+          <div className="flex items-center gap-3">
+            <div className="bg-zinc-900/50 border border-white/5 p-2 rounded-xl backdrop-blur-md">
+              {sortFilter === 'antiguo' ? <SortAsc className="w-4 h-4 text-zinc-500" /> : <SortDesc className="w-4 h-4 text-zinc-500" />}
+            </div>
+            <Select 
+              value={sortFilter} 
+              onValueChange={(val) => {
+                const params = new URLSearchParams(searchParams.toString())
+                params.set('sort', val)
+                router.push(`?${params.toString()}`)
+              }}
+            >
+              <SelectTrigger className="w-[180px] bg-zinc-900/50 border-white/5 rounded-xl text-xs font-bold uppercase tracking-widest h-10">
+                <SelectValue placeholder="Orden" />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-white/10">
+                {sortOptions.map((o) => (
+                  <SelectItem 
+                    key={o.id} 
+                    value={o.id}
+                    className="text-[10px] font-black uppercase tracking-widest focus:bg-primary focus:text-black"
+                  >
+                    <div className="flex items-center gap-2">
+                      <o.icon className="w-3.5 h-3.5" />
+                      {o.label}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
 
-      {initialReservations.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="p-12 text-center text-muted-foreground">
-            No hay reservas registradas por el momento.
+      {filteredReservations.length === 0 ? (
+        <Card className="border-dashed border-zinc-800 bg-zinc-950/50">
+          <CardContent className="p-12 text-center text-muted-foreground font-medium">
+            {statusFilter 
+              ? `No hay reservas con estado "${statusFilter}" por el momento.`
+              : "No hay reservas registradas por el momento."}
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4">
-          {initialReservations.map((res) => (
+          {filteredReservations.map((res) => (
             <Card key={res.id} className="overflow-hidden border-zinc-200 dark:border-zinc-800 bg-[#0a0a0a]/50 backdrop-blur-xl">
               <CardContent className="p-0">
                 <div className="flex flex-col md:flex-row">

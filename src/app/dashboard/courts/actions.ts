@@ -12,6 +12,7 @@ export async function createCourt(formData: FormData) {
   const name = formData.get('name') as string
   const description = formData.get('description') as string
   const pricePerPerson = formData.get('price_per_person') as string
+  const capacity = formData.get('capacity') as string
   const imageUrl = formData.get('image_url') as string
   
   if (!name || !pricePerPerson) return { error: 'Nombre y precio por persona son obligatorios' }
@@ -23,6 +24,7 @@ export async function createCourt(formData: FormData) {
       name,
       description,
       price_per_person: parseFloat(pricePerPerson),
+      capacity: capacity ? parseInt(capacity) : 5,
       image_url: imageUrl,
       is_active: true
     })
@@ -44,6 +46,7 @@ export async function updateCourt(formData: FormData) {
   const name = formData.get('name') as string
   const description = formData.get('description') as string
   const pricePerPerson = formData.get('price_per_person') as string
+  const capacity = formData.get('capacity') as string
   const imageUrl = formData.get('image_url') as string
   
   if (!id || !name || !pricePerPerson) return { error: 'ID, nombre y precio por persona son obligatorios' }
@@ -54,6 +57,7 @@ export async function updateCourt(formData: FormData) {
       name,
       description,
       price_per_person: parseFloat(pricePerPerson),
+      capacity: capacity ? parseInt(capacity) : 5,
       image_url: imageUrl
     })
     .eq('id', id)

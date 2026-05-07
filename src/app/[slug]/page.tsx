@@ -146,7 +146,7 @@ export default async function PublicBusinessPage({ params }: PageProps) {
                   </CardHeader>
                   <CardContent className="space-y-4 p-5 sm:p-6 pt-0 sm:pt-0">
                     <div className="flex items-center gap-4 text-[10px] sm:text-xs font-bold text-zinc-400 uppercase tracking-widest">
-                       <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> 5 vs 5</span>
+                       <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> {court.capacity || 5} vs {court.capacity || 5}</span>
                        <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> 60 min</span>
                     </div>
                     <Button className="w-full bg-white/5 hover:bg-primary hover:text-black border border-white/10 hover:border-transparent font-black uppercase tracking-widest text-[9px] sm:text-[10px] h-11 sm:h-12 rounded-xl sm:rounded-2xl transition-all">

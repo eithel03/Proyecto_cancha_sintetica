@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Calendar, Swords, Clock, TrendingUp, Filter, CalendarDays, CalendarRange } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 
 type FilterType = 'day' | 'week' | 'month'
 
@@ -88,78 +89,82 @@ export function DashboardStats({ reservations, challenges }: DashboardStatsProps
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Card de Reservas */}
-        <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md overflow-hidden group relative">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500/0 via-emerald-500/50 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xl font-black italic uppercase tracking-tighter flex items-center gap-3">
-                <div className="p-2 bg-emerald-500/10 rounded-xl">
-                  <Calendar className="w-5 h-5 text-emerald-500" />
-                </div>
-                Reservas
-              </CardTitle>
-              <TrendingUp className="w-5 h-5 text-emerald-500/30" />
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-baseline gap-2">
-              <span className="text-6xl font-black italic tracking-tighter text-white drop-shadow-2xl">
-                {stats.reservations.total}
-              </span>
-              <span className="text-zinc-500 font-black uppercase italic tracking-widest text-xs">Total del {filter === 'day' ? 'día' : filter === 'week' ? 'periodo' : 'mes'}</span>
-            </div>
+        <Link href="/dashboard/reservations" className="block">
+          <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md overflow-hidden group relative h-full">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500/0 via-emerald-500/50 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xl font-black italic uppercase tracking-tighter flex items-center gap-3">
+                  <div className="p-2 bg-emerald-500/10 rounded-xl">
+                    <Calendar className="w-5 h-5 text-emerald-500" />
+                  </div>
+                  Reservas
+                </CardTitle>
+                <TrendingUp className="w-5 h-5 text-emerald-500/30" />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-baseline gap-2">
+                <span className="text-6xl font-black italic tracking-tighter text-white drop-shadow-2xl">
+                  {stats.reservations.total}
+                </span>
+                <span className="text-zinc-500 font-black uppercase italic tracking-widest text-xs">Total del {filter === 'day' ? 'día' : filter === 'week' ? 'periodo' : 'mes'}</span>
+              </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500/60 text-center">Confirmadas</p>
-                <p className="text-2xl font-black text-emerald-500 text-center">{stats.reservations.confirmed}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500/60 text-center">Confirmadas</p>
+                  <p className="text-2xl font-black text-emerald-500 text-center">{stats.reservations.confirmed}</p>
+                </div>
+                <div className="p-4 rounded-3xl bg-zinc-900/50 border border-white/5 space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center">Pendientes</p>
+                  <p className="text-2xl font-black text-white text-center">{stats.reservations.pending}</p>
+                </div>
               </div>
-              <div className="p-4 rounded-3xl bg-zinc-900/50 border border-white/5 space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center">Pendientes</p>
-                <p className="text-2xl font-black text-white text-center">{stats.reservations.pending}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Card de Retos */}
-        <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md overflow-hidden group relative">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500/0 via-blue-500/50 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xl font-black italic uppercase tracking-tighter flex items-center gap-3">
-                <div className="p-2 bg-blue-500/10 rounded-xl">
-                  <Swords className="w-5 h-5 text-blue-500" />
-                </div>
-                Retos (Matchmaking)
-              </CardTitle>
-              <TrendingUp className="w-5 h-5 text-blue-500/30" />
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-baseline gap-2">
-              <span className="text-6xl font-black italic tracking-tighter text-white drop-shadow-2xl">
-                {stats.challenges.total}
-              </span>
-              <span className="text-zinc-500 font-black uppercase italic tracking-widest text-xs">Publicados</span>
-            </div>
+        <Link href="/dashboard/retos" className="block">
+          <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md overflow-hidden group relative h-full">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500/0 via-blue-500/50 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xl font-black italic uppercase tracking-tighter flex items-center gap-3">
+                  <div className="p-2 bg-blue-500/10 rounded-xl">
+                    <Swords className="w-5 h-5 text-blue-500" />
+                  </div>
+                  Retos
+                </CardTitle>
+                <TrendingUp className="w-5 h-5 text-blue-500/30" />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-baseline gap-2">
+                <span className="text-6xl font-black italic tracking-tighter text-white drop-shadow-2xl">
+                  {stats.challenges.total}
+                </span>
+                <span className="text-zinc-500 font-black uppercase italic tracking-widest text-xs">Publicados</span>
+              </div>
 
-            <div className="grid grid-cols-3 gap-2 sm:gap-4">
-              <div className="p-3 rounded-2xl bg-blue-500/5 border border-blue-500/10 space-y-1 text-center">
-                <p className="text-[8px] font-black uppercase tracking-tighter text-blue-500/60">Abiertos</p>
-                <p className="text-xl font-black text-blue-500">{stats.challenges.open}</p>
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                <div className="p-3 rounded-2xl bg-blue-500/5 border border-blue-500/10 space-y-1 text-center">
+                  <p className="text-[8px] font-black uppercase tracking-tighter text-blue-500/60">Abiertos</p>
+                  <p className="text-xl font-black text-blue-500">{stats.challenges.open}</p>
+                </div>
+                <div className="p-3 rounded-2xl bg-amber-500/5 border border-amber-500/10 space-y-1 text-center">
+                  <p className="text-[8px] font-black uppercase tracking-tighter text-amber-500/60">Aceptados</p>
+                  <p className="text-xl font-black text-amber-500">{stats.challenges.accepted}</p>
+                </div>
+                <div className="p-3 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 space-y-1 text-center">
+                  <p className="text-[8px] font-black uppercase tracking-tighter text-emerald-500/60">Confirm.</p>
+                  <p className="text-xl font-black text-emerald-500">{stats.challenges.confirmed}</p>
+                </div>
               </div>
-              <div className="p-3 rounded-2xl bg-amber-500/5 border border-amber-500/10 space-y-1 text-center">
-                <p className="text-[8px] font-black uppercase tracking-tighter text-amber-500/60">Aceptados</p>
-                <p className="text-xl font-black text-amber-500">{stats.challenges.accepted}</p>
-              </div>
-              <div className="p-3 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 space-y-1 text-center">
-                <p className="text-[8px] font-black uppercase tracking-tighter text-emerald-500/60">Confirm.</p>
-                <p className="text-xl font-black text-emerald-500">{stats.challenges.confirmed}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </div>
   )

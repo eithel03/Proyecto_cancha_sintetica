@@ -13,7 +13,7 @@ import {
   Plus, Pencil, Trash2, Trophy, Users, Calendar, UserPlus, Shield, 
   Timer, Goal, Square, Zap, Loader2 
 } from 'lucide-react'
-import { upsertTeam, deleteTeam, upsertPlayer, deletePlayer, upsertMatch, deleteMatch, addMatchEvent } from './actions'
+import { upsertTeam, deleteTeam, upsertPlayer, deletePlayer, upsertMatch, deleteMatch, addMatchEvent, deleteFullTournament } from './actions'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 
@@ -250,6 +250,19 @@ export default function TournamentClient({
     )
   }
 
+  async function handleDeleteFullTournament() {
+    showConfirm(
+      'Eliminar Torneo',
+      `¿Estás seguro de eliminar el torneo ${selectedGender === 'masculino' ? 'Masculino' : 'Femenino'}? TODOS los equipos, jugadores y jornadas se borrarán permanentemente.`,
+      async () => {
+        const res = await deleteFullTournament(businessId, selectedGender)
+        if (res.error) return toast.error(res.error)
+        toast.success('Torneo eliminado correctamente')
+      },
+      'danger'
+    )
+  }
+
   // --- HANDLER EVENTOS ---
   async function handleEventSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -286,7 +299,7 @@ export default function TournamentClient({
           <div>
             <h2 className="text-sm font-black uppercase tracking-widest text-zinc-400">Torneo Activo</h2>
             <p className="text-lg font-black italic uppercase tracking-tighter text-white">
-              {selectedGender === 'masculino' ? '🏆 Rama Masculina' : '🏆 Rama Femenina'}
+              {selectedGender === 'masculino' ? 'Masculino' : 'Femenino'}
             </p>
           </div>
         </div>
@@ -301,7 +314,7 @@ export default function TournamentClient({
               selectedGender === 'masculino' ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-900/20" : "text-zinc-500 hover:text-zinc-300"
             )}
           >
-            🚹 Masculino
+            Masculino
           </Button>
           <Button 
             variant="ghost" 
@@ -312,9 +325,18 @@ export default function TournamentClient({
               selectedGender === 'femenino' ? "bg-pink-600 text-white hover:bg-pink-700 shadow-lg shadow-pink-900/20" : "text-zinc-500 hover:text-zinc-300"
             )}
           >
-            🚺 Femenino
+            Femenino
           </Button>
         </div>
+
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleDeleteFullTournament}
+          className="rounded-2xl border-destructive/30 text-destructive hover:bg-destructive/10 gap-2 h-10 px-4 font-black italic uppercase tracking-tighter"
+        >
+          <Trash2 className="w-4 h-4" /> Eliminar Torneo
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -358,16 +380,16 @@ export default function TournamentClient({
                       <Input id="captain_phone" name="captain_phone" defaultValue={editingTeam?.captain_phone} placeholder="Ej: 8888-9999" />
                     </div>
                     <div className="space-y-2">
-                      <Label>Rama (Género)</Label>
+                      <Label>Género</Label>
                       <Select name="gender" defaultValue={editingTeam?.gender || 'masculino'} required>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Género">
-                            {(val: any) => val === 'femenino' ? '🚺 Femenino' : '🚹 Masculino'}
+                            {(val: any) => val === 'femenino' ? 'Femenino' : 'Masculino'}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="masculino">🚹 Masculino</SelectItem>
-                          <SelectItem value="femenino">🚺 Femenino</SelectItem>
+                          <SelectItem value="masculino">Masculino</SelectItem>
+                          <SelectItem value="femenino">Femenino</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -716,16 +738,16 @@ export default function TournamentClient({
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Rama (Género)</Label>
+                      <Label>Género</Label>
                       <Select name="gender" defaultValue={editingMatch?.gender || 'masculino'} required>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Género">
-                            {(val: any) => val === 'femenino' ? '🚺 Femenino' : '🚹 Masculino'}
+                            {(val: any) => val === 'femenino' ? 'Femenino' : 'Masculino'}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="masculino">🚹 Masculino</SelectItem>
-                          <SelectItem value="femenino">🚺 Femenino</SelectItem>
+                          <SelectItem value="masculino">Masculino</SelectItem>
+                          <SelectItem value="femenino">Femenino</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

@@ -246,3 +246,44 @@ export async function addMatchEvent(data: any) {
   revalidatePath('/dashboard/tournament')
   return { success: true }
 }
+
+export async function deleteFullTournament(business_id: string, gender: string) {
+  const supabase = await createClient()
+  
+  try {
+    // 1. Obtener IDs de equipos de este género para borrar sus jugadores
+    const { data: teams } = await supabase
+      .from('tournament_teams')
+      .select('id')
+      .eq('business_id', business_id)
+      .eq('gender', gender)
+    
+    const teamIds = teams?.map(t => t.id) || []
+
+    // 2. Obtener IDs de partidos de este género para borrar sus eventos
+    const { data: matches } = await supabase
+      .from('tournament_matches')
+      .select('id')
+      .eq('business_id', business_id)
+      .eq('gender', gender)
+    
+    const matchIds = matches?.map(m => m.id) || []
+
+    // Borrado en cascada manual
+    if (matchIds.length > 0) {
+      await supabase.from('tournament_match_events').delete().in('match_id', matchIds)
+      await supabase.from('tournament_matches').delete().in('id', matchIds)
+    }
+
+    if (teamIds.length > 0) {
+      await supabase.from('tournament_players').delete().in('team_id', teamIds)
+      await supabase.from('tournament_teams').delete().in('id', teamIds)
+    }
+
+    revalidatePath('/dashboard/tournament')
+    return { success: true }
+  } catch (error: any) {
+    console.error('Error al eliminar torneo:', error)
+    return { error: error.message || 'Error desconocido al eliminar el torneo' }
+  }
+}

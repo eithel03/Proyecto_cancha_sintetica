@@ -11,6 +11,7 @@ import BusinessHoursManager from './BusinessHoursManager'
 import { Store, Globe, Phone, MapPin, Save, CalendarOff, Plus, Trash2, Search, Map as MapIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { MapPicker } from '@/components/MapPicker'
+import { MapPreview } from '@/components/MapPreview'
 
 export default function SettingsClient({ business, initialHours, initialExceptions = [] }: { business: any, initialHours: any[], initialExceptions?: any[] }) {
   const [pending, setPending] = useState(false)
@@ -18,36 +19,8 @@ export default function SettingsClient({ business, initialHours, initialExceptio
   const [newExDate, setNewExDate] = useState('')
   const [newExReason, setNewExReason] = useState('')
   const [coords, setCoords] = useState({ lat: business.latitude || '', lng: business.longitude || '' })
-  const [searchQuery, setSearchQuery] = useState('')
   const [isMapOpen, setIsMapOpen] = useState(false)
 
-  const searchAddress = async () => {
-    if (!searchQuery) {
-      toast.error('Ingresa una dirección o nombre de lugar para buscar')
-      return
-    }
-    
-    setPending(true)
-    try {
-      // Usamos el servicio gratuito de Nominatim (OpenStreetMap)
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`)
-      const data = await res.json()
-      
-      if (data && data.length > 0) {
-        setCoords({
-          lat: data[0].lat.toString(),
-          lng: data[0].lon.toString()
-        })
-        toast.success('Ubicación encontrada y aplicada')
-      } else {
-        toast.error('No se encontraron resultados para esa búsqueda.')
-      }
-    } catch (error) {
-      toast.error('Error al conectar con el servicio de mapas.')
-    } finally {
-      setPending(false)
-    }
-  }
 
   const captureLocation = () => {
     if (!navigator.geolocation) {
@@ -168,44 +141,23 @@ export default function SettingsClient({ business, initialHours, initialExceptio
               </div>
 
               <div className="space-y-4 md:col-span-2 border-t border-white/5 pt-6">
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold uppercase tracking-widest text-primary">Buscador de Ubicación (GPS)</Label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Input 
-                        placeholder="Busca por nombre o dirección (ej: Pital de San Carlos)" 
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="bg-zinc-900 border-white/10 pl-10"
-                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), searchAddress())}
-                      />
-                      <Search className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
-                    </div>
-                    <Button type="button" onClick={searchAddress} variant="secondary">
-                      Buscar
+                <input type="hidden" name="latitude" value={coords.lat} />
+                <input type="hidden" name="longitude" value={coords.lng} />
+
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex items-end gap-2 w-full">
+                    <Button type="button" onClick={() => setIsMapOpen(true)} variant="outline" className="flex-1 border-blue-500/50 text-blue-500 hover:bg-blue-500/10 h-12 rounded-xl">
+                      <MapIcon className="w-4 h-4 mr-2" /> Seleccionar Ubicación en Mapa
+                    </Button>
+                    <Button type="button" onClick={captureLocation} variant="outline" className="flex-1 border-primary/50 text-primary hover:bg-primary/10 h-12 rounded-xl">
+                      <MapPin className="w-4 h-4 mr-2" /> Usar GPS del Dispositivo
                     </Button>
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1 space-y-1.5">
-                    <Label className="text-[10px] text-zinc-500 uppercase font-black">Latitud</Label>
-                    <Input name="latitude" value={coords.lat} onChange={(e) => setCoords({...coords, lat: e.target.value})} className="bg-zinc-900 border-white/10" placeholder="Latitud" />
-                  </div>
-                  <div className="flex-1 space-y-1.5">
-                    <Label className="text-[10px] text-zinc-500 uppercase font-black">Longitud</Label>
-                    <Input name="longitude" value={coords.lng} onChange={(e) => setCoords({...coords, lng: e.target.value})} className="bg-zinc-900 border-white/10" placeholder="Longitud" />
-                  </div>
-                  <div className="flex items-end gap-2">
-                    <Button type="button" onClick={() => setIsMapOpen(true)} variant="outline" className="flex-1 border-blue-500/50 text-blue-500 hover:bg-blue-500/10">
-                      <MapIcon className="w-4 h-4 mr-2" /> Seleccionar en Mapa
-                    </Button>
-                    <Button type="button" onClick={captureLocation} variant="outline" className="flex-1 border-primary/50 text-primary hover:bg-primary/10">
-                      <MapPin className="w-4 h-4 mr-2" /> Usar GPS Actual
-                    </Button>
-                  </div>
-                </div>
-                <p className="text-[10px] text-zinc-500 italic">Puedes buscar tu local por nombre, dirección o capturar tu posición actual si estás en el sitio.</p>
+                <MapPreview lat={coords.lat} lng={coords.lng} />
+
+                <p className="text-[10px] text-zinc-500 italic">La ubicación GPS es necesaria para que los clientes puedan ver la distancia hasta tu local.</p>
               </div>
             </div>
             

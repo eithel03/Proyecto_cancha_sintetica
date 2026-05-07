@@ -54,9 +54,9 @@ export default async function ReservationsPage() {
   }))
 
   const allEvents = [...(reservations || []), ...formattedMatches].sort((a, b) => {
-    const dateA = new Date(a.reservation_date).getTime()
-    const dateB = new Date(b.reservation_date).getTime()
-    return dateB - dateA
+    const dateTimeA = new Date(`${a.reservation_date}T${a.start_time}`).getTime()
+    const dateTimeB = new Date(`${b.reservation_date}T${b.start_time}`).getTime()
+    return dateTimeB - dateTimeA // Recientes primero
   })
 
   return (

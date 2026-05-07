@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Flag, CalendarDays, Users, ArrowUpRight, Activity } from 'lucide-react'
 import { DashboardStats } from './DashboardStats'
+import Link from 'next/link'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -60,9 +61,6 @@ export default async function DashboardPage() {
   const courtsCount = courtsCountData || 0
   const reservationsCount = pendingReservations.length
 
-  // Fetch real revenue (confirmed reservations)
-  const totalRevenue = confirmedReservations.reduce((acc: number, res: any) => acc + (Number(res.courts?.price_per_hour) || 0), 0) || 0
-
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -74,50 +72,40 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md hover:border-primary/50 transition-all group overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs font-bold uppercase tracking-widest text-zinc-500">Canchas Activas</CardTitle>
-            <div className="bg-primary/10 p-2 rounded-xl group-hover:bg-primary/20 transition-colors">
-              <Flag className="h-4 w-4 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-black">{courtsCount}</div>
-            <p className="text-[10px] text-zinc-500 mt-1 font-bold uppercase">Disponibles para reserva</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Link href="/dashboard/courts" className="block">
+          <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md hover:border-primary/50 transition-all group overflow-hidden h-full">
+            <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs font-bold uppercase tracking-widest text-zinc-500">Canchas Activas</CardTitle>
+              <div className="bg-primary/10 p-2 rounded-xl group-hover:bg-primary/20 transition-colors">
+                <Flag className="h-4 w-4 text-primary" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-black">{courtsCount}</div>
+              <p className="text-[10px] text-zinc-500 mt-1 font-bold uppercase">Disponibles para reserva</p>
+            </CardContent>
+          </Card>
+        </Link>
         
-        <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md hover:border-orange-500/50 transition-all group overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-orange-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs font-bold uppercase tracking-widest text-zinc-500">Pendientes</CardTitle>
-            <div className="bg-orange-500/10 p-2 rounded-xl group-hover:bg-orange-500/20 transition-colors">
-              <CalendarDays className="h-4 w-4 text-orange-500" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-black text-orange-500">{reservationsCount}</div>
-            <p className="text-[10px] text-zinc-500 mt-1 font-bold uppercase tracking-tighter">Requieren tu atención inmediata</p>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/reservations?status=pendientes" className="block">
+          <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md hover:border-orange-500/50 transition-all group overflow-hidden h-full">
+            <div className="absolute top-0 left-0 w-1 h-full bg-orange-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs font-bold uppercase tracking-widest text-zinc-500">Pendientes</CardTitle>
+              <div className="bg-orange-500/10 p-2 rounded-xl group-hover:bg-orange-500/20 transition-colors">
+                <CalendarDays className="h-4 w-4 text-orange-500" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-black text-orange-500">{reservationsCount}</div>
+              <p className="text-[10px] text-zinc-500 mt-1 font-bold uppercase tracking-tighter">Requieren tu atención inmediata</p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md hover:border-blue-500/50 transition-all group overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs font-bold uppercase tracking-widest text-zinc-500">Ingresos Reales</CardTitle>
-            <div className="bg-blue-500/10 p-2 rounded-xl group-hover:bg-blue-500/20 transition-colors">
-              <Activity className="h-4 w-4 text-blue-500" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-black text-blue-500">₡{totalRevenue.toLocaleString()}</div>
-            <p className="text-[10px] text-zinc-500 mt-1 font-bold uppercase">Basado en reservas confirmadas</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md hover:border-purple-500/50 transition-all group overflow-hidden">
+        <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md hover:border-purple-500/50 transition-all group overflow-hidden h-full">
           <div className="absolute top-0 left-0 w-1 h-full bg-purple-500 opacity-0 group-hover:opacity-100 transition-opacity" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-widest text-zinc-500">Portal Público</CardTitle>
