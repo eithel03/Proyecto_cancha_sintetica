@@ -354,7 +354,7 @@ export default function TournamentClient({
         </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v || 'teams')} className="w-full">
         <TabsList className="grid w-full grid-cols-3 bg-zinc-900/50 p-1 border border-zinc-800/40 rounded-2xl h-12">
           <TabsTrigger value="teams" className="gap-2 rounded-xl data-[state=active]:bg-zinc-800 data-[state=active]:text-white transition-all"><Users className="w-4 h-4" /> Equipos</TabsTrigger>
           <TabsTrigger value="players" className="gap-2 rounded-xl data-[state=active]:bg-zinc-800 data-[state=active]:text-white transition-all"><UserPlus className="w-4 h-4" /> Jugadores</TabsTrigger>
@@ -663,7 +663,7 @@ export default function TournamentClient({
         <Card className="border-zinc-800/60 bg-[#0a0a0a]/80 backdrop-blur-xl shadow-2xl overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-800/60 bg-zinc-950/50">
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-              <Select value={matchStatusFilter} onValueChange={setMatchStatusFilter}>
+              <Select value={matchStatusFilter} onValueChange={(v) => setMatchStatusFilter(v || 'all')}>
                 <SelectTrigger className="w-full sm:w-44 bg-zinc-900/50 border-zinc-800 h-10 text-xs font-bold uppercase tracking-widest">
                   <SelectValue placeholder="Estado">
                     {(val: any) => {
@@ -689,7 +689,7 @@ export default function TournamentClient({
                 </SelectContent>
               </Select>
 
-              <Select value={matchDateSort} onValueChange={setMatchDateSort}>
+              <Select value={matchDateSort} onValueChange={(v) => setMatchDateSort(v || 'desc')}>
                 <SelectTrigger className="w-full sm:w-48 bg-zinc-900/50 border-zinc-800 h-10 text-xs font-bold uppercase tracking-widest">
                   <div className="flex items-center gap-2">
                     <Timer className="w-3.5 h-3.5" />
@@ -924,7 +924,7 @@ export default function TournamentClient({
                     name="event_type" 
                     value={selectedEventType} 
                     onValueChange={(val) => {
-                      setSelectedEventType(val);
+                      setSelectedEventType(val || 'goal');
                       setSelectedTeamIdForEvent(''); // Reset team when type changes
                     }} 
                     required
@@ -952,7 +952,7 @@ export default function TournamentClient({
                   <Select 
                     name="team_id" 
                     value={selectedTeamIdForEvent} 
-                    onValueChange={setSelectedTeamIdForEvent}
+                    onValueChange={(v) => setSelectedTeamIdForEvent(v || '')}
                     required
                   >
                     <SelectTrigger className="w-full">

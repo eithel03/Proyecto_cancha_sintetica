@@ -186,7 +186,7 @@ export default function CourtsClient({ initialCourts, businessId }: { initialCou
                 <Select 
                   name="capacity" 
                   value={selectedCapacity} 
-                  onValueChange={setSelectedCapacity}
+                  onValueChange={(v) => setSelectedCapacity(v || '5')}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Selecciona el tipo de cancha" />

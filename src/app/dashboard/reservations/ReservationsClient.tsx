@@ -124,9 +124,10 @@ export default function ReservationsClient({ initialReservations }: { initialRes
             <Select 
               value={statusFilter || 'todos'} 
               onValueChange={(val) => {
+                const v = val || 'todos'
                 const params = new URLSearchParams(searchParams.toString())
-                if (val === 'todos') params.delete('status')
-                else params.set('status', val)
+                if (v === 'todos') params.delete('status')
+                else params.set('status', v)
                 router.push(`?${params.toString()}`)
               }}
             >
@@ -158,8 +159,9 @@ export default function ReservationsClient({ initialReservations }: { initialRes
             <Select 
               value={sortFilter} 
               onValueChange={(val) => {
+                const v = val || 'reciente'
                 const params = new URLSearchParams(searchParams.toString())
-                params.set('sort', val)
+                params.set('sort', v)
                 router.push(`?${params.toString()}`)
               }}
             >
