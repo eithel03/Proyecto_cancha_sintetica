@@ -37,7 +37,14 @@ export default function BookingClient({
   const [selectedCourt, setSelectedCourt] = useState<string>(preselectedCourtId || (courts.length > 0 ? courts[0].id : ''))
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toLocaleDateString('sv-SE'))
   
-  const [occupiedSlots, setOccupiedSlots] = useState<{start_time: string, end_time: string, id?: string, type?: string}[]>([])
+  const [occupiedSlots, setOccupiedSlots] = useState<{
+    start_time: string, 
+    end_time: string, 
+    id?: string, 
+    type?: string,
+    home?: { name: string, logo_url?: string | null },
+    away?: { name: string, logo_url?: string | null }
+  }[]>([])
   const [loadingSlots, setLoadingSlots] = useState(false)
   
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
