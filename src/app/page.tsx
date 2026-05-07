@@ -1,123 +1,111 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Flag, ArrowRight } from 'lucide-react'
-import { LandingHero, LandingFeatures } from '@/components/LandingClient'
-import { BusinessDirectory } from '@/components/BusinessDirectory'
-import { getBusinesses, getUserFavorites } from './cliente/actions'
+import { Flag, ArrowRight, Shield, Zap, Calendar, Users, BarChart3, Globe, Swords } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function HomePage() {
-  const { businesses, count } = await getBusinesses()
-  const favorites = await getUserFavorites()
-  
-  // Verificar si hay usuario para el botón del navbar
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isAdmin = user?.user_metadata?.role === 'admin' || user?.user_metadata?.role === 'owner'
-  const isCustomer = user?.user_metadata?.role === 'customer'
-
-  // Si es cliente, enviarlo a explorar automáticamente
-  if (isCustomer) {
-    redirect('/explorar')
-  }
-
-  // Si no está logueado, mostrar pantalla de acceso restringido
-  if (!user) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-950 p-4">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
-        
-        <div className="w-full max-w-md space-y-8 text-center relative z-10">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-zinc-900 border border-white/5 mb-4 shadow-2xl">
-            <Flag className="h-10 w-10 text-primary" />
-          </div>
-          
-          <div className="space-y-2">
-            <h1 className="text-3xl font-black tracking-tight text-white italic uppercase">
-              Acceso <span className="text-primary">Restringido</span>
-            </h1>
-            <p className="text-zinc-500 font-medium">
-              Esta sección es exclusiva para administradores de la plataforma.
-            </p>
-          </div>
-
-          <div className="grid gap-4 pt-4">
-            <Link href="/admin/login">
-              <Button className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-zinc-950 font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20 transition-all">
-                Ingresar como Super Admin
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button variant="outline" className="w-full h-14 rounded-2xl border-white/10 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-xs transition-all">
-                Panel de Dueño
-              </Button>
-            </Link>
-          </div>
-
-          <div className="pt-8 border-t border-white/5">
-            <p className="text-zinc-500 text-sm mb-4">¿Eres un jugador buscando canchas?</p>
-            <Link href="/explorar">
-              <Button variant="link" className="text-primary font-bold hover:text-primary/80">
-                Ir al Directorio Público
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen flex flex-col bg-background selection:bg-primary/30">
-      {/* Navbar Glassmorphism */}
-      <header className="sticky top-0 z-50 px-4 lg:px-8 h-20 flex items-center border-b border-white/5 bg-background/60 backdrop-blur-xl">
+    <div className="min-h-screen flex flex-col bg-zinc-950 selection:bg-primary/30 text-white overflow-hidden">
+      {/* Background Orbs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none" />
+
+      {/* Navbar */}
+      <header className="fixed top-0 z-50 w-full px-4 lg:px-8 h-20 flex items-center border-b border-white/5 bg-zinc-950/60 backdrop-blur-xl">
         <Link className="flex items-center justify-center gap-2 transition-transform hover:scale-105" href="/">
-          <div className="bg-primary/10 p-2 rounded-xl">
+          <div className="bg-primary/10 p-2 rounded-xl border border-primary/20">
             <Flag className="h-6 w-6 text-primary" />
           </div>
-          <span className="text-2xl font-black bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent">
+          <span className="text-2xl font-black bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent italic tracking-tighter uppercase">
             SaaSintética
           </span>
         </Link>
-        <nav className="ml-auto flex items-center gap-2 sm:gap-4">
-          <Link href="/dashboard">
-            <Button className="rounded-full shadow-lg shadow-primary/25 font-semibold">
-              Mi Panel de Control
-            </Button>
-          </Link>
+        <nav className="ml-auto flex items-center gap-4">
+          {user ? (
+            <Link href="/dashboard">
+              <Button className="rounded-2xl bg-primary hover:bg-primary/90 text-zinc-950 font-black uppercase tracking-widest text-xs h-11 px-6 shadow-lg shadow-primary/20 transition-all">
+                Panel de Control
+              </Button>
+            </Link>
+          ) : (
+            <Link href="/login">
+              <Button className="rounded-2xl bg-primary hover:bg-primary/90 text-zinc-950 font-black uppercase tracking-widest text-xs h-11 px-8 shadow-lg shadow-primary/20 transition-all">
+                Iniciar Sesión
+              </Button>
+            </Link>
+          )}
         </nav>
       </header>
 
-      <main className="flex-1">
-        {isAdmin && <LandingHero />}
-        
-        {/* Business Directory Section (Solo Admin puede verla aquí ahora como vista previa) */}
-        <div className="pt-12">
-          <div className="container px-4 md:px-6 mx-auto mb-8">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-widest">
-              Vista previa del directorio
-            </div>
+      <main className="flex-1 pt-32">
+        {/* Hero Section */}
+        <section className="container px-4 md:px-6 mx-auto text-center space-y-12 pb-24">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-zinc-400 text-[10px] font-black uppercase tracking-[0.3em] animate-in fade-in slide-in-from-top-4 duration-1000">
+            <Zap className="w-3 h-3 text-primary" /> El estándar para complejos deportivos
           </div>
-          <BusinessDirectory 
-            businesses={businesses} 
-            favorites={favorites} 
-            totalCount={count} 
-          />
-        </div>
+          
+          <div className="space-y-6 max-w-5xl mx-auto">
+            <h1 className="text-6xl md:text-8xl lg:text-9xl font-black italic tracking-tighter leading-[0.85] uppercase animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-100">
+              Automatiza tu <br />
+              <span className="text-primary bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">Sintética</span>
+            </h1>
+            <p className="text-zinc-500 text-lg md:text-2xl font-medium max-w-2xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
+              La plataforma premium para gestionar reservas, torneos y desafíos. Escala tu negocio mientras tus clientes disfrutan de una experiencia de otro nivel.
+            </p>
+          </div>
 
-        {isAdmin && <LandingFeatures />}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
+             {!user && (
+               <Link href="/login">
+                  <Button className="w-full sm:w-auto h-16 px-12 rounded-[24px] bg-primary hover:bg-primary/90 text-zinc-950 font-black uppercase tracking-widest text-sm shadow-2xl shadow-primary/30 transition-all hover:scale-105 active:scale-95">
+                    Entrar al Panel <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+               </Link>
+             )}
+          </div>
+
+          {/* Feature Grid */}
+          <div className="grid md:grid-cols-3 gap-6 pt-24">
+            {[
+              { icon: Calendar, title: "Reservas Inteligentes", desc: "Gestión en tiempo real con pasarela de pagos y recordatorios automáticos." },
+              { icon: Flag, title: "Módulo de Torneos", desc: "Tablas de posiciones, estadísticas de jugadores y gestión de jornadas automática." },
+              { icon: Swords, title: "Muro de Retos", desc: "Fomenta la competitividad permitiendo que tus clientes lancen desafíos públicos." },
+              { icon: Shield, title: "Seguridad Total", desc: "Control de acceso basado en roles y políticas de seguridad robustas." },
+              { icon: BarChart3, title: "Analíticas Avanzadas", desc: "Visualiza el rendimiento de tus canchas con gráficos y reportes de ingresos." },
+              { icon: Globe, title: "Portal Personalizado", desc: "Cada negocio tiene su propia ruta y branding único para sus clientes." }
+            ].map((feature, i) => (
+              <div key={i} className="group p-8 rounded-[32px] bg-white/[0.02] border border-white/5 hover:border-primary/30 transition-all text-left space-y-4">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 group-hover:scale-110 transition-transform">
+                  <feature.icon className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-black italic uppercase tracking-tighter">{feature.title}</h3>
+                <p className="text-zinc-500 text-sm leading-relaxed font-medium">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
       </main>
 
-      <footer className="w-full py-12 border-t border-white/5 bg-zinc-950">
-        <div className="container px-4 md:px-6 mx-auto text-center">
-          <p className="text-sm text-zinc-500">
-            © {new Date().getFullYear()} SaaSintética. Todos los derechos reservados.
+      {/* Footer */}
+      <footer className="w-full py-12 border-t border-white/5 bg-zinc-950 mt-24">
+        <div className="container px-4 md:px-6 mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="flex items-center gap-2">
+            <Flag className="h-5 w-5 text-primary" />
+            <span className="text-lg font-black italic uppercase tracking-tighter text-white">SaaSintética</span>
+          </div>
+          <p className="text-sm text-zinc-600 font-bold uppercase tracking-widest">
+            © {new Date().getFullYear()} • El estándar del fútbol sintético
           </p>
+          <div className="flex gap-6">
+            <Link href="/login" className="text-zinc-500 hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest">Dueños</Link>
+            <Link href="/admin/login" className="text-zinc-500 hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest">Soporte</Link>
+          </div>
         </div>
       </footer>
     </div>
   )
 }
+
