@@ -23,7 +23,6 @@ interface BusinessCardProps {
     phone?: string
     latitude?: number
     longitude?: number
-    description?: string
   }
   isFavorite: boolean
   distance?: number
