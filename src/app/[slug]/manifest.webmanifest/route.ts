@@ -23,10 +23,12 @@ export async function GET(
   const themeColor = business.branding?.primary || '#10b981'
 
   return NextResponse.json({
+    id: `/${slug}`,
     name: name,
     short_name: name,
     description: `Reserva tu cancha en ${name}`,
     start_url: `/${slug}`,
+    scope: `/${slug}`,
     display: 'standalone',
     background_color: business.branding?.background || '#09090b',
     theme_color: themeColor,
