@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -18,7 +18,7 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 
 import { ConfirmationDialog } from '@/components/ConfirmationDialog'
-import { cn } from '@/lib/utils'
+import { cn, formatTime12h } from '@/lib/utils'
 
 export default function TournamentClient({ 
   businessId, 
@@ -64,6 +64,17 @@ export default function TournamentClient({
   const [logoUrl, setLogoUrl] = useState('')
   const [selectedEventType, setSelectedEventType] = useState('goal')
   const [selectedTeamIdForEvent, setSelectedTeamIdForEvent] = useState('')
+  const [matchTime, setMatchTime] = useState('')
+
+  const TIME_OPTIONS = useMemo(() => {
+    const options = []
+    for (let h = 0; h < 24; h++) {
+      for (let m = 0; m < 60; m += 30) {
+        options.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`)
+      }
+    }
+    return options
+  }, [])
 
   // Estado para Diálogo de Confirmación
   const [confirmConfig, setConfirmConfig] = useState<{
@@ -704,7 +715,7 @@ export default function TournamentClient({
                 </SelectContent>
               </Select>
 
-              <Dialog open={isMatchDialogOpen} onOpenChange={(val) => { setIsMatchDialogOpen(val); if(!val) setEditingMatch(null); }}>
+              <Dialog open={isMatchDialogOpen} onOpenChange={(val) => { setIsMatchDialogOpen(val); if(!val) { setEditingMatch(null); setMatchTime(''); } }}>
                 <DialogTrigger render={<Button className="gap-2 shrink-0"><Plus className="w-4 h-4" /> Nuevo Partido</Button>} />
               <DialogContent className="max-w-md">
                 <div key={editingMatch?.id || 'new-match'}>
@@ -749,7 +760,23 @@ export default function TournamentClient({
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="match_time">Hora</Label>
-                        <Input id="match_time" name="match_time" type="time" defaultValue={editingMatch?.match_time} required />
+                        <Select name="match_time" defaultValue={editingMatch?.match_time} required onValueChange={setMatchTime}>
+                          <SelectTrigger className="w-full bg-zinc-900 border-white/10 h-10">
+                            <SelectValue placeholder="--:--" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-zinc-950 border-white/10 max-h-[200px]">
+                            {TIME_OPTIONS.map(time => (
+                              <SelectItem key={time} value={time}>
+                                {formatTime12h(time)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {(matchTime || editingMatch?.match_time) && (
+                          <p className="text-[10px] text-emerald-500 font-bold mt-1 uppercase tracking-widest italic">
+                            Identificado como: {formatTime12h(matchTime || editingMatch.match_time)}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -834,7 +861,7 @@ export default function TournamentClient({
                       <div className="font-medium">
                         {match.match_date.split('-').reverse().join('/')}
                       </div>
-                      <div className="text-xs text-muted-foreground">{match.match_time}</div>
+                      <div className="text-xs text-muted-foreground font-bold">{formatTime12h(match.match_time)}</div>
                     </TableCell>
                     <TableCell>
                       <span className="font-bold">{match.home?.name}</span> vs <span className="font-bold">{match.away?.name}</span>

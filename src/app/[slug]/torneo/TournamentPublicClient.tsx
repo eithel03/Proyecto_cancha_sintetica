@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Trophy, Calendar, Users, BarChart3, User, Shield, Zap, X, ChevronLeft, Activity, Target, ShieldAlert, Clock, MapPin } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { cn } from '@/lib/utils'
+import { cn, formatTime12h } from '@/lib/utils'
 import { autoStartMatches } from '@/app/dashboard/tournament/actions'
 
 export default function TournamentPublicClient({ businessId, matches: initialMatches, standings: initialStandings, teams: initialTeams, stats }: {
@@ -323,7 +323,7 @@ export default function TournamentPublicClient({ businessId, matches: initialMat
                             <span className="text-[10px] sm:text-sm font-black text-zinc-700 italic uppercase tracking-widest">VS</span>
                           )}
                           <span className="text-[8px] sm:text-[10px] font-black text-zinc-500 uppercase mt-1 sm:mt-2 flex items-center gap-1 whitespace-nowrap">
-                             <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {match.match_time.substring(0, 5)}
+                             <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {formatTime12h(match.match_time)}
                           </span>
                         </div>
 
@@ -648,7 +648,7 @@ export default function TournamentPublicClient({ businessId, matches: initialMat
                                      <span className="bg-white/5 px-2 py-0.5 rounded text-[8px] font-black text-zinc-500 uppercase">
                                        {new Date(m.match_date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                                      </span>
-                                     <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">{m.match_time.substring(0,5)}</span>
+                                     <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">{formatTime12h(m.match_time)}</span>
                                    </div>
                                    <div className="flex items-center gap-3">
                                       <div className="w-8 h-8 bg-white rounded-xl p-1.5 shadow-xl border border-white/10 group-hover:scale-110 transition-transform">

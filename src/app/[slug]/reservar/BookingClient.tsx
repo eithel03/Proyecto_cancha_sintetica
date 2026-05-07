@@ -11,7 +11,7 @@ import { toast } from 'sonner'
 import Link from 'next/link'
 import { CheckCircle2, Loader2, User, Flag, Calendar, Clock, AlertCircle, Sparkles } from 'lucide-react'
 import { AuthPromptDialog } from '@/components/AuthPromptDialog'
-import { cn } from '@/lib/utils'
+import { cn, formatTime12h } from '@/lib/utils'
 
 export default function BookingClient({ 
   business, 
@@ -250,7 +250,7 @@ export default function BookingClient({
               </h3>
               {daySchedule && !daySchedule.is_closed && (
                 <Badge variant="outline" className="text-[10px] font-black border-white/10 text-zinc-500">
-                  {daySchedule.open_time.substring(0, 5)} - {daySchedule.close_time.substring(0, 5)}
+                  {formatTime12h(daySchedule.open_time)} - {formatTime12h(daySchedule.close_time)}
                 </Badge>
               )}
             </div>
@@ -320,7 +320,7 @@ export default function BookingClient({
                         setSelectedChallengeId(isOpenChallenge ? (occupancy.id || null) : null)
                       }}
                     >
-                      <span className="text-base font-black tracking-tighter">{startStr}</span>
+                      <span className="text-base font-black tracking-tighter">{formatTime12h(startStr)}</span>
                       <div className="flex gap-1 flex-wrap justify-center">
                         {isOpenChallenge && <span className="text-[8px] font-black uppercase bg-emerald-500 text-black px-1 rounded">RETO DISP.</span>}
                         {isAcceptedChallenge && <span className="text-[8px] font-black uppercase bg-amber-200 text-black px-1 rounded">POR CONFIRMAR</span>}
@@ -390,7 +390,7 @@ export default function BookingClient({
                     <div className="bg-white/5 p-2 rounded-xl"><Clock className="w-5 h-5 text-zinc-400" /></div>
                     <div>
                       <p className="text-[10px] uppercase font-black tracking-widest text-zinc-500">Hora de Inicio</p>
-                      <p className="font-bold text-zinc-100">{selectedSlot.split('-')[0]}</p>
+                      <p className="font-bold text-zinc-100">{formatTime12h(selectedSlot.split('-')[0])}</p>
                     </div>
                   </div>
                 </div>

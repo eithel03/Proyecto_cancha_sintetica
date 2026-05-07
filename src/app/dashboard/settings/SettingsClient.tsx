@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { updateBusiness } from './actions'
 import { toast } from 'sonner'
 import BusinessHoursManager from './BusinessHoursManager'
-import { Store, Globe, Phone, MapPin, Save, CalendarOff, Plus, Trash2, Search, Map as MapIcon, Palette, Layout, Type, Layers } from 'lucide-react'
+import { Store, Globe, Phone, MapPin, Save, CalendarOff, Plus, Trash2, Search, Map as MapIcon, Palette, Layout, Type, Layers, Upload, Shield } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { MapPicker } from '@/components/MapPicker'
 import { MapPreview } from '@/components/MapPreview'
@@ -30,6 +30,8 @@ export default function SettingsClient({ business, initialHours, initialExceptio
     accent: '#10b981'
   })
   const [brandingPending, setBrandingPending] = useState(false)
+  const [logoUrl, setLogoUrl] = useState(business.logo_url || '')
+  const [uploading, setUploading] = useState(false)
 
 
   const captureLocation = () => {
@@ -141,6 +143,66 @@ export default function SettingsClient({ business, initialHours, initialExceptio
           </CardHeader>
           <CardContent>
             <form action={onSubmit} className="space-y-6">
+              <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-white/5">
+                <div className="relative group">
+                  <div className="w-24 h-24 sm:w-32 sm:h-32 bg-zinc-900 rounded-3xl border-2 border-dashed border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50">
+                    {logoUrl ? (
+                      <img src={logoUrl} className="w-full h-full object-contain" alt="Logo preview" />
+                    ) : (
+                      <Shield className="w-10 h-10 text-zinc-700" />
+                    )}
+                    {uploading && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  <label className="absolute -bottom-2 -right-2 p-2 bg-primary text-black rounded-xl cursor-pointer shadow-lg hover:scale-110 transition-transform">
+                    <Upload className="w-4 h-4" />
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*" 
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        
+                        setUploading(true)
+                        try {
+                          const { createClient } = await import('@/lib/supabase/client')
+                          const supabase = createClient()
+                          
+                          const fileExt = file.name.split('.').pop()
+                          const fileName = `${business.id}/pwa-logo-${Math.random()}.${fileExt}`
+                          
+                          const { data, error } = await supabase.storage
+                            .from('logos')
+                            .upload(fileName, file)
+                            
+                          if (error) throw error
+                          
+                          const { data: { publicUrl } } = supabase.storage
+                            .from('logos')
+                            .getPublicUrl(fileName)
+                            
+                          setLogoUrl(publicUrl)
+                          toast.success('Logo actualizado correctamente')
+                        } catch (error: any) {
+                          toast.error('Error al subir imagen: ' + error.message)
+                        } finally {
+                          setUploading(false)
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                <div className="space-y-1 text-center sm:text-left">
+                  <h4 className="font-black uppercase italic tracking-tighter text-white">Logo de la Empresa</h4>
+                  <p className="text-xs text-zinc-500 max-w-[250px]">Este logo se usará como icono de la aplicación cuando tus clientes la instalen en sus teléfonos.</p>
+                  <input type="hidden" name="logo_url" value={logoUrl} />
+                </div>
+              </div>
+
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Nombre del Local</Label>

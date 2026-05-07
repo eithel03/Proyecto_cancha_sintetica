@@ -14,6 +14,7 @@ export async function updateBusiness(formData: FormData) {
   const location = formData.get('location') as string
   const latitude = formData.get('latitude') as string
   const longitude = formData.get('longitude') as string
+  const logo_url = formData.get('logo_url') as string
   
   if (!name) return { error: 'El nombre es obligatorio' }
 
@@ -25,6 +26,7 @@ export async function updateBusiness(formData: FormData) {
       location,
       latitude: latitude ? parseFloat(latitude) : null,
       longitude: longitude ? parseFloat(longitude) : null,
+      logo_url: logo_url || null,
     })
     .eq('id', id)
     .eq('owner_id', user.id)

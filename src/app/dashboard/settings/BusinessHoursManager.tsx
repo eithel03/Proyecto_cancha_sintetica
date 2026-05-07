@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Clock, CalendarOff } from 'lucide-react'
 import { updateBusinessHours } from './actions'
 import { toast } from 'sonner'
+import { formatTime12h } from '@/lib/utils'
 
 const DAYS = [
   'Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'
@@ -76,20 +77,26 @@ export default function BusinessHoursManager({ businessId, initialHours }: { bus
 
               <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full sm:w-auto">
                 {!hours[index].is_closed ? (
-                  <div className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-300 w-full sm:w-auto justify-center sm:justify-start">
-                    <Input 
-                      type="time" 
-                      value={hours[index].open_time} 
-                      onChange={(e) => handleTimeChange(index, 'open_time', e.target.value)}
-                      className="w-24 sm:w-32 bg-zinc-900 border-white/10 h-10 sm:h-11 text-sm"
-                    />
-                    <span className="text-muted-foreground font-bold">-</span>
-                    <Input 
-                      type="time" 
-                      value={hours[index].close_time} 
-                      onChange={(e) => handleTimeChange(index, 'close_time', e.target.value)}
-                      className="w-24 sm:w-32 bg-zinc-900 border-white/10 h-10 sm:h-11 text-sm"
-                    />
+                  <div className="flex items-center gap-4 animate-in fade-in zoom-in-95 duration-300 w-full sm:w-auto justify-center sm:justify-start">
+                    <div className="flex flex-col items-center gap-1">
+                      <Input 
+                        type="time" 
+                        value={hours[index].open_time} 
+                        onChange={(e) => handleTimeChange(index, 'open_time', e.target.value)}
+                        className="w-24 bg-zinc-900 border-white/10 h-10 text-sm text-center"
+                      />
+                      <span className="text-[10px] font-bold text-primary uppercase">{formatTime12h(hours[index].open_time)}</span>
+                    </div>
+                    <span className="text-muted-foreground font-bold self-center mb-4">-</span>
+                    <div className="flex flex-col items-center gap-1">
+                      <Input 
+                        type="time" 
+                        value={hours[index].close_time} 
+                        onChange={(e) => handleTimeChange(index, 'close_time', e.target.value)}
+                        className="w-24 bg-zinc-900 border-white/10 h-10 text-sm text-center"
+                      />
+                      <span className="text-[10px] font-bold text-primary uppercase">{formatTime12h(hours[index].close_time)}</span>
+                    </div>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-zinc-500 font-medium italic animate-in slide-in-from-right-4 py-2">

@@ -15,6 +15,7 @@ import { toast } from 'sonner'
 import { AuthPromptDialog } from '@/components/AuthPromptDialog'
 import { useRouter } from 'next/navigation'
 import { checkAvailability } from '@/app/[slug]/reservar/actions'
+import { formatTime12h } from '@/lib/utils'
 
 import { ConfirmationDialog } from '@/components/ConfirmationDialog'
 
@@ -330,7 +331,7 @@ export default function ChallengesClient({
                         ) : (
                           TIME_OPTIONS.map(time => (
                             <SelectItem key={time} value={time} className="font-bold focus:bg-emerald-500 focus:text-black">
-                              {time}
+                              {formatTime12h(time)}
                             </SelectItem>
                           ))
                         )}
@@ -448,7 +449,7 @@ export default function ChallengesClient({
                       </div>
                       <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0">
                         <div className="inline-flex items-center gap-2 bg-white/5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-white font-black text-[10px] sm:text-xs tracking-widest uppercase">
-                          <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" /> {reto.challenge_time.substring(0, 5)}
+                          <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" /> {formatTime12h(reto.challenge_time)}
                         </div>
                         <div className="text-[9px] sm:text-[10px] text-zinc-500 font-black uppercase tracking-widest sm:mt-2">
                           {reto.challenge_date}

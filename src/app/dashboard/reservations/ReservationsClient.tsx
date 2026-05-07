@@ -9,6 +9,7 @@ import { MessageCircle, CheckCircle, XCircle, Clock, Calendar, Phone, Mail, Stic
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useMemo } from 'react'
 import Link from 'next/link'
+import { formatTime12h } from '@/lib/utils'
 import { 
   Select, 
   SelectContent, 
@@ -94,7 +95,7 @@ export default function ReservationsClient({ initialReservations }: { initialRes
     
     let message = ''
     if (type === 'confirm') {
-      message = `Hola ${res.customer_name}, ¡buenas noticias! Tu reserva para ${res.courts?.name} el día ${res.reservation_date} a las ${res.start_time} ha sido CONFIRMADA. ⚽ ¡Te esperamos!`
+      message = `Hola ${res.customer_name}, ¡buenas noticias! Tu reserva para ${res.courts?.name} el día ${res.reservation_date} a las ${formatTime12h(res.start_time)} ha sido CONFIRMADA. ⚽ ¡Te esperamos!`
     } else if (type === 'cancel') {
       message = `Hola ${res.customer_name}, lamentamos informarte que tu reserva para el día ${res.reservation_date} ha sido CANCELADA. Por favor contáctanos para reprogramar.`
     } else {
@@ -228,7 +229,7 @@ export default function ReservationsClient({ initialReservations }: { initialRes
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Clock className="w-4 h-4 text-zinc-100" />
-                        <span className="font-medium text-zinc-100">{res.start_time.substring(0, 5)} - {res.end_time.substring(0, 5)}</span>
+                        <span className="font-medium text-zinc-100">{formatTime12h(res.start_time)} - {formatTime12h(res.end_time)}</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Phone className="w-4 h-4 text-zinc-100" />
