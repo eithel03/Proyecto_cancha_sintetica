@@ -8,6 +8,7 @@ import { Calendar, Clock, Swords, CheckCircle2, AlertTriangle, User, Phone, Mess
 import { toast } from 'sonner'
 import { confirmChallenge, cancelChallenge } from '@/app/[slug]/retos/actions'
 import { createClient } from '@/lib/supabase/client'
+import { formatTime12h } from '@/lib/utils'
 
 import { ConfirmationDialog } from '@/components/ConfirmationDialog'
 
@@ -142,7 +143,7 @@ export default function AdminChallengesClient({ initialChallenges }: { initialCh
                         <Badge className="bg-amber-500 text-black font-black px-4 py-1">ACCIÓN REQUERIDA</Badge>
                         <div className="flex items-center gap-4 text-sm font-bold text-zinc-300">
                           <span className="flex items-center gap-2"><Calendar className="w-4 h-4 text-emerald-500" /> {reto.challenge_date}</span>
-                          <span className="flex items-center gap-2"><Clock className="w-4 h-4 text-emerald-500" /> {reto.challenge_time.substring(0, 5)}</span>
+                          <span className="flex items-center gap-2"><Clock className="w-4 h-4 text-emerald-500" /> {formatTime12h(reto.challenge_time)}</span>
                         </div>
                       </div>
 
@@ -217,7 +218,7 @@ export default function AdminChallengesClient({ initialChallenges }: { initialCh
                       <div>
                         <p className="font-black italic uppercase tracking-tight">{reto.creator?.full_name || reto.customer_name}</p>
                         <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
-                          {reto.challenge_date} @ {reto.challenge_time.substring(0, 5)}
+                          {reto.challenge_date} @ {formatTime12h(reto.challenge_time)}
                         </p>
                       </div>
                     </div>
