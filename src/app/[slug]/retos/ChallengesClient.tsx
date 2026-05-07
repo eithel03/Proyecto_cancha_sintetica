@@ -156,7 +156,7 @@ export default function ChallengesClient({
       if (total > capacity) {
         const errorMsg = `Esta cancha tiene una capacidad máxima de ${capacity} jugadores por equipo. Tu selección actual es de ${total} personas.`
         
-        toast.custom((t) => (
+        toast.custom((t: any) => (
           <div className={`${t.visible ? 'animate-in fade-in slide-in-from-right-4' : 'animate-out fade-out slide-out-to-right-4'} relative overflow-hidden p-4 rounded-2xl bg-zinc-950 border border-red-500/30 shadow-2xl min-w-[320px] backdrop-blur-xl`}>
             <div className="absolute -top-10 -right-10 w-24 h-24 bg-red-500/10 blur-[40px] rounded-full" />
             <div className="flex items-center gap-4 relative z-10">
