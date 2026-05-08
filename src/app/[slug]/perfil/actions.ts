@@ -33,12 +33,17 @@ export async function hideHistoryItem(type: 'reservation' | 'challenge', id: str
   if (!user) return { error: 'No autorizado' }
 
   const table = type === 'reservation' ? 'reservations' : 'challenges'
+  const idColumn = type === 'reservation' ? 'customer_id' : 'creator_id'
   
-  const { error } = await supabase
-    .from(table)
-    .update({ hidden_by_customer: true })
-    .eq('id', id)
-    .eq(type === 'reservation' ? 'customer_id' : 'creator_id', user.id)
+  let query = supabase.from(table).update({ hidden_by_customer: true }).eq('id', id)
+
+  if (type === 'reservation') {
+    query = query.eq('customer_id', user.id)
+  } else {
+    query = query.or(`creator_id.eq.${user.id},opponent_id.eq.${user.id}`)
+  }
+
+  const { error } = await query
 
   if (error) return { error: 'Error al ocultar: ' + error.message }
 
@@ -61,15 +66,18 @@ export async function clearAllHistory(businessId: string) {
     .eq('business_id', businessId)
     .or(`status.in.(cancelled,completed),reservation_date.lt.${today}`)
 
-  // Ocultar retos no vigentes
+  // Ocultar retos no vigentes (donde sea creador u oponente)
   const { error: chalError } = await supabase
     .from('challenges')
     .update({ hidden_by_customer: true })
-    .eq('creator_id', user.id)
+    .or(`creator_id.eq.${user.id},opponent_id.eq.${user.id}`)
     .eq('business_id', businessId)
-    .or(`status.in.(cancelled,completed),and(status.eq.confirmed,challenge_date.lt.${today})`)
+    .or(`status.in.(cancelled,completed,confirmed),challenge_date.lt.${today}`)
 
-  if (resError || chalError) return { error: 'Error al limpiar historial.' }
+  if (resError || chalError) {
+    console.error('Clear History Error:', resError, chalError)
+    return { error: 'Error al limpiar historial.' }
+  }
 
   revalidatePath('/[slug]/perfil')
   return { success: true }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Share, Download, X, Smartphone, Info, Apple, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -14,12 +15,15 @@ interface PWAInstallPromptProps {
 }
 
 export function PWAInstallPrompt({ businessName, businessLogo, slug }: PWAInstallPromptProps) {
+  const pathname = usePathname()
   const [isStandalone, setIsStandalone] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [platform, setPlatform] = useState<'ios' | 'android' | 'other'>('other')
 
   useEffect(() => {
+    // No mostrar en rutas de admin
+    if (pathname.includes('/admin')) return
     // Check if already installed
     if (typeof window !== 'undefined') {
       const isPWA = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone
@@ -74,8 +78,9 @@ export function PWAInstallPrompt({ businessName, businessLogo, slug }: PWAInstal
   }
 
   const [isVisible, setIsVisible] = useState(true)
+  const isExcludedRoute = pathname.includes('/admin')
 
-  if (isStandalone || !isVisible) return null
+  if (isStandalone || !isVisible || isExcludedRoute) return null
 
   return (
     <>

@@ -107,8 +107,8 @@ export default function BookingClient({
     return occupiedSlots.find((res: any) => {
       const resStart = res.start_time.substring(0, 5)
       const resEnd = res.end_time.substring(0, 5)
-      // Un slot está ocupado si se solapa con cualquier reserva existente
-      return resStart < endT && resEnd > startT
+      // Un slot está ocupado si el inicio del slot cae dentro del rango de la reserva [resStart, resEnd)
+      return startT >= resStart && startT < resEnd
     })
   }
 

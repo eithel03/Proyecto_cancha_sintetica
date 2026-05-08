@@ -26,6 +26,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { updateProfile, hideHistoryItem, clearAllHistory } from './actions'
 import { toast } from 'sonner'
+import { formatTime12h } from '@/lib/utils'
 
 export default function ProfileClient({ initialProfile, initialReservations, initialChallenges, businessSlug }: { 
   initialProfile: any, 
@@ -95,6 +96,8 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
             setChallenges((prev: any) => prev.filter((c: any) => c.id !== id))
           }
           toast.success('Registro ocultado')
+        } else {
+          toast.error(result.error || 'No se pudo ocultar el registro')
         }
       }
     )
@@ -115,6 +118,8 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
           setReservations([])
           setChallenges([])
           toast.success('Historial limpiado')
+        } else {
+          toast.error(result.error || 'Error al limpiar historial')
         }
       },
       'danger'
@@ -253,12 +258,15 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
                             </div>
                             <div className="flex flex-wrap gap-x-3 gap-y-1 text-[8px] sm:text-[10px] font-black text-zinc-500 uppercase tracking-widest">
                               <span className="flex items-center gap-1.5"><Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" /> {res.reservation_date}</span>
-                              <span className="flex items-center gap-1.5"><Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" /> {res.start_time.substring(0, 5)}</span>
+                              <span className="flex items-center gap-1.5">
+                                <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" /> 
+                                {formatTime12h(res.start_time.substring(0, 5))} - {formatTime12h(`${res.start_time.split(':')[0].padStart(2, '0')}:59`)}
+                              </span>
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 sm:gap-3 justify-end pt-3 sm:pt-0 border-t sm:border-t-0 border-white/5 sm:border-transparent">
-                          {['cancelled', 'completed'].includes(res.status) && (
+                          {(['cancelled', 'completed'].includes(res.status) || res.reservation_date < new Date().toLocaleDateString('sv-SE')) && (
                             <Button 
                               variant="ghost" 
                               size="icon"
@@ -268,11 +276,6 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
                               <Trash2 className="w-4 h-4 sm:w-6 sm:h-6" />
                             </Button>
                           )}
-                          <Link href={`/${businessSlug}/reservar?courtId=${res.court_id}`} className="flex-1 sm:flex-none">
-                            <Button variant="outline" className="w-full sm:w-auto font-black text-[9px] sm:text-xs uppercase tracking-widest h-10 sm:h-14 px-5 sm:px-8 rounded-xl sm:rounded-2xl border-white/10 hover:border-primary/50 transition-all">
-                              Repetir <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 ml-1 sm:ml-2" />
-                            </Button>
-                          </Link>
                         </div>
                       </div>
                     </CardContent>
@@ -339,7 +342,7 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
                             </div>
                           )}
 
-                          {['cancelled', 'completed'].includes(challenge.status) && (
+                          {(['cancelled', 'completed'].includes(challenge.status) || challenge.challenge_date < new Date().toLocaleDateString('sv-SE')) && (
                             <Button 
                               variant="ghost" 
                               size="icon"
