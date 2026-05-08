@@ -80,7 +80,7 @@ export function PWAInstallPrompt({ businessName, businessLogo, slug }: PWAInstal
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="fixed bottom-24 right-6 z-40 md:bottom-8"
+        className="hidden fixed bottom-24 right-6 z-40 md:bottom-8"
       >
         <Button
           onClick={handleInstallClick}
