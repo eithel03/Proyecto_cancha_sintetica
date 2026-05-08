@@ -27,12 +27,12 @@ export default function NewBusinessClient() {
       toast.error('Ingresa una dirección para buscar')
       return
     }
-    
+
     setPending(true)
     try {
       const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`)
       const data = await res.json()
-      
+
       if (data && data.length > 0) {
         setCoords({
           lat: data[0].lat.toString(),
@@ -85,7 +85,7 @@ export default function NewBusinessClient() {
     setPending(true)
     const result = await createBusinessWithUser(formData)
     setPending(false)
-    
+
     if (result.error) {
       toast.error(result.error)
     } else {
@@ -104,7 +104,7 @@ export default function NewBusinessClient() {
       </CardHeader>
       <CardContent>
         <form action={onSubmit} className="space-y-8">
-          
+
           {/* Datos del Negocio */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium border-b pb-2">1. Datos del Negocio</h3>
@@ -119,14 +119,14 @@ export default function NewBusinessClient() {
                   <span className="inline-flex items-center rounded-l-md border border-r-0 border-gray-300 px-3 text-gray-500 sm:text-sm bg-gray-50 dark:bg-zinc-800 dark:border-zinc-700">
                     /
                   </span>
-                  <Input 
-                    id="b_slug" 
-                    name="b_slug" 
+                  <Input
+                    id="b_slug"
+                    name="b_slug"
                     value={slugPreview}
                     onChange={handleSlugChange}
-                    className="rounded-l-none" 
-                    placeholder="sintetica-pital" 
-                    required 
+                    className="rounded-l-none"
+                    placeholder="sintetica-pital"
+                    required
                   />
                 </div>
               </div>
@@ -148,11 +148,11 @@ export default function NewBusinessClient() {
               </div>
               <div className="space-y-4 md:col-span-2 border-t pt-4">
                 <Label className="text-primary font-bold">Localización GPS</Label>
-                
+
                 <div className="flex gap-2">
                   <div className="relative flex-1">
-                    <Input 
-                      placeholder="Busca por dirección (ej: Alajuela, Costa Rica)" 
+                    <Input
+                      placeholder="Busca por dirección (ej: Alajuela, Costa Rica)"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-10"
@@ -180,7 +180,7 @@ export default function NewBusinessClient() {
 
                 <input type="hidden" name="b_latitude" value={coords.lat} />
                 <input type="hidden" name="b_longitude" value={coords.lng} />
-                
+
                 <p className="text-[10px] text-zinc-500 italic mt-1">La ubicación GPS es necesaria para que los clientes puedan ver la distancia hasta tu local.</p>
               </div>
             </div>
@@ -217,7 +217,7 @@ export default function NewBusinessClient() {
               {pending ? 'Creando sistema...' : 'Crear Negocio y Cuenta'}
             </Button>
           </div>
-          <MapPicker 
+          <MapPicker
             isOpen={isMapOpen}
             onOpenChange={setIsMapOpen}
             onSelect={(lat, lng) => setCoords({ lat, lng })}

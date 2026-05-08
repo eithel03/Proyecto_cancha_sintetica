@@ -73,23 +73,51 @@ export function PWAInstallPrompt({ businessName, businessLogo, slug }: PWAInstal
     }
   }
 
-  if (isStandalone) return null
+  const [isVisible, setIsVisible] = useState(true)
+
+  if (isStandalone || !isVisible) return null
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="hidden fixed bottom-24 right-6 z-40 md:bottom-8"
-      >
-        <Button
-          onClick={handleInstallClick}
-          className="rounded-full h-14 w-14 sm:h-16 sm:w-auto sm:px-6 bg-primary text-black font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-primary/40 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 group"
-        >
-          <Download className="w-5 h-5 group-hover:bounce" />
-          <span className="hidden sm:inline">Instalar App</span>
-        </Button>
-      </motion.div>
+      <AnimatePresence>
+        {isVisible && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md"
+          >
+            <div className="bg-zinc-900/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/10 p-2 rounded-lg">
+                  <Smartphone className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">¿Deseas instalar la aplicación?</p>
+                  <p className="text-[10px] text-zinc-400 font-medium">Acceso rápido y mejor experiencia</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setIsVisible(false)}
+                  className="text-zinc-500 hover:text-white text-[10px] font-bold uppercase tracking-widest h-8"
+                >
+                  No
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={handleInstallClick}
+                  className="bg-primary text-black hover:bg-primary/90 text-[10px] font-black uppercase tracking-widest h-8 px-4 rounded-lg"
+                >
+                  Sí
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-md bg-zinc-950 border-white/10 rounded-[32px] overflow-hidden p-0">
