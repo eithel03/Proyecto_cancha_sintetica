@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { MapPin, Search, Map as MapIcon } from 'lucide-react'
 import { MapPicker } from '@/components/MapPicker'
+import { MapPreview } from '@/components/MapPreview'
 
 export default function NewBusinessClient() {
   const router = useRouter()
@@ -165,22 +166,22 @@ export default function NewBusinessClient() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1">
-                    <Input name="b_latitude" value={coords.lat} onChange={(e) => setCoords({...coords, lat: e.target.value})} placeholder="Latitud" />
-                  </div>
-                  <div className="flex-1">
-                    <Input name="b_longitude" value={coords.lng} onChange={(e) => setCoords({...coords, lng: e.target.value})} placeholder="Longitud" />
-                  </div>
-                  <div className="flex items-end gap-2">
-                    <Button type="button" onClick={() => setIsMapOpen(true)} variant="outline" className="flex-1 border-blue-500/50 text-blue-500 hover:bg-blue-500/10">
-                      <MapIcon className="w-4 h-4 mr-2" /> Mapa
+                  <div className="flex items-end gap-2 w-full">
+                    <Button type="button" onClick={() => setIsMapOpen(true)} variant="outline" className="flex-1 border-blue-500/50 text-blue-500 hover:bg-blue-500/10 h-12 rounded-xl">
+                      <MapIcon className="w-4 h-4 mr-2" /> Seleccionar Ubicación en Mapa
                     </Button>
-                    <Button type="button" onClick={captureLocation} variant="outline" className="flex-1 border-primary/50 text-primary hover:bg-primary/10">
-                      <MapPin className="w-4 h-4 mr-2" /> GPS
+                    <Button type="button" onClick={captureLocation} variant="outline" className="flex-1 border-primary/50 text-primary hover:bg-primary/10 h-12 rounded-xl">
+                      <MapPin className="w-4 h-4 mr-2" /> Usar GPS del Dispositivo
                     </Button>
                   </div>
                 </div>
-                <p className="text-[10px] text-zinc-500 italic mt-1">Busca el lugar o captura las coordenadas si estás ahí.</p>
+
+                <MapPreview lat={coords.lat} lng={coords.lng} />
+
+                <input type="hidden" name="b_latitude" value={coords.lat} />
+                <input type="hidden" name="b_longitude" value={coords.lng} />
+                
+                <p className="text-[10px] text-zinc-500 italic mt-1">La ubicación GPS es necesaria para que los clientes puedan ver la distancia hasta tu local.</p>
               </div>
             </div>
           </div>

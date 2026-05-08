@@ -25,18 +25,6 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
-  if (business.is_active === false) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center">
-        <div className="bg-red-500/10 p-4 rounded-full mb-4">
-          <Activity className="h-12 w-12 text-red-500" />
-        </div>
-        <h1 className="text-4xl font-bold text-red-500">Cuenta Suspendida</h1>
-        <p className="text-xl text-muted-foreground max-w-md">Tu negocio ha sido desactivado por la administración. Por favor, contacta con soporte para reactivar tu cuenta.</p>
-      </div>
-    )
-  }
-
   // Fetch all reservations for stats (not just pending)
   const { data: allReservations } = await supabase
     .from('reservations')

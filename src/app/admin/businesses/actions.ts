@@ -22,7 +22,7 @@ export async function updateBusiness(id: string, data: any) {
   const adminClient = createAdminClient()
 
   // Actualizar negocio
-  const { error } = await adminClient
+  const { error: bizError } = await adminClient
     .from('businesses')
     .update({
       name: data.name,
@@ -31,13 +31,31 @@ export async function updateBusiness(id: string, data: any) {
       phone: data.phone,
       whatsapp: data.whatsapp,
       description: data.description,
-      is_active: data.is_active
+      is_active: data.is_active,
+      latitude: data.latitude ? parseFloat(data.latitude) : null,
+      longitude: data.longitude ? parseFloat(data.longitude) : null
     })
     .eq('id', id)
 
-  if (error) {
-    if (error.code === '23505') return { error: 'El slug ya está en uso por otro negocio' }
-    return { error: 'Error al actualizar el negocio: ' + error.message }
+  if (bizError) {
+    if (bizError.code === '23505') return { error: 'El slug ya está en uso por otro negocio' }
+    return { error: 'Error al actualizar el negocio: ' + bizError.message }
+  }
+
+  // Actualizar perfil del dueño si se proporcionan datos
+  if (data.owner_id && (data.owner_name || data.owner_phone)) {
+    const { error: profileError } = await adminClient
+      .from('profiles')
+      .update({
+        full_name: data.owner_name,
+        phone: data.owner_phone
+      })
+      .eq('id', data.owner_id)
+    
+    if (profileError) {
+      console.error('Error updating owner profile:', profileError)
+      // No retornamos error fatal aquí para que los cambios del negocio se mantengan
+    }
   }
 
   revalidatePath('/admin/businesses')

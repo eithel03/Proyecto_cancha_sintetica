@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { Metadata, Viewport } from 'next'
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt'
+import { SuspensionCheck } from '@/components/SuspensionCheck'
 
 export async function generateViewport({ params }: { params: Promise<{ slug: string }> }): Promise<Viewport> {
   const { slug } = await params
@@ -63,7 +64,7 @@ export default async function SlugLayout({
 
   const { data: business } = await supabase
     .from('businesses')
-    .select('name, logo_url, branding')
+    .select('name, logo_url, branding, is_active')
     .eq('slug', slug)
     .single()
 
@@ -88,13 +89,15 @@ export default async function SlugLayout({
   } as React.CSSProperties
 
   return (
-    <div style={customStyles} className="min-h-screen bg-background text-foreground selection:bg-primary/30">
-      {children}
-      <PWAInstallPrompt 
-        businessName={business.name} 
-        businessLogo={business.logo_url || ''} 
-        slug={slug} 
-      />
-    </div>
+    <SuspensionCheck isActive={business.is_active ?? true} businessName={business.name}>
+      <div style={customStyles} className="min-h-screen bg-background text-foreground selection:bg-primary/30">
+        {children}
+        <PWAInstallPrompt 
+          businessName={business.name} 
+          businessLogo={business.logo_url || ''} 
+          slug={slug} 
+        />
+      </div>
+    </SuspensionCheck>
   )
 }
