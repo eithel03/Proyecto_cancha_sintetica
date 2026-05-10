@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { Swords, Calendar, Clock, MapPin, AlertCircle, CheckCircle2, User, XCircle, Trophy, Zap, Users } from 'lucide-react'
+import { Swords, Calendar, Clock, MapPin, AlertCircle, CheckCircle2, User, XCircle, Trophy, Zap, Users, Sparkles } from 'lucide-react'
 import { createChallenge, acceptChallenge, cancelChallenge } from '@/app/[slug]/retos/actions'
 import { toast } from 'sonner'
 import { AuthPromptDialog } from '@/components/AuthPromptDialog'
@@ -86,7 +86,9 @@ export default function ChallengesClient({
       setLoadingAvailability(true)
       try {
         const busy = await checkAvailability(selectedCourt, selectedDate)
-        setOccupiedSlots(busy)
+        if (Array.isArray(busy)) {
+          setOccupiedSlots(busy)
+        }
       } catch (error) {
         console.error("Error checking availability:", error)
       } finally {
@@ -347,9 +349,6 @@ export default function ChallengesClient({
                   </div>
                 </div>
 
-                  </div>
-                </div>
-
                 {currentException ? (
                   <div className="flex flex-col items-center justify-center p-8 bg-red-500/5 rounded-2xl border border-red-500/10 space-y-2">
                     {currentException.reason?.toLowerCase().includes('feriado') ? (
@@ -413,14 +412,15 @@ export default function ChallengesClient({
                       </div>
                     </div>
                   )}
+                  
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest ml-1">Mensaje (Opcional)</Label>
+                    <Textarea name="notes" placeholder="Ej: Buscamos equipo nivel medio..." className="bg-zinc-900/50 border-white/10 min-h-[100px] sm:min-h-[120px] font-medium rounded-xl sm:rounded-2xl text-base sm:text-lg resize-none" />
+                  </div>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest ml-1">Mensaje (Opcional)</Label>
-                  <Textarea name="notes" placeholder="Ej: Buscamos equipo nivel medio..." className="bg-zinc-900/50 border-white/10 min-h-[100px] sm:min-h-[120px] font-medium rounded-xl sm:rounded-2xl text-base sm:text-lg resize-none" />
-                </div>
-              </div>
+              )}
             </div>
+          </div>
               <DialogFooter className="p-6 sm:p-10 pt-0">
                 <Button type="submit" disabled={pending || loadingAvailability} className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black h-14 sm:h-16 text-base sm:text-lg rounded-xl sm:rounded-2xl shadow-lg shadow-emerald-500/20">
                   {pending ? 'CARGANDO...' : 'PUBLICAR RETO'}
