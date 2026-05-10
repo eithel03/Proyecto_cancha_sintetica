@@ -52,7 +52,13 @@ export default function SettingsClient({
   const [uploading, setUploading] = useState(false)
   
   // Estado para Bloqueo Manual
-  const [manualResData, setManualResData] = useState({
+  const [manualResData, setManualResData] = useState<{
+    court_id: string;
+    date: string;
+    time: string;
+    customer_name: string;
+    notes: string;
+  }>({
     court_id: '',
     date: new Date().toLocaleDateString('sv-SE'),
     time: '',
@@ -557,7 +563,7 @@ export default function SettingsClient({
               <div className="grid gap-6 md:grid-cols-2 p-6 rounded-2xl bg-white/5 border border-white/5">
                 <div className="space-y-3">
                   <Label className="text-xs font-black uppercase tracking-widest text-zinc-500">Elegir Cancha</Label>
-                  <Select value={manualResData.court_id} onValueChange={(v) => setManualResData({...manualResData, court_id: v})}>
+                  <Select value={manualResData.court_id} onValueChange={(v: string | null) => setManualResData(prev => ({ ...prev, court_id: v || '' }))}>
                     <SelectTrigger className="bg-zinc-900 border-white/10 h-12 rounded-xl font-bold">
                       <SelectValue placeholder="Seleccionar cancha">
                         {courts.find(c => c.id === manualResData.court_id)?.name || "Seleccionar cancha"}
