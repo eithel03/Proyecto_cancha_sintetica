@@ -24,13 +24,15 @@ export default function ChallengesClient({
   businessId,
   userId,
   courts,
-  businessHours 
+  businessHours,
+  exceptions = []
 }: { 
   initialChallenges: any[], 
   businessId: string,
   userId?: string,
   courts: any[],
-  businessHours: any[]
+  businessHours: any[],
+  exceptions?: any[]
 }) {
   const [challenges, setChallenges] = useState(initialChallenges)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -94,8 +96,13 @@ export default function ChallengesClient({
     checkBusySlots()
   }, [selectedCourt, selectedDate])
 
+  const currentException = useMemo(() => {
+    return (exceptions || []).find(ex => ex.exception_date === selectedDate)
+  }, [exceptions, selectedDate])
+
   // Generar opciones de tiempo (cada 30 min) basadas en el horario más amplio del negocio
   const TIME_OPTIONS = useMemo(() => {
+    if (currentException) return []
     if (!businessHours || businessHours.length === 0) {
       // Fallback a un horario general si no hay configurados
       return Array.from({ length: 32 }, (_, i) => {
@@ -340,7 +347,23 @@ export default function ChallengesClient({
                   </div>
                 </div>
 
-                <div className="space-y-4 border-t border-white/5 pt-4">
+                  </div>
+                </div>
+
+                {currentException ? (
+                  <div className="flex flex-col items-center justify-center p-8 bg-red-500/5 rounded-2xl border border-red-500/10 space-y-2">
+                    {currentException.reason?.toLowerCase().includes('feriado') ? (
+                       <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+                    ) : (
+                       <AlertCircle className="w-8 h-8 text-red-500/50" />
+                    )}
+                    <p className="text-red-500 font-black uppercase tracking-tight text-center">
+                      {currentException.reason?.toLowerCase().includes('feriado') ? '¡ES UN DÍA FERIADO!' : 'FECHA BLOQUEADA'}
+                    </p>
+                    <p className="text-zinc-500 text-[10px] text-center font-bold uppercase">{currentException.reason || 'No se permiten retos hoy.'}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4 border-t border-white/5 pt-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest ml-1">Tipo de Encuentro</Label>
                     <Select value={gender} onValueChange={(v) => {

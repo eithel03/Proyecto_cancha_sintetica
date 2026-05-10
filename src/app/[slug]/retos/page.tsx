@@ -50,6 +50,12 @@ export default async function ChallengesPage({ params }: PageProps) {
     .select('*')
     .eq('business_id', business.id)
 
+  const { data: exceptions } = await supabase
+    .from('business_exceptions')
+    .select('*')
+    .eq('business_id', business.id)
+    .eq('is_closed', true)
+
   return (
     <div className="min-h-screen bg-background flex flex-col selection:bg-primary/30">
       <PublicNav slug={business.slug} businessName={business.name} />
@@ -71,6 +77,7 @@ export default async function ChallengesPage({ params }: PageProps) {
           userId={user?.id}
           courts={courts || []}
           businessHours={businessHours || []}
+          exceptions={exceptions || []}
         />
       </main>
 

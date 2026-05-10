@@ -93,20 +93,34 @@ export default function BookingClient({
       setLoadingSlots(true)
       setSelectedSlot(null)
       setSelectedChallengeId(null)
-      const reserved = await checkAvailability(selectedCourt, selectedDate)
-      setOccupiedSlots(reserved)
+      
+      // Sincronizar URL con la cancha seleccionada
+      const url = new URL(window.location.href)
+      url.searchParams.set('courtId', selectedCourt)
+      window.history.replaceState({}, '', url.toString())
+
+      const result = await checkAvailability(selectedCourt, selectedDate)
+      if (Array.isArray(result)) {
+        setOccupiedSlots(result)
+      } else if (result && (result as any).error) {
+        toast.error('Error al cargar disponibilidad: ' + (result as any).error)
+        setOccupiedSlots([])
+      }
       setLoadingSlots(false)
     }
     loadAvailability()
   }, [selectedCourt, selectedDate])
 
   const getSlotOccupancy = (hour: number) => {
-    const startT = formatTime(hour)
-    const endT = formatTime(hour + 1)
+    const startT = formatTime(hour) // HH:mm
 
     return occupiedSlots.find((res: any) => {
-      const resStart = res.start_time.substring(0, 5)
-      const resEnd = res.end_time.substring(0, 5)
+      // Normalizar horas de la reserva a HH:mm
+      const partsStart = res.start_time.split(':')
+      const partsEnd = res.end_time.split(':')
+      const resStart = `${partsStart[0].padStart(2, '0')}:${partsStart[1]}`
+      const resEnd = `${partsEnd[0].padStart(2, '0')}:${partsEnd[1]}`
+      
       // Un slot está ocupado si el inicio del slot cae dentro del rango de la reserva [resStart, resEnd)
       return startT >= resStart && startT < resEnd
     })
@@ -262,10 +276,19 @@ export default function BookingClient({
               </div>
             ) : !daySchedule || daySchedule.is_closed || currentException ? (
               <div className="flex flex-col items-center justify-center p-16 bg-red-500/5 rounded-3xl border border-red-500/10 space-y-3 animate-in fade-in duration-500">
-                <AlertCircle className="w-12 h-12 text-red-500/50" />
-                <p className="text-red-500 font-black uppercase italic tracking-tight text-lg">
-                  {currentException ? 'Fecha Bloqueada' : 'Local Cerrado'}
-                </p>
+                {currentException?.reason?.toLowerCase().includes('feriado') ? (
+                  <>
+                    <Sparkles className="w-12 h-12 text-primary animate-pulse" />
+                    <p className="text-primary font-black uppercase italic tracking-tight text-3xl">¡Día Feriado!</p>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="w-12 h-12 text-red-500/50" />
+                    <p className="text-red-500 font-black uppercase italic tracking-tight text-lg">
+                      {currentException ? 'Fecha Bloqueada' : 'Local Cerrado'}
+                    </p>
+                  </>
+                )}
                 <p className="text-zinc-500 text-sm font-medium">
                   {currentException 
                     ? (currentException.reason || 'Este local ha bloqueado las reservas para este día.')

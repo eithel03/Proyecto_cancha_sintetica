@@ -46,9 +46,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     },
     appleWebApp: {
       capable: true,
-      statusBarStyle: 'default',
+      statusBarStyle: 'black-translucent',
       title: business.name,
     },
+    other: {
+      'apple-mobile-web-app-capable': 'yes',
+      'mobile-web-app-capable': 'yes',
+    }
   }
 }
 

@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       default: `${business.name} | Admin`,
       template: `%s | ${business.name} Admin`
     },
-    manifest: `/${slug}/admin/manifest.webmanifest`,
+    // manifest: `/${slug}/admin/manifest.webmanifest`,
     icons: {
       icon: business.logo_url || '/favicon.ico',
       apple: business.logo_url || '/favicon.ico',

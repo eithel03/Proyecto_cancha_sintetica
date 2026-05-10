@@ -25,6 +25,12 @@ export default async function SettingsPage() {
     .eq('business_id', business.id)
     .order('exception_date', { ascending: true })
 
+  const { data: courts } = await supabase
+    .from('courts')
+    .select('*')
+    .eq('business_id', business.id)
+    .eq('is_active', true)
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-2">
@@ -38,6 +44,7 @@ export default async function SettingsPage() {
         business={business} 
         initialHours={hours || []} 
         initialExceptions={exceptions || []}
+        courts={courts || []}
       />
     </div>
   )

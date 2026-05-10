@@ -8,14 +8,32 @@ import { Button } from '@/components/ui/button'
 import { updateBusiness } from './actions'
 import { toast } from 'sonner'
 import BusinessHoursManager from './BusinessHoursManager'
-import { Store, Globe, Phone, MapPin, Save, CalendarOff, Plus, Trash2, Search, Map as MapIcon, Palette, Layout, Type, Layers, Upload, Shield } from 'lucide-react'
+import { Store, Globe, Phone, MapPin, Save, CalendarOff, Plus, Trash2, Search, Map as MapIcon, Palette, Layout, Type, Layers, Upload, Shield, Loader2, Clock } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { MapPicker } from '@/components/MapPicker'
 import { MapPreview } from '@/components/MapPreview'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { updateBranding } from './actions'
+import { createAdminReservation } from '../reservations/actions'
+import { checkAvailability } from '../../reservar/actions'
+import { useParams } from 'next/navigation'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { formatTime12h } from '@/lib/utils'
+import { useMemo, useEffect } from 'react'
 
-export default function SettingsClient({ business, initialHours, initialExceptions = [] }: { business: any, initialHours: any[], initialExceptions?: any[] }) {
+export default function SettingsClient({ 
+  business, 
+  initialHours, 
+  initialExceptions = [],
+  courts = []
+}: { 
+  business: any, 
+  initialHours: any[], 
+  initialExceptions?: any[],
+  courts?: any[]
+}) {
+  const params = useParams()
+  const slug = params.slug as string
   const [pending, setPending] = useState(false)
   const [exceptions, setExceptions] = useState<any[]>(initialExceptions)
   const [newExDate, setNewExDate] = useState('')
@@ -32,6 +50,102 @@ export default function SettingsClient({ business, initialHours, initialExceptio
   const [brandingPending, setBrandingPending] = useState(false)
   const [logoUrl, setLogoUrl] = useState(business.logo_url || '')
   const [uploading, setUploading] = useState(false)
+  
+  // Estado para Bloqueo Manual
+  const [manualResData, setManualResData] = useState({
+    court_id: '',
+    date: new Date().toLocaleDateString('sv-SE'),
+    time: '',
+    customer_name: 'BLOQUEO ADMINISTRATIVO',
+    notes: ''
+  })
+  const [manualPending, setManualPending] = useState(false)
+  const [occupiedSlots, setOccupiedSlots] = useState<any[]>([])
+  const [loadingAvailability, setLoadingAvailability] = useState(false)
+
+  // Cargar disponibilidad cuando cambian cancha o fecha
+  useEffect(() => {
+    async function loadBusy() {
+      if (!manualResData.court_id || !manualResData.date) return
+      setLoadingAvailability(true)
+      try {
+        const busy = await checkAvailability(manualResData.court_id, manualResData.date)
+        if (Array.isArray(busy)) {
+          setOccupiedSlots(busy)
+        }
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoadingAvailability(false)
+      }
+    }
+    loadBusy()
+  }, [manualResData.court_id, manualResData.date])
+
+  const isDateBlockedByException = useMemo(() => {
+    return exceptions.find(ex => ex.exception_date === manualResData.date)
+  }, [exceptions, manualResData.date])
+
+  const TIME_OPTIONS = useMemo(() => {
+    if (!manualResData.date || isDateBlockedByException) return []
+    const dayOfWeek = new Date(manualResData.date + 'T12:00:00').getDay()
+    const daySchedule = initialHours.find(h => h.day_of_week === dayOfWeek)
+    
+    if (!daySchedule || daySchedule.is_closed) return []
+    
+    const start = parseInt(daySchedule.open_time.split(':')[0])
+    const end = parseInt(daySchedule.close_time.split(':')[0])
+    
+    const options = []
+    for (let h = start; h <= end - 1; h += 0.5) {
+      const hours = Math.floor(h)
+      const mins = h % 1 === 0 ? '00' : '30'
+      const timeStr = `${hours.toString().padStart(2, '0')}:${mins}`
+      
+      const isBusy = occupiedSlots.some(slot => {
+        const s = slot.start_time.substring(0, 5)
+        const e = slot.end_time.substring(0, 5)
+        return timeStr >= s && timeStr < e
+      })
+      
+      options.push({ time: timeStr, isBusy })
+    }
+    return options
+  }, [manualResData.date, initialHours, occupiedSlots])
+
+  const handleManualBlock = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!manualResData.court_id || !manualResData.date || !manualResData.time) {
+      return toast.error('Completa los campos obligatorios')
+    }
+
+    setManualPending(true)
+    const [h, m] = manualResData.time.split(':').map(Number)
+    const endTime = `${(h + 1).toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:00`
+
+    const result = await createAdminReservation({
+      business_id: business.id,
+      court_id: manualResData.court_id,
+      customer_name: manualResData.customer_name,
+      customer_phone: 'ADMIN',
+      reservation_date: manualResData.date,
+      start_time: manualResData.time + ':00',
+      end_time: endTime,
+      notes: manualResData.notes || 'Bloqueo personalizado desde configuración',
+      slug
+    })
+
+    setManualPending(false)
+    if (result.success) {
+      toast.success('Horario bloqueado correctamente')
+      setManualResData(prev => ({ ...prev, time: '', notes: '' }))
+      // Recargar disponibilidad
+      const busy = await checkAvailability(manualResData.court_id, manualResData.date)
+      if (Array.isArray(busy)) setOccupiedSlots(busy)
+    } else {
+      toast.error(result.error)
+    }
+  }
 
 
   const captureLocation = () => {
@@ -127,11 +241,14 @@ export default function SettingsClient({ business, initialHours, initialExceptio
 
   return (
     <Tabs defaultValue="general" className="space-y-8">
-      <TabsList className="bg-zinc-900/50 p-1 border border-white/5 rounded-2xl h-14 w-full sm:w-auto">
-        <TabsTrigger value="general" className="rounded-xl px-6 gap-2 h-12 data-[state=active]:bg-zinc-800"><Store className="w-4 h-4" /> General</TabsTrigger>
-        <TabsTrigger value="horarios" className="rounded-xl px-6 gap-2 h-12 data-[state=active]:bg-zinc-800"><CalendarOff className="w-4 h-4" /> Horarios</TabsTrigger>
-        <TabsTrigger value="apariencia" className="rounded-xl px-6 gap-2 h-12 data-[state=active]:bg-zinc-800"><Palette className="w-4 h-4" /> Apariencia</TabsTrigger>
-      </TabsList>
+      <div className="w-full overflow-x-auto pb-4 -mb-4 no-scrollbar">
+        <TabsList className="bg-zinc-900/50 p-1 border border-white/5 rounded-2xl h-14 w-max min-w-full sm:w-auto">
+          <TabsTrigger value="general" className="rounded-xl px-4 sm:px-6 gap-2 h-12 data-[state=active]:bg-zinc-800"><Store className="w-4 h-4" /> General</TabsTrigger>
+          <TabsTrigger value="horarios" className="rounded-xl px-4 sm:px-6 gap-2 h-12 data-[state=active]:bg-zinc-800"><CalendarOff className="w-4 h-4" /> Horarios</TabsTrigger>
+          <TabsTrigger value="apariencia" className="rounded-xl px-4 sm:px-6 gap-2 h-12 data-[state=active]:bg-zinc-800"><Palette className="w-4 h-4" /> Apariencia</TabsTrigger>
+          <TabsTrigger value="bloqueos" className="rounded-xl px-4 sm:px-6 gap-2 h-12 data-[state=active]:bg-zinc-800"><Shield className="w-4 h-4 text-primary" /> Reserva Personalizada</TabsTrigger>
+        </TabsList>
+      </div>
 
       <TabsContent value="general" className="space-y-8 focus-visible:outline-none">
         <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-xl">
@@ -424,6 +541,115 @@ export default function SettingsClient({ business, initialHours, initialExceptio
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+      <TabsContent value="bloqueos" className="space-y-8 focus-visible:outline-none">
+        <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-primary">
+              <Shield className="w-5 h-5" /> Reserva Personalizada (Administrador)
+            </CardTitle>
+            <CardDescription>Aparta cupos o bloquea horarios específicos de forma rápida.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleManualBlock} className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2 p-6 rounded-2xl bg-white/5 border border-white/5">
+                <div className="space-y-3">
+                  <Label className="text-xs font-black uppercase tracking-widest text-zinc-500">Elegir Cancha</Label>
+                  <Select value={manualResData.court_id} onValueChange={(v) => setManualResData({...manualResData, court_id: v})}>
+                    <SelectTrigger className="bg-zinc-900 border-white/10 h-12 rounded-xl font-bold">
+                      <SelectValue placeholder="Seleccionar cancha">
+                        {courts.find(c => c.id === manualResData.court_id)?.name || "Seleccionar cancha"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="bg-zinc-900 border-white/10">
+                      {courts.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="text-xs font-black uppercase tracking-widest text-zinc-500">Seleccionar Fecha</Label>
+                  <Input 
+                    type="date" 
+                    value={manualResData.date} 
+                    onChange={(e) => setManualResData({...manualResData, date: e.target.value})}
+                    className="bg-zinc-900 border-white/10 h-12 rounded-xl"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <Label className="text-xs font-black uppercase tracking-widest text-zinc-500">Seleccionar Horario</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
+                  {loadingAvailability ? (
+                    <div className="col-span-full py-12 flex flex-col items-center gap-3 text-zinc-500 border border-dashed border-white/10 rounded-2xl">
+                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                      <p className="text-[10px] font-black uppercase tracking-widest">Verificando disponibilidad...</p>
+                    </div>
+                  ) : isDateBlockedByException ? (
+                    <div className="col-span-full py-12 flex flex-col items-center gap-3 text-red-500 bg-red-500/5 border border-dashed border-red-500/20 rounded-2xl animate-in fade-in zoom-in duration-500">
+                      <CalendarOff className="w-8 h-8" />
+                      <div className="text-center">
+                        <p className="text-sm font-black uppercase tracking-tight">Fecha Bloqueada por Excepción</p>
+                        <p className="text-[10px] font-medium opacity-60 uppercase tracking-widest mt-1">Motivo: {isDateBlockedByException.reason || 'No especificado'}</p>
+                      </div>
+                    </div>
+                  ) : TIME_OPTIONS.length === 0 ? (
+                    <div className="col-span-full py-12 flex flex-col items-center gap-3 text-amber-500 bg-amber-500/5 border border-dashed border-amber-500/20 rounded-2xl">
+                      <Clock className="w-8 h-8 opacity-50" />
+                      <p className="text-[10px] font-black uppercase tracking-widest">El local está cerrado en este día</p>
+                    </div>
+                  ) : (
+                    TIME_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.time}
+                        type="button"
+                        disabled={opt.isBusy}
+                        onClick={() => setManualResData({ ...manualResData, time: opt.time })}
+                        className={`
+                          relative group p-4 rounded-2xl border transition-all duration-300
+                          ${manualResData.time === opt.time 
+                            ? 'bg-primary border-primary text-black scale-105 shadow-lg shadow-primary/20' 
+                            : opt.isBusy
+                              ? 'bg-red-500/10 border-red-500/20 text-red-500/40 cursor-not-allowed'
+                              : 'bg-zinc-900/50 border-white/5 text-zinc-400 hover:border-primary/50 hover:text-primary hover:bg-primary/5'
+                          }
+                        `}
+                      >
+                        <span className="text-xs font-black tracking-tighter">{formatTime12h(opt.time)}</span>
+                        {opt.isBusy && (
+                          <div className="absolute -top-1 -right-1">
+                            <Badge variant="destructive" className="px-1 py-0 h-4 text-[7px] font-black">OCUPADO</Badge>
+                          </div>
+                        )}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-xs font-black uppercase tracking-widest text-zinc-500">Motivo o Nota del Bloqueo</Label>
+                <Input 
+                  placeholder="Ej: Mantenimiento de cancha, Partido de liga predeterminado..." 
+                  value={manualResData.notes} 
+                  onChange={(e) => setManualResData({...manualResData, notes: e.target.value})}
+                  className="bg-zinc-900 border-white/10 h-14 rounded-2xl"
+                />
+              </div>
+
+              <div className="pt-6 border-t border-white/5">
+                <Button 
+                  type="submit" 
+                  disabled={manualPending || !manualResData.time}
+                  className="w-full sm:w-auto px-12 h-14 bg-primary hover:bg-primary/90 text-black font-black uppercase italic tracking-tighter rounded-2xl shadow-xl shadow-primary/20"
+                >
+                  {manualPending ? 'BLOQUEANDO...' : <><Shield className="w-4 h-4 mr-2" /> CONFIRMAR RESERVA PERSONALIZADA</>}
+                </Button>
+              </div>
+            </form>
           </CardContent>
         </Card>
       </TabsContent>

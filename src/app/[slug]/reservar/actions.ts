@@ -1,21 +1,26 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
 export async function checkAvailability(courtId: string, date: string) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
-  // 1. Obtener Reservas
+  // 1. Obtener Reservas (Todas, sin importar RLS)
   const { data: reservations, error: resError } = await supabase
     .from('reservations')
     .select('start_time, end_time, status, notes')
     .eq('court_id', courtId)
     .eq('reservation_date', date)
-    .in('status', ['pending', 'confirmed', 'completed'])
+
+  console.log(`Found ${reservations?.length || 0} reservations`);
+  if (reservations && reservations.length > 0) {
+    console.log('Reservations:', JSON.stringify(reservations));
+  }
 
   if (resError) {
     console.error('Error fetching availability (reservations):', resError)
+    return { error: resError.message }
   }
 
   // 2. Obtener Retos (Abiertos, Aceptados y Confirmados)
@@ -67,12 +72,19 @@ export async function checkAvailability(courtId: string, date: string) {
         away: (m as any).away
       }
     }),
-    ...(reservations || []).map(r => ({
-      start_time: r.start_time,
-      end_time: r.end_time,
-      type: (r.notes && r.notes.includes('Reto')) ? 'confirmed_challenge' : 'reservation',
-      status: r.status
-    })),
+    ...(reservations || []).map(r => {
+      const startParts = r.start_time.split(':')
+      const endParts = r.end_time.split(':')
+      const startNormalized = `${startParts[0].padStart(2, '0')}:${startParts[1] || '00'}:00`
+      const endNormalized = `${endParts[0].padStart(2, '0')}:${endParts[1] || '00'}:00`
+      
+      return {
+        start_time: startNormalized,
+        end_time: endNormalized,
+        type: (r.notes && r.notes.includes('Reto')) ? 'confirmed_challenge' : 'reservation',
+        status: r.status
+      }
+    }),
     ...(challenges || []).map(c => {
       const parts = c.challenge_time.split(':')
       const h = parts[0].padStart(2, '0')
