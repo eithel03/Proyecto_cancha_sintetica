@@ -56,11 +56,11 @@ export default function DashboardLayout({
 
       {/* Sidebar - Adaptable width */}
       <aside className={`
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} 
-        md:translate-x-0 flex flex-col flex-shrink-0
+        ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'} 
+        flex flex-col flex-shrink-0
         w-72 lg:w-64 md:w-20
-        bg-white dark:bg-zinc-900 border-r dark:border-zinc-800
-        fixed md:relative z-[80] h-full top-0 left-0 
+        bg-white dark:bg-zinc-900 border-l md:border-r md:border-l-0 dark:border-zinc-800
+        fixed md:relative z-[80] h-full top-0 right-0 md:right-auto md:left-0
         transition-all duration-300 ease-in-out
       `}>
         <div className="flex items-center justify-between p-6 border-b dark:border-zinc-800 h-16 sm:h-20 flex-shrink-0">

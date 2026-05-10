@@ -31,7 +31,9 @@ export function PWAInstallPrompt({ businessName, businessLogo, slug }: PWAInstal
 
       // Detect platform
       const userAgent = window.navigator.userAgent.toLowerCase()
-      if (/iphone|ipad|ipod/.test(userAgent)) {
+      const isIOS = /iphone|ipad|ipod/.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+      
+      if (isIOS) {
         setPlatform('ios')
       } else if (/android/.test(userAgent)) {
         setPlatform('android')
@@ -114,9 +116,10 @@ export function PWAInstallPrompt({ businessName, businessLogo, slug }: PWAInstal
                 <Button 
                   size="sm"
                   onClick={handleInstallClick}
-                  className="bg-primary text-black hover:bg-primary/90 text-[10px] font-black uppercase tracking-widest h-8 px-4 rounded-lg"
+                  className="bg-primary text-black hover:bg-primary/90 text-[10px] font-black uppercase tracking-widest h-8 px-4 rounded-lg flex items-center gap-2"
                 >
-                  Sí
+                  {platform === 'ios' ? <Apple className="w-3.5 h-3.5" /> : null}
+                  {platform === 'ios' ? 'Instrucciones' : 'Sí'}
                 </Button>
               </div>
             </div>

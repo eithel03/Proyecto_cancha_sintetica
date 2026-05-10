@@ -41,3 +41,48 @@ export async function updateReservationStatus(reservationId: string, status: str
   return { success: true }
 }
 
+export async function createAdminReservation(data: {
+  business_id: string,
+  court_id: string,
+  customer_name: string,
+  customer_phone: string,
+  reservation_date: string,
+  start_time: string,
+  end_time: string,
+  notes?: string,
+  slug?: string
+}) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autorizado' }
+
+  const { error } = await supabase
+    .from('reservations')
+    .insert({
+      business_id: data.business_id,
+      court_id: data.court_id,
+      customer_name: data.customer_name,
+      customer_phone: data.customer_phone,
+      reservation_date: data.reservation_date,
+      start_time: data.start_time,
+      end_time: data.end_time,
+      notes: data.notes,
+      status: 'confirmed' // Las reservas manuales del admin se confirman automáticamente
+    })
+
+  if (error) {
+    if (error.message.includes('ya está reservada')) {
+      return { error: 'Este horario ya está ocupado por otra reserva o partido.' }
+    }
+    return { error: 'Error al crear reserva manual: ' + error.message }
+  }
+
+  revalidatePath('/dashboard/reservations')
+  if (data.slug) {
+    revalidatePath(`/${data.slug}/reservar`, 'page')
+    revalidatePath(`/${data.slug}/reservar`, 'layout')
+  } else {
+    revalidatePath('/[slug]/reservar', 'page')
+  }
+  return { success: true }
+}

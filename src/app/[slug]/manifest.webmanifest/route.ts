@@ -35,9 +35,21 @@ export async function GET(
     icons: [
       {
         src: logo,
+        sizes: '192x192',
+        type: 'image/png',
+        purpose: 'maskable'
+      },
+      {
+        src: logo,
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'maskable'
+      },
+      {
+        src: logo,
         sizes: 'any',
         type: 'image/png',
-        purpose: 'any maskable'
+        purpose: 'any'
       }
     ]
   })

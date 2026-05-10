@@ -1,11 +1,12 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { updateReservationStatus } from './actions'
+import { updateReservationStatus, createAdminReservation } from './actions'
 import { toast } from 'sonner'
-import { MessageCircle, CheckCircle, XCircle, Clock, Calendar, Phone, Mail, StickyNote, FilterX, Trophy, Filter, SortAsc, SortDesc } from 'lucide-react'
+import { MessageCircle, CheckCircle, XCircle, Clock, Calendar, Phone, Mail, StickyNote, FilterX, Trophy, Filter, SortAsc, SortDesc, Plus, Loader2 } from 'lucide-react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useMemo } from 'react'
 import Link from 'next/link'
@@ -18,11 +19,24 @@ import {
   SelectValue 
 } from '@/components/ui/select'
 
-export default function ReservationsClient({ initialReservations }: { initialReservations: any[] }) {
+export default function ReservationsClient({ 
+  initialReservations, 
+  courts, 
+  businessId,
+  businessHours,
+  slug
+}: { 
+  initialReservations: any[], 
+  courts: any[],
+  businessId: string,
+  businessHours: any[],
+  slug: string
+}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const statusFilter = searchParams.get('status')
   const sortFilter = searchParams.get('sort') || 'reciente'
+
 
   const filteredReservations = useMemo(() => {
     let result = initialReservations
@@ -107,13 +121,10 @@ export default function ReservationsClient({ initialReservations }: { initialRes
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-4xl font-black italic uppercase tracking-tighter bg-gradient-to-r from-white to-zinc-500 bg-clip-text text-transparent">Reservas</h2>
-            <p className="text-zinc-500 text-sm font-medium">Gestiona y confirma las solicitudes de tus clientes.</p>
-          </div>
-        </div>
+      <div className="flex flex-col gap-1">
+        <h2 className="text-4xl font-black italic uppercase tracking-tighter bg-gradient-to-r from-white to-zinc-500 bg-clip-text text-transparent">Reservas</h2>
+        <p className="text-zinc-500 text-sm font-medium">Gestiona y confirma las solicitudes de tus clientes.</p>
+      </div>
 
         {/* Barra de Filtros y Orden */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -186,7 +197,6 @@ export default function ReservationsClient({ initialReservations }: { initialRes
             </Select>
           </div>
         </div>
-      </div>
 
       {filteredReservations.length === 0 ? (
         <Card className="border-dashed border-zinc-800 bg-zinc-950/50">

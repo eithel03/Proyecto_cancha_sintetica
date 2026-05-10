@@ -2,7 +2,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import ReservationsClient from './ReservationsClient'
 
-export default async function ReservationsPage() {
+export default async function ReservationsPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -59,9 +60,26 @@ export default async function ReservationsPage() {
     return dateTimeB - dateTimeA // Recientes primero
   })
 
+  const { data: courts } = await supabase
+    .from('courts')
+    .select('*')
+    .eq('business_id', business.id)
+    .eq('is_active', true)
+
+  const { data: hours } = await supabase
+    .from('business_hours')
+    .select('*')
+    .eq('business_id', business.id)
+
   return (
     <div className="space-y-6">
-      <ReservationsClient initialReservations={allEvents} />
+      <ReservationsClient 
+        initialReservations={allEvents} 
+        courts={courts || []} 
+        businessId={business.id}
+        businessHours={hours || []}
+        slug={slug}
+      />
     </div>
   )
 }
