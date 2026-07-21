@@ -650,11 +650,15 @@ export default function TournamentPublicClient({ businessId, matches: initialMat
                                      </span>
                                      <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">{formatTime12h(m.match_time)}</span>
                                    </div>
-                                   <div className="flex items-center gap-3">
-                                      <div className="w-8 h-8 bg-white rounded-xl p-1.5 shadow-xl border border-white/10 group-hover:scale-110 transition-transform">
-                                        {opp?.logo_url ? <img src={opp.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-full h-full text-zinc-200" />}
+                                   <div className="flex items-center gap-2">
+                                      <div className="w-7 h-7 bg-white rounded-lg p-1 shadow-md border border-white/10 flex-shrink-0">
+                                        {selectedTeam.logo_url ? <img src={selectedTeam.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-full h-full text-zinc-300" />}
                                       </div>
-                                      <span className="text-sm sm:text-lg font-black uppercase text-zinc-100 italic tracking-tight">vs {opp?.name}</span>
+                                      <span className="text-[10px] font-black text-zinc-500 italic uppercase">VS</span>
+                                      <div className="w-7 h-7 bg-white rounded-lg p-1 shadow-md border border-white/10 flex-shrink-0">
+                                        {opp?.logo_url ? <img src={opp.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-full h-full text-zinc-300" />}
+                                      </div>
+                                      <span className="text-sm sm:text-lg font-black uppercase text-zinc-100 italic tracking-tight ml-1">{opp?.name}</span>
                                    </div>
                                 </div>
                                 <div className="flex flex-col items-end gap-1">

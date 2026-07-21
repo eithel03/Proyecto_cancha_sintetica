@@ -18,7 +18,7 @@ export async function updateBusiness(formData: FormData) {
   
   if (!name) return { error: 'El nombre es obligatorio' }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('businesses')
     .update({
       name,
@@ -29,13 +29,40 @@ export async function updateBusiness(formData: FormData) {
       logo_url: logo_url || null,
     })
     .eq('id', id)
-    .eq('owner_id', user.id)
+    .select()
 
   if (error) {
     return { error: 'Error al actualizar negocio: ' + error.message }
   }
 
-  revalidatePath('/dashboard/settings')
+  if (!data || data.length === 0) {
+    return { error: 'No tienes permisos para actualizar este negocio o el negocio no existe.' }
+  }
+
+  revalidatePath('/', 'layout')
+  return { success: true }
+}
+
+export async function updateLogo(businessId: string, logoUrl: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autorizado' }
+
+  const { data, error } = await supabase
+    .from('businesses')
+    .update({ logo_url: logoUrl })
+    .eq('id', businessId)
+    .select()
+
+  if (error) {
+    return { error: 'Error al actualizar logo: ' + error.message }
+  }
+
+  if (!data || data.length === 0) {
+    return { error: 'No tienes permisos para actualizar este negocio o el negocio no existe.' }
+  }
+
+  revalidatePath('/', 'layout')
   return { success: true }
 }
 
@@ -63,7 +90,7 @@ export async function updateBusinessHours(businessId: string, hours: any[]) {
     return { error: 'Error al actualizar horarios: ' + error.message }
   }
 
-  revalidatePath('/dashboard/settings')
+  revalidatePath('/', 'layout')
   return { success: true }
 }
 
@@ -80,7 +107,7 @@ export async function createException(data: { business_id: string, exception_dat
 
   if (error) return { error: 'Error al crear excepción: ' + error.message }
   
-  revalidatePath('/dashboard/settings')
+  revalidatePath('/', 'layout')
   return { success: true, data: newException }
 }
 
@@ -96,7 +123,7 @@ export async function deleteException(id: string) {
 
   if (error) return { error: 'Error al eliminar excepción: ' + error.message }
   
-  revalidatePath('/dashboard/settings')
+  revalidatePath('/', 'layout')
   return { success: true }
 }
 
@@ -109,11 +136,9 @@ export async function updateBranding(businessId: string, branding: any) {
     .from('businesses')
     .update({ branding })
     .eq('id', businessId)
-    .eq('owner_id', user.id)
 
   if (error) return { error: 'Error al actualizar apariencia: ' + error.message }
 
-  revalidatePath('/dashboard/settings')
   // Revalidamos todos los paths que podrían usar este branding
   revalidatePath('/', 'layout')
   return { success: true }

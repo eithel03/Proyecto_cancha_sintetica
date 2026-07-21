@@ -30,6 +30,7 @@ export async function createBusinessWithUser(formData: FormData) {
   const bDescription = formData.get('b_description') as string
   const bLatitude = formData.get('b_latitude') as string
   const bLongitude = formData.get('b_longitude') as string
+  const bMaxCourts = formData.get('b_max_courts') as string
 
   // User Data
   const uName = formData.get('u_name') as string
@@ -73,7 +74,8 @@ export async function createBusinessWithUser(formData: FormData) {
       latitude: bLatitude ? parseFloat(bLatitude) : null,
       longitude: bLongitude ? parseFloat(bLongitude) : null,
       owner_id: newUserId,
-      is_active: true
+      is_active: true,
+      max_courts: bMaxCourts ? parseInt(bMaxCourts, 10) : 1
     })
 
     if (businessError) {
