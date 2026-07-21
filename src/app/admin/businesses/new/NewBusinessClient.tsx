@@ -138,6 +138,10 @@ export default function NewBusinessClient() {
                 <Label htmlFor="b_whatsapp">WhatsApp Público</Label>
                 <Input id="b_whatsapp" name="b_whatsapp" placeholder="8888-8888" />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="b_max_courts">Límite de Canchas</Label>
+                <Input id="b_max_courts" name="b_max_courts" type="number" min="1" defaultValue="1" required />
+              </div>
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="b_location">Ubicación</Label>
                 <Input id="b_location" name="b_location" placeholder="Frente al parque..." />

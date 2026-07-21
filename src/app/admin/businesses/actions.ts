@@ -32,6 +32,7 @@ export async function updateBusiness(id: string, data: any) {
       whatsapp: data.whatsapp,
       description: data.description,
       is_active: data.is_active,
+      max_courts: data.max_courts ? parseInt(data.max_courts.toString(), 10) : 1,
       latitude: data.latitude ? parseFloat(data.latitude) : null,
       longitude: data.longitude ? parseFloat(data.longitude) : null
     })

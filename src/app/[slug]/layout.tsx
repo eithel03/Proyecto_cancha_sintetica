@@ -38,8 +38,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       default: business.name,
       template: `%s | ${business.name}`
     },
-    description: `Reserva tu cancha en ${business.name} - La mejor experiencia deportiva.`,
-    manifest: `/${slug}/manifest.webmanifest`,
+    manifest: `/${slug}/manifest.webmanifest?v=${encodeURIComponent(business.logo_url || '1')}`,
     icons: {
       icon: business.logo_url || '/favicon.ico',
       apple: business.logo_url || '/favicon.ico',
