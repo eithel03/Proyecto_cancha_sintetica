@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { MapPicker } from '@/components/MapPicker'
 import { MapPreview } from '@/components/MapPreview'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { updateBranding } from './actions'
+import { updateBranding, updateLogo } from './actions'
 import { createAdminReservation } from '../reservations/actions'
 import { checkAvailability } from '../../reservar/actions'
 import { useParams } from 'next/navigation'
@@ -309,6 +309,15 @@ export default function SettingsClient({
                             .getPublicUrl(fileName)
                             
                           setLogoUrl(publicUrl)
+                          
+                          // Guardamos el logo en la base de datos inmediatamente
+                          const { updateLogo } = await import('./actions')
+                          const updateResult = await updateLogo(business.id, publicUrl)
+                          
+                          if (updateResult.error) {
+                            throw new Error(updateResult.error)
+                          }
+
                           toast.success('Logo actualizado correctamente')
                         } catch (error: any) {
                           toast.error('Error al subir imagen: ' + error.message)
@@ -327,7 +336,7 @@ export default function SettingsClient({
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-0">
                   <Label htmlFor="name" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Nombre del Local</Label>
                   <div className="relative">
                     <Input id="name" name="name" defaultValue={business.name} required className="bg-zinc-900 border-white/10 pl-10" />
@@ -342,14 +351,14 @@ export default function SettingsClient({
                   </div>
                   <p className="text-[10px] text-zinc-500 italic">Identificador utilizado para generar el enlace público del negocio.</p>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-0">
                   <Label htmlFor="phone" className="text-xs font-bold uppercase tracking-widest text-zinc-500">WhatsApp de Contacto</Label>
                   <div className="relative">
                     <Input id="phone" name="phone" type="tel" inputMode="tel" defaultValue={business.phone || ''} className="bg-zinc-900 border-white/10 pl-10" placeholder="88888888 o 8888-8888" />
                     <Phone className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
                   </div>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-0">
                   <Label htmlFor="location" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Ubicación Física</Label>
                   <div className="relative">
                     <Input id="location" name="location" defaultValue={business.location || ''} className="bg-zinc-900 border-white/10 pl-10" placeholder="Ej: 200m Sur de la Iglesia" />
@@ -361,13 +370,13 @@ export default function SettingsClient({
                   <input type="hidden" name="latitude" value={coords.lat} />
                   <input type="hidden" name="longitude" value={coords.lng} />
 
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex items-end gap-2 w-full">
-                      <Button type="button" onClick={() => setIsMapOpen(true)} variant="outline" className="flex-1 border-blue-500/50 text-blue-500 hover:bg-blue-500/10 h-12 rounded-xl">
-                        <MapIcon className="w-4 h-4 mr-2" /> Seleccionar Ubicación en Mapa
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col sm:flex-row gap-2 w-full">
+                      <Button type="button" onClick={() => setIsMapOpen(true)} variant="outline" className="flex-1 border-blue-500/50 text-blue-500 hover:bg-blue-500/10 h-12 rounded-xl px-2 text-xs sm:text-sm whitespace-normal h-auto py-2">
+                        <MapIcon className="w-4 h-4 mr-1 sm:mr-2 flex-shrink-0" /> <span className="flex-1 text-left">Seleccionar en Mapa</span>
                       </Button>
-                      <Button type="button" onClick={captureLocation} variant="outline" className="flex-1 border-primary/50 text-primary hover:bg-primary/10 h-12 rounded-xl">
-                        <MapPin className="w-4 h-4 mr-2" /> Usar GPS del Dispositivo
+                      <Button type="button" onClick={captureLocation} variant="outline" className="flex-1 border-primary/50 text-primary hover:bg-primary/10 h-12 rounded-xl px-2 text-xs sm:text-sm whitespace-normal h-auto py-2">
+                        <MapPin className="w-4 h-4 mr-1 sm:mr-2 flex-shrink-0" /> <span className="flex-1 text-left">Usar GPS del Móvil</span>
                       </Button>
                     </div>
                   </div>

@@ -45,6 +45,7 @@ export function BusinessActions({ business }: { business: any }) {
     whatsapp: business.whatsapp || '',
     description: business.description || '',
     is_active: business.is_active,
+    max_courts: business.max_courts ?? 1,
     latitude: business.latitude || '',
     longitude: business.longitude || '',
     owner_id: business.owner_id,
@@ -177,6 +178,10 @@ export function BusinessActions({ business }: { business: any }) {
                   <div className="space-y-2">
                     <Label htmlFor="whatsapp">WhatsApp Público</Label>
                     <Input id="whatsapp" name="whatsapp" type="tel" inputMode="tel" placeholder="88888888 o 8888-8888" value={formData.whatsapp} onChange={handleChange} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="max_courts">Límite de Canchas</Label>
+                    <Input id="max_courts" name="max_courts" type="number" min="1" value={formData.max_courts} onChange={handleChange} required />
                   </div>
                   <div className="col-span-2 space-y-2">
                     <Label htmlFor="location">Ubicación (Texto)</Label>

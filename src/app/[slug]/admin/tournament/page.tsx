@@ -37,7 +37,7 @@ export default async function TournamentPage() {
   // Fetch matches
   const { data: matches } = await supabase
     .from('tournament_matches')
-    .select('*, home:home_team_id(name, gender), away:away_team_id(name, gender), court:court_id(name)')
+    .select('*, home:home_team_id(name, logo_url, gender), away:away_team_id(name, logo_url, gender), court:court_id(name)')
     .eq('business_id', business.id)
     .order('match_date', { ascending: false })
 
@@ -47,6 +47,12 @@ export default async function TournamentPage() {
     .select('id, name')
     .eq('business_id', business.id)
     .eq('is_active', true)
+
+  // Fetch stats (match events) for team details
+  const { data: stats } = await supabase
+    .from('tournament_match_events')
+    .select('*, player:player_id(first_name, last_name, team_id), team:team_id(name)')
+    .eq('business_id', business.id)
 
   return (
     <div className="space-y-6">
@@ -61,6 +67,7 @@ export default async function TournamentPage() {
         initialPlayers={players || []}
         initialMatches={matches || []}
         courts={courts || []}
+        stats={stats || []}
       />
     </div>
   )

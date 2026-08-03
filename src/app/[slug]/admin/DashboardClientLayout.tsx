@@ -111,7 +111,7 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 w-full overflow-y-auto bg-gray-50 dark:bg-zinc-950 pt-16 md:pt-0">
+      <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-gray-50 dark:bg-zinc-950 pt-16 md:pt-0">
         <div className="p-4 md:p-8 lg:p-12 max-w-7xl mx-auto">
           {children}
         </div>

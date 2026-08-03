@@ -17,6 +17,24 @@ export async function createCourt(formData: FormData) {
   
   if (!name || !pricePerPerson) return { error: 'Nombre y precio por persona son obligatorios' }
 
+  // Verificar límite de canchas
+  const { data: business } = await supabase
+    .from('businesses')
+    .select('max_courts')
+    .eq('id', businessId)
+    .single()
+
+  const maxCourts = business?.max_courts || 1
+
+  const { count } = await supabase
+    .from('courts')
+    .select('*', { count: 'exact', head: true })
+    .eq('business_id', businessId)
+
+  if (count !== null && count >= maxCourts) {
+    return { error: 'Has alcanzado el límite máximo de canchas permitidas. Contacta a soporte para ampliar tu plan.' }
+  }
+
   const { error } = await supabase
     .from('courts')
     .insert({
