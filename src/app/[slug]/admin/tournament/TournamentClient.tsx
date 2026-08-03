@@ -403,7 +403,7 @@ export default function TournamentClient({
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="captain_phone">Teléfono del Capitán</Label>
-                      <Input id="captain_phone" name="captain_phone" defaultValue={editingTeam?.captain_phone} placeholder="Ej: 8888-9999" />
+                      <Input id="captain_phone" name="captain_phone" type="tel" inputMode="tel" defaultValue={editingTeam?.captain_phone} placeholder="Ej: 88888888 o 8888-8888" />
                     </div>
                     {!editingTeam && (
                       <div className="space-y-2">
@@ -673,9 +673,9 @@ export default function TournamentClient({
       <TabsContent value="matches">
         <Card className="border-zinc-800/60 bg-[#0a0a0a]/80 backdrop-blur-xl shadow-2xl overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-800/60 bg-zinc-950/50">
-            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 w-full">
               <Select value={matchStatusFilter} onValueChange={(v) => setMatchStatusFilter(v || 'all')}>
-                <SelectTrigger className="w-full sm:w-44 bg-zinc-900/50 border-zinc-800 h-10 text-xs font-bold uppercase tracking-widest">
+                <SelectTrigger className="w-full sm:w-[190px] shrink-0 bg-zinc-900/50 border-zinc-800 h-10 text-xs font-bold uppercase tracking-widest">
                   <SelectValue placeholder="Estado">
                     {(val: any) => {
                       const statusMap: Record<string, string> = { 
@@ -701,7 +701,7 @@ export default function TournamentClient({
               </Select>
 
               <Select value={matchDateSort} onValueChange={(v) => setMatchDateSort(v || 'desc')}>
-                <SelectTrigger className="w-full sm:w-48 bg-zinc-900/50 border-zinc-800 h-10 text-xs font-bold uppercase tracking-widest">
+                <SelectTrigger className="w-full sm:w-[240px] shrink-0 bg-zinc-900/50 border-zinc-800 h-10 text-xs font-bold uppercase tracking-widest">
                   <div className="flex items-center gap-2">
                     <Timer className="w-3.5 h-3.5" />
                     <SelectValue placeholder="Orden Fecha">
@@ -716,7 +716,7 @@ export default function TournamentClient({
               </Select>
 
               <Dialog open={isMatchDialogOpen} onOpenChange={(val) => { setIsMatchDialogOpen(val); if(!val) { setEditingMatch(null); setMatchTime(''); } }}>
-                <DialogTrigger render={<Button className="gap-2 shrink-0"><Plus className="w-4 h-4" /> Nuevo Partido</Button>} />
+                <DialogTrigger render={<Button className="w-full sm:w-auto gap-2 shrink-0"><Plus className="w-4 h-4" /> Nuevo Partido</Button>} />
               <DialogContent className="max-w-md">
                 <div key={editingMatch?.id || 'new-match'}>
                   <form onSubmit={handleMatchSubmit}>
@@ -811,10 +811,10 @@ export default function TournamentClient({
                           <Label className="text-[10px]">Minuto</Label>
                           <Input name="current_minute" type="number" defaultValue={editingMatch?.current_minute || 0} />
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-1 col-span-3 sm:col-span-2">
                           <Label className="text-[10px]">Estado</Label>
                           <Select name="status" defaultValue={editingMatch?.status || 'scheduled'}>
-                            <SelectTrigger className="w-full">
+                            <SelectTrigger className="w-full min-w-0">
                               <SelectValue placeholder="Estado">
                                 {(val: any) => {
                                   const statusMap: Record<string, string> = { scheduled: 'Programado', live: 'En Vivo', halftime: 'Entretiempo', finished: 'Finalizado', cancelled: 'Cancelado' };
