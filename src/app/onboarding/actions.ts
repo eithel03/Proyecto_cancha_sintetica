@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { validatePhone } from '@/lib/phone'
 
 export async function createBusiness(formData: FormData) {
   const supabase = await createClient()
@@ -18,6 +19,8 @@ export async function createBusiness(formData: FormData) {
   const slug = formData.get('slug') as string
   const phone = formData.get('phone') as string
   const location = formData.get('location') as string
+  const businessPhone = validatePhone(phone)
+  if (!businessPhone.ok) return { error: businessPhone.error }
 
   // Insert the business
   const { data: business, error } = await supabase
@@ -25,7 +28,7 @@ export async function createBusiness(formData: FormData) {
     .insert({
       name,
       slug,
-      phone,
+      phone: businessPhone.value,
       location,
       owner_id: user.id
     })

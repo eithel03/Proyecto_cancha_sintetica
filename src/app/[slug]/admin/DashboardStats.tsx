@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, type ReactNode } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Calendar, Swords, Clock, TrendingUp, Filter, CalendarDays, CalendarRange } from 'lucide-react'
+import { Calendar, Swords, Clock, TrendingUp, CalendarDays, CalendarRange, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
@@ -10,11 +10,19 @@ import { useParams } from 'next/navigation'
 type FilterType = 'day' | 'week' | 'month'
 
 interface DashboardStatsProps {
-  reservations: any[]
-  challenges: any[]
+  reservations: Array<{
+    status: string | null
+    reservation_date: string
+  }>
+  challenges: Array<{
+    status: string | null
+    challenge_date: string
+  }>
+  headerContent?: ReactNode
+  summaryCards?: ReactNode
 }
 
-export function DashboardStats({ reservations, challenges }: DashboardStatsProps) {
+export function DashboardStats({ reservations, challenges, headerContent, summaryCards }: DashboardStatsProps) {
   const [filter, setFilter] = useState<FilterType>('week')
   const params = useParams()
   const slug = params.slug as string
@@ -61,23 +69,23 @@ export function DashboardStats({ reservations, challenges }: DashboardStatsProps
     }
   }, [reservations, challenges, filter])
 
-  const filterOptions: { id: FilterType; label: string; icon: any }[] = [
+  const filterOptions: { id: FilterType; label: string; icon: LucideIcon }[] = [
     { id: 'day', label: 'Hoy', icon: Clock },
     { id: 'week', label: 'Semana', icon: CalendarDays },
     { id: 'month', label: 'Mes', icon: CalendarRange },
   ]
 
   return (
-    <div className="space-y-6">
-      {/* Filtros */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 px-1 py-1 bg-zinc-900/50 border border-white/5 rounded-2xl backdrop-blur-md">
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        {headerContent}
+        <div className="flex w-fit max-w-full items-center gap-1 px-1 py-1 bg-zinc-900/50 border border-white/5 rounded-2xl backdrop-blur-md">
           {filterOptions.map((opt) => (
             <button
               key={opt.id}
               onClick={() => setFilter(opt.id)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300",
+                "flex shrink-0 items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300",
                 filter === opt.id 
                   ? "bg-primary text-black shadow-lg shadow-primary/20 scale-[1.02]" 
                   : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
@@ -89,6 +97,8 @@ export function DashboardStats({ reservations, challenges }: DashboardStatsProps
           ))}
         </div>
       </div>
+
+      {summaryCards}
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Card de Reservas */}
@@ -115,11 +125,11 @@ export function DashboardStats({ reservations, challenges }: DashboardStatsProps
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 space-y-1">
+                <div className="min-h-[88px] p-4 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 space-y-1">
                   <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500/60 text-center">Confirmadas</p>
                   <p className="text-2xl font-black text-emerald-500 text-center">{stats.reservations.confirmed}</p>
                 </div>
-                <div className="p-4 rounded-3xl bg-zinc-900/50 border border-white/5 space-y-1">
+                <div className="min-h-[88px] p-4 rounded-3xl bg-zinc-900/50 border border-white/5 space-y-1">
                   <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center">Pendientes</p>
                   <p className="text-2xl font-black text-white text-center">{stats.reservations.pending}</p>
                 </div>
@@ -151,18 +161,18 @@ export function DashboardStats({ reservations, challenges }: DashboardStatsProps
                 <span className="text-zinc-500 font-black uppercase italic tracking-widest text-xs">Publicados</span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                <div className="p-3 rounded-2xl bg-blue-500/5 border border-blue-500/10 space-y-1 text-center">
-                  <p className="text-[8px] font-black uppercase tracking-tighter text-blue-500/60">Abiertos</p>
-                  <p className="text-xl font-black text-blue-500">{stats.challenges.open}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="min-h-[88px] p-4 rounded-3xl bg-blue-500/5 border border-blue-500/10 space-y-1 text-center">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-500/60">Abiertos</p>
+                  <p className="text-2xl font-black text-blue-500">{stats.challenges.open}</p>
                 </div>
-                <div className="p-3 rounded-2xl bg-amber-500/5 border border-amber-500/10 space-y-1 text-center">
-                  <p className="text-[8px] font-black uppercase tracking-tighter text-amber-500/60">Aceptados</p>
-                  <p className="text-xl font-black text-amber-500">{stats.challenges.accepted}</p>
+                <div className="min-h-[88px] p-4 rounded-3xl bg-amber-500/5 border border-amber-500/10 space-y-1 text-center">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-amber-500/60">Aceptados</p>
+                  <p className="text-2xl font-black text-amber-500">{stats.challenges.accepted}</p>
                 </div>
-                <div className="p-3 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 space-y-1 text-center">
-                  <p className="text-[8px] font-black uppercase tracking-tighter text-emerald-500/60">Confirm.</p>
-                  <p className="text-xl font-black text-emerald-500">{stats.challenges.confirmed}</p>
+                <div className="min-h-[88px] p-4 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 space-y-1 text-center">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500/60">Confirmados</p>
+                  <p className="text-2xl font-black text-emerald-500">{stats.challenges.confirmed}</p>
                 </div>
               </div>
             </CardContent>

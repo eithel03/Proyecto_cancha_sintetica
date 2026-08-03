@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+printf "\n# Test and performance outputs\nplaywright-report/\ntest-results/\nk6-next-dev.err.log\nk6-next-dev.out.log\n" >> .gitignore
+# Test and performance outputs
+playwright-report/
+test-results/
+k6-next-dev.err.log
+k6-next-dev.out.log

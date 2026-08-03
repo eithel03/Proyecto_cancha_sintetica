@@ -130,7 +130,7 @@ export function BusinessActions({ business }: { business: any }) {
             <DropdownMenuItem 
               onClick={async () => {
                 const newStatus = !business.is_active;
-                const res = await updateBusiness(business.id, { ...business, is_active: newStatus });
+                const res = await updateBusiness(business.id, { ...business, is_active: newStatus, _skipPhoneValidation: true });
                 if (res.error) toast.error(res.error);
                 else toast.success(newStatus ? 'Negocio activado' : 'Negocio bloqueado');
               }}
@@ -167,16 +167,17 @@ export function BusinessActions({ business }: { business: any }) {
                     <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="slug">Slug</Label>
+                    <Label htmlFor="slug">Portal público</Label>
                     <Input id="slug" name="slug" value={formData.slug} onChange={handleChange} required />
+                    <p className="text-[10px] text-zinc-500">Identificador utilizado para generar el enlace público del negocio.</p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Teléfono Fijo</Label>
-                    <Input id="phone" name="phone" value={formData.phone} onChange={handleChange} />
+                    <Input id="phone" name="phone" type="tel" inputMode="tel" placeholder="24600000 o 2460-0000" value={formData.phone} onChange={handleChange} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="whatsapp">WhatsApp Público</Label>
-                    <Input id="whatsapp" name="whatsapp" value={formData.whatsapp} onChange={handleChange} />
+                    <Input id="whatsapp" name="whatsapp" type="tel" inputMode="tel" placeholder="88888888 o 8888-8888" value={formData.whatsapp} onChange={handleChange} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="max_courts">Límite de Canchas</Label>
@@ -230,7 +231,7 @@ export function BusinessActions({ business }: { business: any }) {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="owner_phone">Teléfono Personal</Label>
-                    <Input id="owner_phone" name="owner_phone" value={formData.owner_phone} onChange={handleChange} />
+                    <Input id="owner_phone" name="owner_phone" type="tel" inputMode="tel" placeholder="88888888 o 8888-8888" value={formData.owner_phone} onChange={handleChange} />
                   </div>
                 </div>
               </div>

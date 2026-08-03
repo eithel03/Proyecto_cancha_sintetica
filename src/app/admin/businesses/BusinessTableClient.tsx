@@ -22,7 +22,7 @@ export function BusinessTableClient({ businesses }: { businesses: any[] }) {
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar negocio, dueño o slug..."
+          placeholder="Buscar negocio, dueño o portal público..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-9 bg-zinc-900/50 border-white/5 h-10 rounded-xl"
@@ -36,7 +36,7 @@ export function BusinessTableClient({ businesses }: { businesses: any[] }) {
               <thead className="bg-white/5 border-b border-white/5">
                 <tr>
                   <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-muted-foreground text-center">Logo</th>
-                  <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-muted-foreground">Nombre / Slug</th>
+                  <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-muted-foreground">Nombre / Portal público</th>
                   <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-muted-foreground text-center">Canchas</th>
                   <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-muted-foreground text-center">Reservas Hoy</th>
                   <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-muted-foreground">Dueño / Contacto</th>

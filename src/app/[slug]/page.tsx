@@ -79,12 +79,12 @@ export default async function PublicBusinessPage({ params }: PageProps) {
             />
         </div>
 
-        <div className="relative z-10 max-w-4xl mx-auto space-y-4 sm:space-y-6">
+        <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col items-center justify-center space-y-4 sm:space-y-6">
           <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-white/5 border border-white/10 text-zinc-400 text-[8px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em]">
             <Flag className="w-3 h-3 text-primary" /> Complejo Deportivo
           </div>
           
-          <h1 className="text-5xl sm:text-7xl md:text-9xl font-black italic tracking-tighter uppercase text-white leading-[0.85] sm:leading-tight px-2">
+          <h1 className="w-full max-w-full mx-auto px-2 text-center text-[clamp(2.2rem,8vw,7rem)] sm:text-[clamp(3rem,6.5vw,8rem)] font-black italic tracking-tight sm:tracking-tighter uppercase text-white leading-none text-balance break-words">
             {business.name}
           </h1>
           

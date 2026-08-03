@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { validatePhone } from '@/lib/phone'
 
 export async function updateProfile(formData: FormData) {
   const supabase = await createClient()
@@ -10,12 +11,14 @@ export async function updateProfile(formData: FormData) {
 
   const fullName = formData.get('full_name') as string
   const phone = formData.get('phone') as string
+  const profilePhone = validatePhone(phone)
+  if (!profilePhone.ok) return { error: profilePhone.error }
 
   const { data, error } = await supabase
     .from('profiles')
     .update({ 
       full_name: fullName, 
-      phone: phone 
+      phone: profilePhone.value
     })
     .eq('id', user.id)
     .select()

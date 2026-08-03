@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { validatePhone } from '@/lib/phone'
 
 export async function updateBusiness(formData: FormData) {
   const supabase = await createClient()
@@ -17,12 +18,14 @@ export async function updateBusiness(formData: FormData) {
   const logo_url = formData.get('logo_url') as string
   
   if (!name) return { error: 'El nombre es obligatorio' }
+  const businessPhone = validatePhone(phone)
+  if (!businessPhone.ok) return { error: businessPhone.error }
 
   const { data, error } = await supabase
     .from('businesses')
     .update({
       name,
-      phone,
+      phone: businessPhone.value,
       location,
       latitude: latitude ? parseFloat(latitude) : null,
       longitude: longitude ? parseFloat(longitude) : null,

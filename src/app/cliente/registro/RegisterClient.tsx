@@ -76,7 +76,7 @@ export default function RegisterClient() {
               <div className="flex items-center justify-center px-3 rounded-md bg-gray-100 border border-gray-200 text-gray-500 text-sm font-bold">
                 +506
               </div>
-              <Input id="phone" name="phone" type="tel" placeholder="8888 8888" required className="flex-1" />
+              <Input id="phone" name="phone" type="tel" inputMode="tel" placeholder="88888888 o 8888-8888" required className="flex-1" />
             </div>
           </div>
           <div className="space-y-2">

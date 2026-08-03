@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { validatePhone } from '@/lib/phone'
 
 // --- EQUIPOS ---
 
@@ -18,6 +19,9 @@ export async function upsertTeam(formData: FormData) {
     logo_url: formData.get('logo_url') as string,
     gender: formData.get('gender') as string || 'masculino',
   }
+  const captainPhone = validatePhone(data.captain_phone)
+  if (!captainPhone.ok) return { error: captainPhone.error }
+  data.captain_phone = captainPhone.value
 
   let error
   if (id) {

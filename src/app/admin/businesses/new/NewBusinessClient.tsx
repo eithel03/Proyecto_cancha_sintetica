@@ -114,7 +114,7 @@ export default function NewBusinessClient() {
                 <Input id="b_name" name="b_name" required placeholder="Sintética Pital" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="b_slug">Slug (Enlace Público)</Label>
+                <Label htmlFor="b_slug">Portal público</Label>
                 <div className="flex rounded-md shadow-sm">
                   <span className="inline-flex items-center rounded-l-md border border-r-0 border-gray-300 px-3 text-gray-500 sm:text-sm bg-gray-50 dark:bg-zinc-800 dark:border-zinc-700">
                     /
@@ -129,14 +129,15 @@ export default function NewBusinessClient() {
                     required
                   />
                 </div>
+                <p className="text-[10px] text-zinc-500">Identificador utilizado para generar el enlace público del negocio.</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="b_phone">Teléfono Fijo</Label>
-                <Input id="b_phone" name="b_phone" placeholder="2460-0000" />
+                <Input id="b_phone" name="b_phone" type="tel" inputMode="tel" placeholder="24600000 o 2460-0000" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="b_whatsapp">WhatsApp Público</Label>
-                <Input id="b_whatsapp" name="b_whatsapp" placeholder="8888-8888" />
+                <Input id="b_whatsapp" name="b_whatsapp" type="tel" inputMode="tel" placeholder="88888888 o 8888-8888" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="b_max_courts">Límite de Canchas</Label>
@@ -200,7 +201,7 @@ export default function NewBusinessClient() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="u_phone">Teléfono Personal</Label>
-                <Input id="u_phone" name="u_phone" placeholder="8888-8888" />
+                <Input id="u_phone" name="u_phone" type="tel" inputMode="tel" placeholder="88888888 o 8888-8888" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="u_email">Correo Electrónico (Login)</Label>
