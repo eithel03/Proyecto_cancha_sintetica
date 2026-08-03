@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { validatePhone } from '@/lib/phone'
 
 export async function loginCustomer(formData: FormData) {
   const supabase = await createClient()
@@ -61,6 +62,8 @@ export async function registerCustomer(formData: FormData) {
   const redirectTo = formData.get('redirectTo') as string
   
   const fullName = `${firstName} ${lastName}`.trim()
+  const customerPhone = validatePhone(phone, { required: true })
+  if (!customerPhone.ok) return { error: customerPhone.error }
 
   const { data: authData, error } = await supabase.auth.signUp({
     email,
@@ -70,7 +73,7 @@ export async function registerCustomer(formData: FormData) {
         first_name: firstName,
         last_name: lastName,
         full_name: fullName,
-        phone: phone,
+        phone: customerPhone.value,
         role: 'customer',
       },
       // Important: don't let supabase redirect to its default site
@@ -86,7 +89,7 @@ export async function registerCustomer(formData: FormData) {
     // Explicitly update profile to ensure phone and role are correct
     // (The trigger handles creation, but we want to be 100% sure about the phone)
     await supabase.from('profiles').update({
-      phone: phone,
+      phone: customerPhone.value,
       first_name: firstName,
       last_name: lastName,
       full_name: fullName,

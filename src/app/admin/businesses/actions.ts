@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { validatePhone } from '@/lib/phone'
 
 export async function updateBusiness(id: string, data: any) {
   const supabase = await createClient()
@@ -20,6 +21,14 @@ export async function updateBusiness(id: string, data: any) {
   if (profile?.role !== 'super_admin') return { error: 'Acceso denegado' }
 
   const adminClient = createAdminClient()
+  const businessPhone = data._skipPhoneValidation ? { value: data.phone } : validatePhone(data.phone)
+  if ('ok' in businessPhone && !businessPhone.ok) return { error: businessPhone.error }
+
+  const whatsapp = data._skipPhoneValidation ? { value: data.whatsapp } : validatePhone(data.whatsapp)
+  if ('ok' in whatsapp && !whatsapp.ok) return { error: whatsapp.error }
+
+  const ownerPhone = data._skipPhoneValidation ? { value: data.owner_phone } : validatePhone(data.owner_phone)
+  if ('ok' in ownerPhone && !ownerPhone.ok) return { error: ownerPhone.error }
 
   // Actualizar negocio
   const { error: bizError } = await adminClient
@@ -28,8 +37,8 @@ export async function updateBusiness(id: string, data: any) {
       name: data.name,
       slug: data.slug,
       location: data.location,
-      phone: data.phone,
-      whatsapp: data.whatsapp,
+      phone: businessPhone.value,
+      whatsapp: whatsapp.value,
       description: data.description,
       is_active: data.is_active,
       latitude: data.latitude ? parseFloat(data.latitude) : null,
@@ -48,7 +57,7 @@ export async function updateBusiness(id: string, data: any) {
       .from('profiles')
       .update({
         full_name: data.owner_name,
-        phone: data.owner_phone
+        phone: ownerPhone.value
       })
       .eq('id', data.owner_id)
     

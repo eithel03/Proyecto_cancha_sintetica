@@ -335,17 +335,17 @@ export default function SettingsClient({
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="slug" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Enlace Personalizado</Label>
+                  <Label htmlFor="slug" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Portal público</Label>
                   <div className="relative">
                     <Input id="slug" defaultValue={business.slug} disabled className="bg-zinc-900/50 border-white/5 pl-10 text-zinc-500" />
                     <Globe className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
                   </div>
-                  <p className="text-[10px] text-zinc-500 italic">Este enlace es único y no se puede cambiar.</p>
+                  <p className="text-[10px] text-zinc-500 italic">Identificador utilizado para generar el enlace público del negocio.</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="text-xs font-bold uppercase tracking-widest text-zinc-500">WhatsApp de Contacto</Label>
                   <div className="relative">
-                    <Input id="phone" name="phone" defaultValue={business.phone || ''} className="bg-zinc-900 border-white/10 pl-10" placeholder="8888 8888" />
+                    <Input id="phone" name="phone" type="tel" inputMode="tel" defaultValue={business.phone || ''} className="bg-zinc-900 border-white/10 pl-10" placeholder="88888888 o 8888-8888" />
                     <Phone className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
                   </div>
                 </div>

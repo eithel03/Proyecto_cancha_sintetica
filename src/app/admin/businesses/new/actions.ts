@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { validatePhone } from '@/lib/phone'
 
 export async function createBusinessWithUser(formData: FormData) {
   const supabase = await createClient()
@@ -41,6 +42,15 @@ export async function createBusinessWithUser(formData: FormData) {
     return { error: 'Faltan campos obligatorios' }
   }
 
+  const businessPhone = validatePhone(bPhone)
+  if (!businessPhone.ok) return { error: businessPhone.error }
+
+  const whatsapp = validatePhone(bWhatsapp)
+  if (!whatsapp.ok) return { error: whatsapp.error }
+
+  const userPhone = validatePhone(uPhone)
+  if (!userPhone.ok) return { error: userPhone.error }
+
   try {
     // 1. Create the user using Admin API (bypasses Auth policies and doesn't sign us out)
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
@@ -60,15 +70,15 @@ export async function createBusinessWithUser(formData: FormData) {
     // 2. The trigger `on_auth_user_created` will automatically create the profile.
     // Wait briefly to ensure trigger finishes or we could manually update if needed.
     // We update the profile to set the phone number if needed.
-    await adminClient.from('profiles').update({ phone: uPhone, role: 'owner' }).eq('id', newUserId)
+    await adminClient.from('profiles').update({ phone: userPhone.value, role: 'owner' }).eq('id', newUserId)
 
     // 3. Create the business
     const { error: businessError } = await adminClient.from('businesses').insert({
       name: bName,
       slug: bSlug,
       location: bLocation,
-      phone: bPhone,
-      whatsapp: bWhatsapp,
+      phone: businessPhone.value,
+      whatsapp: whatsapp.value,
       description: bDescription,
       latitude: bLatitude ? parseFloat(bLatitude) : null,
       longitude: bLongitude ? parseFloat(bLongitude) : null,

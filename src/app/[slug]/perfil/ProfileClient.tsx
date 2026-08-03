@@ -193,7 +193,7 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest ml-1">Teléfono Móvil (+506)</Label>
                     <div className="relative">
-                      <Input name="phone" defaultValue={profile.phone} className="bg-zinc-900/50 border-white/10 h-12 sm:h-14 pl-12 font-bold text-base sm:text-lg rounded-xl sm:rounded-2xl focus:ring-primary/20" />
+                      <Input name="phone" type="tel" inputMode="tel" defaultValue={profile.phone} placeholder="88888888 o 8888-8888" className="bg-zinc-900/50 border-white/10 h-12 sm:h-14 pl-12 font-bold text-base sm:text-lg rounded-xl sm:rounded-2xl focus:ring-primary/20" />
                       <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                     </div>
                   </div>
