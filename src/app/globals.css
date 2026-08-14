@@ -7,6 +7,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-secondary: var(--surface-secondary);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
@@ -26,6 +28,9 @@
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -35,6 +40,31 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-brand-green: var(--brand-green);
+  --color-brand-green-hover: var(--brand-green-hover);
+  --color-brand-green-dark: var(--brand-green-dark);
+  --color-brand-yellow: var(--brand-yellow);
+  --color-brand-yellow-hover: var(--brand-yellow-hover);
+  --color-brand-yellow-foreground: var(--brand-yellow-foreground);
+  --color-primary-green: var(--primary-green);
+  --color-primary-green-hover: var(--primary-green-hover);
+  --color-primary-green-dark: var(--primary-green-dark);
+  --color-primary-green-light: var(--primary-green-light);
+  --color-primary-green-subtle: var(--primary-green-subtle);
+  --color-navy: var(--navy);
+  --color-navy-soft: var(--navy-soft);
+  --color-gold: var(--gold);
+  --color-green-50: #ECFDF5;
+  --color-green-100: #D1FAE5;
+  --color-green-200: #A7F3D0;
+  --color-green-300: #6EE7B7;
+  --color-green-400: #34D399;
+  --color-green-500: #10B981;
+  --color-green-600: #047857;
+  --color-green-700: #036B4E;
+  --color-green-800: #065F46;
+  --color-green-900: #064E3B;
+  --color-green-950: #022C22;
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -48,49 +78,164 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ============================================================
+   LIGHT MODE — Portal del cliente
+   Paleta deportiva: crema + verde + amarillo/dorado + navy
+   ============================================================ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.627 0.194 149.214); /* Emerald Green 500 */
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.962 0.018 172.314); /* Green 50 */
-  --secondary-foreground: oklch(0.384 0.136 151.726); /* Emerald Green 800 */
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.962 0.018 172.314);
-  --accent-foreground: oklch(0.384 0.136 151.726);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.627 0.194 149.214);
-  --chart-1: oklch(0.627 0.194 149.214);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  color-scheme: light;
+
+  --background: #F8F5EE;
+  --surface: #F1EDE3;
+  --surface-secondary: #E9E4D8;
+  --foreground: #071E24;
+  --card: #FFFFFF;
+  --card-foreground: #071E24;
+  --popover: #FFFFFF;
+  --popover-foreground: #071E24;
+
+  --primary: #047857;
+  --primary-hover: #036B4E;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #F1EDE3;
+  --secondary-foreground: #071E24;
+  --muted: #F1EDE3;
+  --muted-foreground: #66777D;
+  --accent: #E7F6F0;
+  --accent-foreground: #064E3B;
+
+  --destructive: #C4503A;
+  --success: #047857;
+  --warning: #D4A00A;
+  --info: #3B6FA0;
+
+  --border: #E3DED5;
+  --input: #DCD6C8;
+  --ring: #047857;
+
+  --navy: #08262D;
+  --navy-soft: #0D3037;
+  --gold: #F5BF16;
+
+  /* Portal público tokens */
+  --portal-cream: #F8F5EE;
+  --portal-card: #FFFFFF;
+  --portal-border: #E3DED5;
+  --portal-text: #071E24;
+  --portal-text-muted: #66777D;
+  --portal-green: #047857;
+  --portal-green-light: #E7F6F0;
+  --portal-gold: #F5BF16;
+  --portal-gold-light: #FFF5CD;
+  --portal-navy: #08262D;
+  --portal-navy-light: #0D3037;
+
+  --brand-green: #047857;
+  --brand-green-hover: #036B4E;
+  --brand-green-dark: #035C45;
+  --brand-yellow: #F5BF16;
+  --brand-yellow-hover: #FFD04A;
+  --brand-yellow-foreground: #0B3B2E;
+
+  /* Verde de selección / estado activo (tabs, segmentos, positivo) */
+  --primary-green: #047857;
+  --primary-green-hover: #036B4E;
+  --primary-green-dark: #065F46;
+  --primary-green-light: #E7F6F0;
+  --primary-green-subtle: #ECF8F3;
+
+  --chart-1: #047857;
+  --chart-2: #059669;
+  --chart-3: #F5BF16;
+  --chart-4: #3B6FA0;
+  --chart-5: #66777D;
+
   --radius: 0.75rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.627 0.194 149.214);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.962 0.018 172.314);
-  --sidebar-accent-foreground: oklch(0.384 0.136 151.726);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.627 0.194 149.214);
+
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #071E24;
+  --sidebar-primary: #047857;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E7F6F0;
+  --sidebar-accent-foreground: #064E3B;
+  --sidebar-border: #E3DED5;
+  --sidebar-ring: #047857;
 }
 
+/* ============================================================
+   DARK MODE — Portal del cliente
+   ============================================================ */
 .dark {
-  --background: oklch(0.13 0.02 260); /* Slate/Zinc Dark */
+  color-scheme: dark;
+
+  --background: #0e1714;
+  --surface: #121e1a;
+  --surface-secondary: #1a2822;
+  --foreground: #f1f5f3;
+  --card: #18241f;
+  --card-foreground: #f1f5f3;
+  --popover: #1d2b26;
+  --popover-foreground: #f1f5f3;
+
+  --primary: #059669;
+  --primary-hover: #047857;
+  --primary-foreground: #06251d;
+
+  --secondary: #121e1a;
+  --secondary-foreground: #f1f5f3;
+  --muted: #1d2b26;
+  --muted-foreground: #a8b5af;
+  --accent: #1d2b26;
+  --accent-foreground: #7edcaf;
+
+  --destructive: #e5765e;
+  --success: #059669;
+  --warning: #e9ad17;
+  --info: #7fb3e0;
+
+  --border: #2a3933;
+  --input: #2a3933;
+  --ring: #059669;
+
+  --navy: #08262d;
+  --navy-soft: #0d3037;
+  --gold: #ffc400;
+
+  --brand-green: #059669;
+  --brand-green-hover: #047857;
+  --brand-green-dark: #059669;
+  --brand-yellow: #e9ad17;
+  --brand-yellow-hover: #f5b800;
+  --brand-yellow-foreground: #0b3b2e;
+
+  --chart-1: #059669;
+  --chart-2: #7edcaf;
+  --chart-3: #e9ad17;
+  --chart-4: #7fb3e0;
+  --chart-5: #a8b5af;
+
+  --sidebar: #18241f;
+  --sidebar-foreground: #f1f5f3;
+  --sidebar-primary: #059669;
+  --sidebar-primary-foreground: #06251d;
+  --sidebar-accent: #1d2b26;
+  --sidebar-accent-foreground: #7edcaf;
+  --sidebar-border: #2a3933;
+  --sidebar-ring: #059669;
+}
+
+/* ============================================================
+   THEME LEGACY — Panel administrativo (no modificar su apariencia)
+   ============================================================ */
+.admin-theme {
+  --background: oklch(0.13 0.02 260);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.16 0.02 260);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.16 0.02 260);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.627 0.194 149.214); /* Emerald Green 500 */
+  --primary: oklch(0.627 0.194 149.214);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.25 0.03 260);
   --secondary-foreground: oklch(0.985 0 0);
@@ -99,6 +244,9 @@
   --accent: oklch(0.25 0.03 260);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
+  --success: oklch(0.627 0.194 149.214);
+  --warning: oklch(0.7 0.15 70);
+  --info: oklch(0.6 0.15 250);
   --border: oklch(0.25 0.03 260);
   --input: oklch(0.25 0.03 260);
   --ring: oklch(0.627 0.194 149.214);
@@ -130,13 +278,26 @@
   }
 }
 
+/* Transición suave al cambiar de tema (150-250ms, sin exagerar) */
+@media (prefers-reduced-motion: no-preference) {
+  body,
+  body * {
+    transition:
+      background-color 200ms ease,
+      border-color 200ms ease,
+      color 200ms ease,
+      fill 200ms ease,
+      stroke 200ms ease;
+  }
+}
+
 @layer utilities {
   .glass-card {
     @apply bg-white/5 backdrop-blur-lg border border-white/10 shadow-xl;
   }
-  
+
   .text-gradient {
-    @apply bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-primary to-green-400 bg-clip-text text-transparent;
   }
 
   .no-scrollbar::-webkit-scrollbar {
@@ -146,12 +307,96 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Sombra extremadamente discreta para tarjetas del portal */
+  .shadow-soft {
+    box-shadow:
+      0 1px 2px rgba(23, 33, 30, 0.04),
+      0 4px 12px rgba(23, 33, 30, 0.05);
+  }
+
+  /* Portal: sombra hover para cards interactivas */
+  .shadow-card-hover {
+    box-shadow:
+      0 4px 6px rgba(23, 33, 30, 0.06),
+      0 10px 24px rgba(23, 33, 30, 0.08);
+  }
+
+  /* Portal: patrón deportivo sutil para heroes */
+  .hero-pattern {
+    background-image:
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 44px),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 44px);
+  }
+
+  /* Portal: bottom nav safe area */
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Focus accesible */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  /* Shimmer animation for skeletons */
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite linear;
+    background-image: linear-gradient(
+      to right,
+      var(--surface) 4%,
+      var(--surface-secondary) 25%,
+      var(--surface) 36%
+    );
+    background-size: 1000px 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
-/* FIX: Asegurar que los iconos de calendario (fecha) y reloj (hora) sean blancos */
+/* Los formularios administrativos claros deben mantener texto y valores legibles. */
+.settings-fields input:not([type='color']) {
+  color: #0f172a;
+  background-color: #ffffff;
+  opacity: 1;
+}
+
+.settings-fields input:not([type='color'])::placeholder {
+  color: #64748b;
+  opacity: 1;
+}
+
+.settings-fields label {
+  color: #334155;
+  font-weight: 600;
+}
+
+/* FIX: Iconos de calendario (fecha) y reloj (hora) visibles en modo claro; blancos solo en oscuro */
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(2);
+    cursor: pointer;
+}
+
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="time"]::-webkit-calendar-picker-indicator {
-    filter: invert(1) brightness(2);
+    filter: invert(0.45);
     cursor: pointer;
 }
 
@@ -161,12 +406,12 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     padding-left: 1rem;
     padding-right: 1rem;
   }
-  
+
   h1 {
     font-size: 2.25rem !important; /* text-4xl */
   }
-  
+
   .card-content-compact {
     padding: 1rem !important;
   }
-}
+}

@@ -70,7 +70,7 @@ export function BusinessDirectory({ businesses, favorites, totalCount }: Busines
     <section className="w-full py-20 relative overflow-hidden" id="directorio">
       {/* Background decoration */}
       <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/5 rounded-full blur-[120px] -z-10" />
-      <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-emerald-500/5 rounded-full blur-[120px] -z-10" />
+      <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-green-600/5 rounded-full blur-[120px] -z-10" />
 
       <div className="container px-4 md:px-6 mx-auto">
         <div className="flex flex-col md:flex-row items-end justify-between gap-8 mb-16">
@@ -80,7 +80,7 @@ export function BusinessDirectory({ businesses, favorites, totalCount }: Busines
               Directorio de Complejos
             </div>
             <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight">
-              Encuentra tu próximo <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">terreno de juego</span>
+              Encuentra tu próximo <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-green-400">terreno de juego</span>
             </h2>
             <p className="text-muted-foreground text-lg leading-relaxed">
               Explora nuestra red de <span className="text-foreground font-bold">{totalCount} locales registrados</span>. 

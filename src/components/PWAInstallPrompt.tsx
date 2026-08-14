@@ -92,34 +92,45 @@ export function PWAInstallPrompt({ businessName, businessLogo, slug }: PWAInstal
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md"
+            transition={{ duration: 0.25 }}
+            className="fixed z-50 inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-5 sm:right-5 sm:w-[21rem]"
           >
-            <div className="bg-zinc-900/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-primary/10 p-2 rounded-lg">
+            <div className="relative bg-white sm:rounded-2xl rounded-t-2xl sm:border border-slate-200 border-t border-slate-200 shadow-[0_-4px_24px_rgba(23,33,30,0.08)] sm:shadow-lg px-4 sm:px-5 pt-3 pb-4 sm:py-4">
+              {/* Handle visual en móvil */}
+              <div className="sm:hidden mx-auto mb-2 h-1 w-10 rounded-full bg-slate-200" />
+
+              <button
+                onClick={() => setIsVisible(false)}
+                aria-label="Cerrar"
+                className="absolute top-2.5 right-2.5 h-8 w-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-3 pr-8">
+                <div className="bg-primary/10 rounded-xl p-2 flex-shrink-0">
                   <Smartphone className="w-5 h-5 text-primary" />
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-white">¿Deseas instalar la aplicación?</p>
-                  <p className="text-[10px] text-zinc-400 font-medium">Acceso rápido y mejor experiencia</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground leading-tight">Instala nuestra app</p>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">Reserva más rápido y recibe novedades.</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
+
+              <div className="grid grid-cols-2 gap-2 mt-3.5">
+                <Button
+                  variant="outline"
                   onClick={() => setIsVisible(false)}
-                  className="text-zinc-500 hover:text-white text-[10px] font-bold uppercase tracking-widest h-8"
+                  className="h-11 rounded-xl border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50"
                 >
-                  No
+                  Ahora no
                 </Button>
-                <Button 
-                  size="sm"
+                <Button
                   onClick={handleInstallClick}
-                  className="bg-primary text-black hover:bg-primary/90 text-[10px] font-black uppercase tracking-widest h-8 px-4 rounded-lg flex items-center gap-2"
+                  className="h-11 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary/90"
                 >
-                  {platform === 'ios' ? <Apple className="w-3.5 h-3.5" /> : null}
-                  {platform === 'ios' ? 'Instrucciones' : 'Sí'}
+                  {platform === 'ios' ? <Apple className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                  {platform === 'ios' ? 'Instrucciones' : 'Instalar'}
                 </Button>
               </div>
             </div>
@@ -128,24 +139,24 @@ export function PWAInstallPrompt({ businessName, businessLogo, slug }: PWAInstal
       </AnimatePresence>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md bg-zinc-950 border-white/10 rounded-[32px] overflow-hidden p-0">
+        <DialogContent className="sm:max-w-md bg-white border-slate-200 rounded-2xl overflow-hidden p-0">
           <div className="relative p-6 sm:p-8 space-y-6">
-            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-primary/20 to-transparent pointer-events-none" />
+            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-primary/10 to-transparent pointer-events-none" />
             
             <DialogHeader className="relative z-10">
               <div className="flex flex-col items-center text-center gap-4">
-                <div className="w-24 h-24 rounded-3xl bg-zinc-900 border border-white/10 p-2 shadow-2xl flex items-center justify-center overflow-hidden">
+                <div className="w-20 h-20 rounded-2xl bg-white border border-slate-200 p-2 shadow-sm flex items-center justify-center overflow-hidden">
                   {businessLogo ? (
                     <img src={businessLogo} alt={businessName} className="w-full h-full object-contain" />
                   ) : (
-                    <Smartphone className="w-12 h-12 text-primary" />
+                    <Smartphone className="w-10 h-10 text-primary" />
                   )}
                 </div>
                 <div>
-                  <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter text-white">
+                  <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
                     Instalar {businessName}
                   </DialogTitle>
-                  <DialogDescription className="text-zinc-400 font-medium mt-1">
+                  <DialogDescription className="text-slate-500 font-medium mt-1 text-sm">
                     Accede directamente desde tu pantalla de inicio
                   </DialogDescription>
                 </div>
@@ -154,43 +165,43 @@ export function PWAInstallPrompt({ businessName, businessLogo, slug }: PWAInstal
 
             <div className="space-y-4 relative z-10">
               {platform === 'ios' ? (
-                <div className="bg-white/5 rounded-2xl p-4 border border-white/5 space-y-4">
-                  <p className="text-xs font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary flex items-center gap-2">
                     <Apple className="w-4 h-4" /> Instrucciones para iPhone:
                   </p>
                   <ol className="space-y-3">
-                    <li className="flex items-start gap-3 text-sm text-zinc-300">
-                      <div className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">1</div>
-                      <p>Toca el botón <strong>Compartir</strong> <Share className="w-4 h-4 inline mx-1 text-blue-400" /> en la barra inferior.</p>
+                    <li className="flex items-start gap-3 text-sm text-slate-600">
+                      <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">1</div>
+                      <p>Toca el botón <strong>Compartir</strong> <Share className="w-4 h-4 inline mx-1 text-blue-500" /> en la barra inferior.</p>
                     </li>
-                    <li className="flex items-start gap-3 text-sm text-zinc-300">
-                      <div className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">2</div>
+                    <li className="flex items-start gap-3 text-sm text-slate-600">
+                      <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">2</div>
                       <p>Desliza hacia abajo y selecciona <strong>"Agregar a Inicio"</strong> <PlusSquare className="w-4 h-4 inline mx-1" />.</p>
                     </li>
-                    <li className="flex items-start gap-3 text-sm text-zinc-300">
-                      <div className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">3</div>
+                    <li className="flex items-start gap-3 text-sm text-slate-600">
+                      <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">3</div>
                       <p>Confirma tocando <strong>"Agregar"</strong> en la esquina superior derecha.</p>
                     </li>
                   </ol>
                 </div>
               ) : platform === 'android' ? (
-                <div className="bg-white/5 rounded-2xl p-4 border border-white/5 flex items-center gap-4">
-                  <div className="bg-emerald-500/20 p-3 rounded-xl">
-                    <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 flex items-center gap-4">
+                  <div className="bg-green-50 p-3 rounded-xl">
+                    <CheckCircle2 className="w-6 h-6 text-green-700" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-white">Compatible con Android</p>
-                    <p className="text-xs text-zinc-500 font-medium">Toca el botón de abajo para instalar instantáneamente.</p>
+                    <p className="text-sm font-semibold text-foreground">Compatible con Android</p>
+                    <p className="text-xs text-slate-500 font-medium">Toca el botón de abajo para instalar instantáneamente.</p>
                   </div>
                 </div>
               ) : (
-                <div className="bg-white/5 rounded-2xl p-4 border border-white/5 flex items-center gap-4">
-                  <div className="bg-blue-500/20 p-3 rounded-xl">
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 flex items-center gap-4">
+                  <div className="bg-blue-50 p-3 rounded-xl">
                     <Info className="w-6 h-6 text-blue-500" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-white">Instalación Manual</p>
-                    <p className="text-xs text-zinc-500 font-medium">Busca la opción "Instalar aplicación" en el menú de tu navegador.</p>
+                    <p className="text-sm font-semibold text-foreground">Instalación manual</p>
+                    <p className="text-xs text-slate-500 font-medium">Busca la opción "Instalar aplicación" en el menú de tu navegador.</p>
                   </div>
                 </div>
               )}
@@ -199,23 +210,23 @@ export function PWAInstallPrompt({ businessName, businessLogo, slug }: PWAInstal
                 <Button 
                   variant="outline" 
                   onClick={() => setIsOpen(false)}
-                  className="rounded-2xl h-12 border-white/5 bg-white/5 text-zinc-400 font-bold uppercase tracking-widest text-[10px]"
+                  className="rounded-xl h-12 border-slate-200 text-slate-600 font-medium text-sm"
                 >
                   Cerrar
                 </Button>
                 {platform === 'android' && deferredPrompt ? (
                   <Button 
                     onClick={handleInstallClick}
-                    className="rounded-2xl h-12 bg-primary text-black font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
+                    className="rounded-xl h-12 bg-primary text-white font-semibold text-sm"
                   >
-                    Instalar Ahora
+                    Instalar ahora
                   </Button>
                 ) : (
                   <Button 
                     onClick={handleShare}
-                    className="rounded-2xl h-12 bg-primary text-black font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                    className="rounded-xl h-12 bg-primary text-white font-semibold text-sm flex items-center justify-center gap-2"
                   >
-                    <Share className="w-3.5 h-3.5" /> Compartir Link
+                    <Share className="w-3.5 h-3.5" /> Compartir link
                   </Button>
                 )}
               </div>

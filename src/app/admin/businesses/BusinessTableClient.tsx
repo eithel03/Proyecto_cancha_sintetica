@@ -8,7 +8,18 @@ import { Search, MessageSquare, ExternalLink } from 'lucide-react'
 import { BusinessActions } from './BusinessActions'
 import { Card, CardContent } from '@/components/ui/card'
 
-export function BusinessTableClient({ businesses }: { businesses: any[] }) {
+type BusinessRow = {
+  id: string
+  name: string
+  slug: string
+  logo_url: string | null
+  is_active: boolean
+  ownerProfile?: { full_name: string | null; phone: string | null }
+  courtCount: number
+  todayReservationsCount: number
+}
+
+export function BusinessTableClient({ businesses }: { businesses: BusinessRow[] }) {
   const [search, setSearch] = useState('')
 
   const filteredBusinesses = businesses.filter(b => 
@@ -25,26 +36,26 @@ export function BusinessTableClient({ businesses }: { businesses: any[] }) {
           placeholder="Buscar negocio, dueño o portal público..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-9 bg-zinc-900/50 border-white/5 h-10 rounded-xl"
+          className="h-10 rounded-xl border-slate-200 bg-white pl-9 text-slate-950 shadow-sm"
         />
       </div>
 
-      <Card className="border-white/5 bg-zinc-900/50 backdrop-blur-xl overflow-hidden rounded-2xl">
+      <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm">
         <CardContent className="p-0">
           <div className="overflow-x-auto w-full">
             <table className="w-full text-sm text-left whitespace-nowrap">
-              <thead className="bg-white/5 border-b border-white/5">
+              <thead className="border-b border-slate-200 bg-slate-50">
                 <tr>
-                  <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-muted-foreground text-center">Logo</th>
-                  <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-muted-foreground">Nombre / Portal público</th>
-                  <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-muted-foreground text-center">Canchas</th>
-                  <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-muted-foreground text-center">Reservas Hoy</th>
-                  <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-muted-foreground">Dueño / Contacto</th>
-                  <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-muted-foreground">Estado</th>
-                  <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-muted-foreground text-right">Acciones</th>
+                  <th className="px-6 py-4 text-center text-[10px] font-bold uppercase tracking-widest text-slate-500">Logo</th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Nombre / Portal público</th>
+                  <th className="px-6 py-4 text-center text-[10px] font-bold uppercase tracking-widest text-slate-500">Canchas</th>
+                  <th className="px-6 py-4 text-center text-[10px] font-bold uppercase tracking-widest text-slate-500">Reservas hoy</th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Dueño / Contacto</th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Estado</th>
+                  <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-widest text-slate-500">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-slate-100">
                 {filteredBusinesses.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground italic">
@@ -53,7 +64,7 @@ export function BusinessTableClient({ businesses }: { businesses: any[] }) {
                   </tr>
                 ) : (
                   filteredBusinesses.map((b) => (
-                    <tr key={b.id} className="group hover:bg-white/[0.02] transition-colors">
+                      <tr key={b.id} className="group transition-colors hover:bg-slate-50">
                       <td className="px-6 py-4">
                         <div className="flex justify-center">
                           {b.logo_url ? (
@@ -66,25 +77,25 @@ export function BusinessTableClient({ businesses }: { businesses: any[] }) {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="font-bold text-white group-hover:text-primary transition-colors">{b.name}</div>
-                        <div className="text-xs text-muted-foreground font-mono opacity-60">/{b.slug}</div>
+                        <div className="font-bold text-slate-900 transition-colors group-hover:text-emerald-700">{b.name}</div>
+                        <div className="font-mono text-xs text-slate-400">/{b.slug}</div>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <div className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-zinc-800 text-zinc-300 font-bold border border-white/5">
+                        <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 font-bold text-slate-700">
                           {b.courtCount}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <Badge variant="outline" className={`rounded-lg h-7 px-3 border-white/5 ${b.todayReservationsCount > 0 ? 'bg-primary/10 text-primary border-primary/20' : 'bg-zinc-800 text-zinc-500'}`}>
+                        <Badge variant="outline" className={`h-7 rounded-lg border-slate-200 px-3 ${b.todayReservationsCount > 0 ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-500'}`}>
                           {b.todayReservationsCount}
                         </Badge>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="space-y-0.5">
-                            <div className="font-bold text-white text-xs">{b.ownerProfile?.full_name || 'Sin dueño'}</div>
+                            <div className="text-xs font-bold text-slate-800">{b.ownerProfile?.full_name || 'Sin dueño'}</div>
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">{b.ownerProfile?.phone || '-'}</span>
+                              <span className="text-xs text-slate-500">{b.ownerProfile?.phone || '-'}</span>
                               {b.ownerProfile?.phone && (
                                 <a 
                                   href={`https://wa.me/${b.ownerProfile.phone.replace(/\D/g, '')}`} 
@@ -103,7 +114,7 @@ export function BusinessTableClient({ businesses }: { businesses: any[] }) {
                       <td className="px-6 py-4">
                         <Badge 
                           variant={b.is_active ? "default" : "destructive"}
-                          className={`rounded-full px-4 py-0.5 text-[10px] uppercase font-black tracking-widest ${b.is_active ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'bg-red-500/20 text-red-500 border border-red-500/20'}`}
+                          className={`rounded-full px-4 py-0.5 text-[10px] font-black uppercase tracking-widest ${b.is_active ? 'bg-emerald-700 text-white shadow-sm' : 'border border-rose-200 bg-rose-50 text-rose-700'}`}
                         >
                           {b.is_active ? "ACTIVO" : "BLOQUEADO"}
                         </Badge>
@@ -113,7 +124,7 @@ export function BusinessTableClient({ businesses }: { businesses: any[] }) {
                           <Link 
                             href={`/${b.slug}`} 
                             target="_blank" 
-                            className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-white/5 bg-zinc-900 text-muted-foreground hover:text-white hover:bg-zinc-800 transition-all shadow-sm"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition-all hover:bg-slate-100 hover:text-slate-900"
                             title="Ver Página Pública"
                           >
                             <ExternalLink className="h-4 w-4" />

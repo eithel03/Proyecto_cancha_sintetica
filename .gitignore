@@ -47,3 +47,5 @@ playwright-report/
 test-results/
 k6-next-dev.err.log
 k6-next-dev.out.log
+dev-new.log
+dev-new-error.log

@@ -23,17 +23,11 @@ export async function adminLogin(formData: FormData) {
     return { error: 'Ocurrió un error inesperado al verificar la cuenta.' }
   }
 
-  // Agregar logs temporales en servidor
-  console.log('ADMIN LOGIN USER ID:', user.id)
-
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single()
-
-  console.log('ADMIN LOGIN PROFILE:', profile)
-  console.log('ADMIN LOGIN PROFILE ERROR:', profileError)
 
   if (profileError) {
     await supabase.auth.signOut()

@@ -1,665 +1,218 @@
 'use client'
 
 import { useState } from 'react'
+import { useParams } from 'next/navigation'
+import { toast } from 'sonner'
+import {
+  CalendarDays,
+  ExternalLink,
+  ImagePlus,
+  Loader2,
+  Map,
+  MapPin,
+  Palette,
+  MessageCircle as Phone,
+  Save,
+  Store,
+  Trash2,
+  Upload,
+  X,
+} from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { updateBusiness } from './actions'
-import { toast } from 'sonner'
-import BusinessHoursManager from './BusinessHoursManager'
-import { Store, Globe, Phone, MapPin, Save, CalendarOff, Plus, Trash2, Search, Map as MapIcon, Palette, Layout, Type, Layers, Upload, Shield, Loader2, Clock } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MapPicker } from '@/components/MapPicker'
 import { MapPreview } from '@/components/MapPreview'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { updateBranding } from './actions'
-import { createAdminReservation } from '../reservations/actions'
-import { checkAvailability } from '../../reservar/actions'
-import { useParams } from 'next/navigation'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { formatTime12h } from '@/lib/utils'
-import { useMemo, useEffect } from 'react'
+import { updateBusiness, updateBranding, updateCoverImage, createException, deleteException } from './actions'
+import BusinessHoursManager from './BusinessHoursManager'
 
-export default function SettingsClient({ 
-  business, 
-  initialHours, 
-  initialExceptions = [],
-  courts = []
-}: { 
-  business: any, 
-  initialHours: any[], 
-  initialExceptions?: any[],
-  courts?: any[]
-}) {
-  const params = useParams()
-  const slug = params.slug as string
-  const [pending, setPending] = useState(false)
-  const [exceptions, setExceptions] = useState<any[]>(initialExceptions)
-  const [newExDate, setNewExDate] = useState('')
-  const [newExReason, setNewExReason] = useState('')
-  const [coords, setCoords] = useState({ lat: business.latitude || '', lng: business.longitude || '' })
-  const [isMapOpen, setIsMapOpen] = useState(false)
-  const [branding, setBranding] = useState(business.branding || {
-    primary: '#10b981',
-    background: '#09090b',
-    text: '#ffffff',
-    card_bg: '#18181b',
-    accent: '#10b981'
-  })
-  const [brandingPending, setBrandingPending] = useState(false)
-  const [logoUrl, setLogoUrl] = useState(business.logo_url || '')
-  const [uploading, setUploading] = useState(false)
-  
-  // Estado para Bloqueo Manual
-  const [manualResData, setManualResData] = useState<{
-    court_id: string;
-    date: string;
-    time: string;
-    customer_name: string;
-    notes: string;
-  }>({
-    court_id: '',
-    date: new Date().toLocaleDateString('sv-SE'),
-    time: '',
-    customer_name: 'BLOQUEO ADMINISTRATIVO',
-    notes: ''
-  })
-  const [manualPending, setManualPending] = useState(false)
-  const [occupiedSlots, setOccupiedSlots] = useState<any[]>([])
-  const [loadingAvailability, setLoadingAvailability] = useState(false)
+type Branding = {
+  primary: string
+  secondary: string
+  background: string
+  text: string
+  card_bg: string
+  cover_image_url?: string
+}
 
-  // Cargar disponibilidad cuando cambian cancha o fecha
-  useEffect(() => {
-    async function loadBusy() {
-      if (!manualResData.court_id || !manualResData.date) return
-      setLoadingAvailability(true)
-      try {
-        const busy = await checkAvailability(manualResData.court_id, manualResData.date)
-        if (Array.isArray(busy)) {
-          setOccupiedSlots(busy)
-        }
-      } catch (err) {
-        console.error(err)
-      } finally {
-        setLoadingAvailability(false)
-      }
-    }
-    loadBusy()
-  }, [manualResData.court_id, manualResData.date])
+type Business = {
+  id: string
+  name: string
+  slug: string
+  phone: string | null
+  whatsapp: string | null
+  email?: string | null
+  location: string | null
+  latitude: number | null
+  longitude: number | null
+  logo_url: string | null
+  cover_image_url: string | null
+  branding: Partial<Branding> | null
+}
 
-  const isDateBlockedByException = useMemo(() => {
-    return exceptions.find(ex => ex.exception_date === manualResData.date)
-  }, [exceptions, manualResData.date])
+type Exception = {
+  id: string
+  exception_date: string
+  reason: string | null
+}
 
-  const TIME_OPTIONS = useMemo(() => {
-    if (!manualResData.date || isDateBlockedByException) return []
-    const dayOfWeek = new Date(manualResData.date + 'T12:00:00').getDay()
-    const daySchedule = initialHours.find(h => h.day_of_week === dayOfWeek)
-    
-    if (!daySchedule || daySchedule.is_closed) return []
-    
-    const start = parseInt(daySchedule.open_time.split(':')[0])
-    const end = parseInt(daySchedule.close_time.split(':')[0])
-    
-    const options = []
-    for (let h = start; h <= end - 1; h += 0.5) {
-      const hours = Math.floor(h)
-      const mins = h % 1 === 0 ? '00' : '30'
-      const timeStr = `${hours.toString().padStart(2, '0')}:${mins}`
-      
-      const isBusy = occupiedSlots.some(slot => {
-        const s = slot.start_time.substring(0, 5)
-        const e = slot.end_time.substring(0, 5)
-        return timeStr >= s && timeStr < e
-      })
-      
-      options.push({ time: timeStr, isBusy })
-    }
-    return options
-  }, [manualResData.date, initialHours, occupiedSlots])
+type Hour = {
+  id?: string
+  business_id?: string
+  day_of_week: number
+  open_time: string
+  close_time: string
+  is_closed: boolean
+}
 
-  const handleManualBlock = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!manualResData.court_id || !manualResData.date || !manualResData.time) {
-      return toast.error('Completa los campos obligatorios')
-    }
+const defaultBranding: Branding = {
+  primary: '#15803d',
+  secondary: '#f59e0b',
+  background: '#f5f7f4',
+  text: '#17251d',
+  card_bg: '#ffffff',
+}
 
-    setManualPending(true)
-    const [h, m] = manualResData.time.split(':').map(Number)
-    const endTime = `${(h + 1).toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:00`
+const colorFields: Array<{ key: keyof Branding; label: string }> = [
+  { key: 'primary', label: 'Color principal' },
+  { key: 'secondary', label: 'Color secundario' },
+  { key: 'background', label: 'Color de fondo' },
+  { key: 'text', label: 'Color de texto' },
+  { key: 'card_bg', label: 'Color de tarjetas' },
+]
 
-    const result = await createAdminReservation({
-      business_id: business.id,
-      court_id: manualResData.court_id,
-      customer_name: manualResData.customer_name,
-      customer_phone: 'ADMIN',
-      reservation_date: manualResData.date,
-      start_time: manualResData.time + ':00',
-      end_time: endTime,
-      notes: manualResData.notes || 'Bloqueo personalizado desde configuración',
-      slug
-    })
-
-    setManualPending(false)
-    if (result.success) {
-      toast.success('Horario bloqueado correctamente')
-      setManualResData(prev => ({ ...prev, time: '', notes: '' }))
-      // Recargar disponibilidad
-      const busy = await checkAvailability(manualResData.court_id, manualResData.date)
-      if (Array.isArray(busy)) setOccupiedSlots(busy)
-    } else {
-      toast.error(result.error)
-    }
-  }
-
-
-  const captureLocation = () => {
-    if (!navigator.geolocation) {
-      toast.error('La geolocalización no es soportada por tu navegador')
-      return
-    }
-
-    toast.promise(
-      new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            setCoords({
-              lat: position.coords.latitude.toString(),
-              lng: position.coords.longitude.toString()
-            })
-            resolve(position)
-          },
-          (err) => reject(err)
-        )
-      }),
-      {
-        loading: 'Obteniendo ubicación...',
-        success: '¡Ubicación capturada correctamente!',
-        error: 'No se pudo obtener la ubicación. Asegúrate de dar permisos.'
-      }
-    )
-  }
-
-  async function onSubmit(formData: FormData) {
-    setPending(true)
-    formData.append('id', business.id)
-    const result = await updateBusiness(formData)
-    setPending(false)
-    
-    if (result.error) {
-      toast.error(result.error)
-    } else {
-      toast.success('Configuración actualizada correctamente')
-    }
-  }
-
-  const addException = async () => {
-    if (!newExDate) return
-    setPending(true)
-    
-    const { createException } = await import('./actions')
-    const result = await createException({
-      business_id: business.id,
-      exception_date: newExDate,
-      reason: newExReason,
-      is_closed: true
-    })
-
-    if (result.success) {
-      setExceptions([...exceptions, result.data])
-      setNewExDate('')
-      setNewExReason('')
-      toast.success('Fecha bloqueada correctamente')
-    } else {
-      toast.error(result.error)
-    }
-    setPending(false)
-  }
-
-  const removeException = async (id: string) => {
-    setPending(true)
-    const { deleteException } = await import('./actions')
-    const result = await deleteException(id)
-    if (result.success) {
-      setExceptions(exceptions.filter(e => e.id !== id))
-      toast.success('Bloqueo eliminado')
-    } else {
-      toast.error(result.error)
-    }
-    setPending(false)
-  }
-
-  const handleBrandingSave = async () => {
-    setBrandingPending(true)
-    const result = await updateBranding(business.id, branding)
-    setBrandingPending(false)
-    if (result.success) {
-      toast.success('Apariencia actualizada correctamente')
-    } else {
-      toast.error(result.error)
-    }
-  }
-
-  const updateBrandingColor = (key: string, value: string) => {
-    setBranding((prev: any) => ({ ...prev, [key]: value }))
-  }
-
+function SectionHeader({ icon: Icon, title, description }: { icon: typeof Store; title: string; description: string }) {
   return (
-    <Tabs defaultValue="general" className="space-y-8">
-      <div className="w-full overflow-x-auto pb-4 -mb-4 no-scrollbar">
-        <TabsList className="bg-zinc-900/50 p-1 border border-white/5 rounded-2xl h-14 w-max min-w-full sm:w-auto">
-          <TabsTrigger value="general" className="rounded-xl px-4 sm:px-6 gap-2 h-12 data-[state=active]:bg-zinc-800"><Store className="w-4 h-4" /> General</TabsTrigger>
-          <TabsTrigger value="horarios" className="rounded-xl px-4 sm:px-6 gap-2 h-12 data-[state=active]:bg-zinc-800"><CalendarOff className="w-4 h-4" /> Horarios</TabsTrigger>
-          <TabsTrigger value="apariencia" className="rounded-xl px-4 sm:px-6 gap-2 h-12 data-[state=active]:bg-zinc-800"><Palette className="w-4 h-4" /> Apariencia</TabsTrigger>
-          <TabsTrigger value="bloqueos" className="rounded-xl px-4 sm:px-6 gap-2 h-12 data-[state=active]:bg-zinc-800"><Shield className="w-4 h-4 text-primary" /> Reserva Personalizada</TabsTrigger>
-        </TabsList>
-      </div>
-
-      <TabsContent value="general" className="space-y-8 focus-visible:outline-none">
-        <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-xl">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Store className="w-5 h-5 text-primary" /> Información General
-            </CardTitle>
-            <CardDescription>Actualiza los datos públicos de tu sintética para que los clientes te encuentren.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form action={onSubmit} className="space-y-6">
-              <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-white/5">
-                <div className="relative group">
-                  <div className="w-24 h-24 sm:w-32 sm:h-32 bg-zinc-900 rounded-3xl border-2 border-dashed border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50">
-                    {logoUrl ? (
-                      <img src={logoUrl} className="w-full h-full object-contain" alt="Logo preview" />
-                    ) : (
-                      <Shield className="w-10 h-10 text-zinc-700" />
-                    )}
-                    {uploading && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                      </div>
-                    )}
-                  </div>
-                  <label className="absolute -bottom-2 -right-2 p-2 bg-primary text-black rounded-xl cursor-pointer shadow-lg hover:scale-110 transition-transform">
-                    <Upload className="w-4 h-4" />
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      accept="image/*" 
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0]
-                        if (!file) return
-                        
-                        setUploading(true)
-                        try {
-                          const { createClient } = await import('@/lib/supabase/client')
-                          const supabase = createClient()
-                          
-                          const fileExt = file.name.split('.').pop()
-                          const fileName = `${business.id}/pwa-logo-${Math.random()}.${fileExt}`
-                          
-                          const { data, error } = await supabase.storage
-                            .from('logos')
-                            .upload(fileName, file)
-                            
-                          if (error) throw error
-                          
-                          const { data: { publicUrl } } = supabase.storage
-                            .from('logos')
-                            .getPublicUrl(fileName)
-                            
-                          setLogoUrl(publicUrl)
-                          toast.success('Logo actualizado correctamente')
-                        } catch (error: any) {
-                          toast.error('Error al subir imagen: ' + error.message)
-                        } finally {
-                          setUploading(false)
-                        }
-                      }}
-                    />
-                  </label>
-                </div>
-                <div className="space-y-1 text-center sm:text-left">
-                  <h4 className="font-black uppercase italic tracking-tighter text-white">Logo de la Empresa</h4>
-                  <p className="text-xs text-zinc-500 max-w-[250px]">Este logo se usará como icono de la aplicación cuando tus clientes la instalen en sus teléfonos.</p>
-                  <input type="hidden" name="logo_url" value={logoUrl} />
-                </div>
-              </div>
-
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Nombre del Local</Label>
-                  <div className="relative">
-                    <Input id="name" name="name" defaultValue={business.name} required className="bg-zinc-900 border-white/10 pl-10" />
-                    <Store className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="slug" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Portal público</Label>
-                  <div className="relative">
-                    <Input id="slug" defaultValue={business.slug} disabled className="bg-zinc-900/50 border-white/5 pl-10 text-zinc-500" />
-                    <Globe className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
-                  </div>
-                  <p className="text-[10px] text-zinc-500 italic">Identificador utilizado para generar el enlace público del negocio.</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-xs font-bold uppercase tracking-widest text-zinc-500">WhatsApp de Contacto</Label>
-                  <div className="relative">
-                    <Input id="phone" name="phone" type="tel" inputMode="tel" defaultValue={business.phone || ''} className="bg-zinc-900 border-white/10 pl-10" placeholder="88888888 o 8888-8888" />
-                    <Phone className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="location" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Ubicación Física</Label>
-                  <div className="relative">
-                    <Input id="location" name="location" defaultValue={business.location || ''} className="bg-zinc-900 border-white/10 pl-10" placeholder="Ej: 200m Sur de la Iglesia" />
-                    <MapPin className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
-                  </div>
-                </div>
-
-                <div className="space-y-4 md:col-span-2 border-t border-white/5 pt-6">
-                  <input type="hidden" name="latitude" value={coords.lat} />
-                  <input type="hidden" name="longitude" value={coords.lng} />
-
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex items-end gap-2 w-full">
-                      <Button type="button" onClick={() => setIsMapOpen(true)} variant="outline" className="flex-1 border-blue-500/50 text-blue-500 hover:bg-blue-500/10 h-12 rounded-xl">
-                        <MapIcon className="w-4 h-4 mr-2" /> Seleccionar Ubicación en Mapa
-                      </Button>
-                      <Button type="button" onClick={captureLocation} variant="outline" className="flex-1 border-primary/50 text-primary hover:bg-primary/10 h-12 rounded-xl">
-                        <MapPin className="w-4 h-4 mr-2" /> Usar GPS del Dispositivo
-                      </Button>
-                    </div>
-                  </div>
-
-                  <MapPreview lat={coords.lat} lng={coords.lng} />
-
-                  <p className="text-[10px] text-zinc-500 italic">La ubicación GPS es necesaria para que los clientes puedan ver la distancia hasta tu local.</p>
-                </div>
-              </div>
-              
-              <Button type="submit" className="w-full sm:w-auto font-bold px-8" disabled={pending}>
-                {pending ? (
-                  <>Guardando...</>
-                ) : (
-                  <><Save className="w-4 h-4 mr-2" /> Guardar Información</>
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <MapPicker 
-          isOpen={isMapOpen}
-          onOpenChange={setIsMapOpen}
-          onSelect={(lat, lng) => setCoords({ lat, lng })}
-          initialLat={coords.lat}
-          initialLng={coords.lng}
-        />
-      </TabsContent>
-
-      <TabsContent value="horarios" className="space-y-8 focus-visible:outline-none">
-        <BusinessHoursManager businessId={business.id} initialHours={initialHours} />
-
-        <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-xl">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarOff className="w-5 h-5 text-red-500" /> Calendario de Excepciones
-            </CardTitle>
-            <CardDescription>Bloquea fechas específicas (feriados, mantenimiento) para que no se puedan realizar reservas.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex flex-col sm:flex-row gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
-              <div className="flex-1 space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Fecha a Bloquear</Label>
-                <Input type="date" value={newExDate} onChange={(e) => setNewExDate(e.target.value)} className="bg-zinc-900 border-white/10" />
-              </div>
-              <div className="flex-[2] space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Motivo (Opcional)</Label>
-                <Input placeholder="Ej: Mantenimiento, Feriado..." value={newExReason} onChange={(e) => setNewExReason(e.target.value)} className="bg-zinc-900 border-white/10" />
-              </div>
-              <div className="flex items-end">
-                <Button onClick={addException} disabled={!newExDate || pending} className="w-full sm:w-auto">
-                  <Plus className="w-4 h-4 mr-2" /> Bloquear Fecha
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {exceptions.length === 0 ? (
-                <p className="text-center py-8 text-zinc-500 text-xs font-bold uppercase tracking-widest border border-dashed border-white/5 rounded-2xl">No hay fechas bloqueadas actualmente.</p>
-              ) : (
-                exceptions.map((ex) => (
-                  <div key={ex.id} className="flex items-center justify-between p-4 rounded-xl bg-zinc-900/50 border border-white/5">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-red-500/10 p-2 rounded-lg">
-                        <CalendarOff className="w-4 h-4 text-red-500" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-zinc-100">{new Date(ex.exception_date + 'T12:00:00').toLocaleDateString('es-ES', { dateStyle: 'full' })}</p>
-                        {ex.reason && <p className="text-xs text-zinc-500">{ex.reason}</p>}
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="icon" onClick={() => removeException(ex.id)} className="text-zinc-500 hover:text-red-500 hover:bg-red-500/10">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="apariencia" className="space-y-8 focus-visible:outline-none">
-        <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-xl">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Palette className="w-5 h-5 text-primary" /> Personalización Visual
-            </CardTitle>
-            <CardDescription>Ajusta los colores del portal para que coincidan con la identidad de tu marca.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-8">
-            <div className="grid gap-8 md:grid-cols-2">
-              <div className="space-y-6">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                      <Layout className="w-3 h-3" /> Color Primario
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input type="color" value={branding.primary} onChange={(e) => updateBrandingColor('primary', e.target.value)} className="w-12 h-10 p-1 bg-zinc-900 border-white/10 cursor-pointer" />
-                      <Input type="text" value={branding.primary} onChange={(e) => updateBrandingColor('primary', e.target.value)} className="flex-1 bg-zinc-900 border-white/10 uppercase font-mono" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                      <Layers className="w-3 h-3" /> Color de Fondo
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input type="color" value={branding.background} onChange={(e) => updateBrandingColor('background', e.target.value)} className="w-12 h-10 p-1 bg-zinc-900 border-white/10 cursor-pointer" />
-                      <Input type="text" value={branding.background} onChange={(e) => updateBrandingColor('background', e.target.value)} className="flex-1 bg-zinc-900 border-white/10 uppercase font-mono" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                      <Type className="w-3 h-3" /> Color de Texto
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input type="color" value={branding.text} onChange={(e) => updateBrandingColor('text', e.target.value)} className="w-12 h-10 p-1 bg-zinc-900 border-white/10 cursor-pointer" />
-                      <Input type="text" value={branding.text} onChange={(e) => updateBrandingColor('text', e.target.value)} className="flex-1 bg-zinc-900 border-white/10 uppercase font-mono" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                      <Layers className="w-3 h-3" /> Color de Tarjetas
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input type="color" value={branding.card_bg} onChange={(e) => updateBrandingColor('card_bg', e.target.value)} className="w-12 h-10 p-1 bg-zinc-900 border-white/10 cursor-pointer" />
-                      <Input type="text" value={branding.card_bg} onChange={(e) => updateBrandingColor('card_bg', e.target.value)} className="flex-1 bg-zinc-900 border-white/10 uppercase font-mono" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-white/5">
-                  <Button onClick={handleBrandingSave} disabled={brandingPending} className="w-full sm:w-auto font-bold px-8">
-                    {brandingPending ? 'Guardando...' : <><Save className="w-4 h-4 mr-2" /> Guardar Apariencia</>}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Vista Previa (Borrador)</Label>
-                <div 
-                  className="rounded-3xl p-6 border shadow-2xl transition-colors duration-500"
-                  style={{ 
-                    backgroundColor: branding.background,
-                    borderColor: `${branding.primary}20`,
-                    color: branding.text
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-8">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${branding.primary}20` }}>
-                      <Store className="w-6 h-6" style={{ color: branding.primary }} />
-                    </div>
-                    <div className="h-2 w-24 rounded-full" style={{ backgroundColor: `${branding.primary}40` }} />
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div 
-                      className="p-4 rounded-2xl border" 
-                      style={{ 
-                        backgroundColor: branding.card_bg, 
-                        borderColor: `${branding.text}10` 
-                      }}
-                    >
-                      <div className="h-4 w-3/4 rounded-md mb-2" style={{ backgroundColor: branding.text, opacity: 0.8 }} />
-                      <div className="h-2 w-1/2 rounded-md" style={{ backgroundColor: branding.text, opacity: 0.3 }} />
-                    </div>
-
-                    <div 
-                      className="h-12 rounded-xl flex items-center justify-center font-bold text-sm uppercase tracking-tighter italic" 
-                      style={{ backgroundColor: branding.primary, color: '#000' }}
-                    >
-                      Reservar Ahora
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-      <TabsContent value="bloqueos" className="space-y-8 focus-visible:outline-none">
-        <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-xl">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-primary">
-              <Shield className="w-5 h-5" /> Reserva Personalizada (Administrador)
-            </CardTitle>
-            <CardDescription>Aparta cupos o bloquea horarios específicos de forma rápida.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleManualBlock} className="space-y-6">
-              <div className="grid gap-6 md:grid-cols-2 p-6 rounded-2xl bg-white/5 border border-white/5">
-                <div className="space-y-3">
-                  <Label className="text-xs font-black uppercase tracking-widest text-zinc-500">Elegir Cancha</Label>
-                  <Select value={manualResData.court_id} onValueChange={(v: string | null) => setManualResData(prev => ({ ...prev, court_id: v || '' }))}>
-                    <SelectTrigger className="bg-zinc-900 border-white/10 h-12 rounded-xl font-bold">
-                      <SelectValue placeholder="Seleccionar cancha">
-                        {courts.find(c => c.id === manualResData.court_id)?.name || "Seleccionar cancha"}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-white/10">
-                      {courts.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-xs font-black uppercase tracking-widest text-zinc-500">Seleccionar Fecha</Label>
-                  <Input 
-                    type="date" 
-                    value={manualResData.date} 
-                    onChange={(e) => setManualResData({...manualResData, date: e.target.value})}
-                    className="bg-zinc-900 border-white/10 h-12 rounded-xl"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <Label className="text-xs font-black uppercase tracking-widest text-zinc-500">Seleccionar Horario</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
-                  {loadingAvailability ? (
-                    <div className="col-span-full py-12 flex flex-col items-center gap-3 text-zinc-500 border border-dashed border-white/10 rounded-2xl">
-                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                      <p className="text-[10px] font-black uppercase tracking-widest">Verificando disponibilidad...</p>
-                    </div>
-                  ) : isDateBlockedByException ? (
-                    <div className="col-span-full py-12 flex flex-col items-center gap-3 text-red-500 bg-red-500/5 border border-dashed border-red-500/20 rounded-2xl animate-in fade-in zoom-in duration-500">
-                      <CalendarOff className="w-8 h-8" />
-                      <div className="text-center">
-                        <p className="text-sm font-black uppercase tracking-tight">Fecha Bloqueada por Excepción</p>
-                        <p className="text-[10px] font-medium opacity-60 uppercase tracking-widest mt-1">Motivo: {isDateBlockedByException.reason || 'No especificado'}</p>
-                      </div>
-                    </div>
-                  ) : TIME_OPTIONS.length === 0 ? (
-                    <div className="col-span-full py-12 flex flex-col items-center gap-3 text-amber-500 bg-amber-500/5 border border-dashed border-amber-500/20 rounded-2xl">
-                      <Clock className="w-8 h-8 opacity-50" />
-                      <p className="text-[10px] font-black uppercase tracking-widest">El local está cerrado en este día</p>
-                    </div>
-                  ) : (
-                    TIME_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.time}
-                        type="button"
-                        disabled={opt.isBusy}
-                        onClick={() => setManualResData({ ...manualResData, time: opt.time })}
-                        className={`
-                          relative group p-4 rounded-2xl border transition-all duration-300
-                          ${manualResData.time === opt.time 
-                            ? 'bg-primary border-primary text-black scale-105 shadow-lg shadow-primary/20' 
-                            : opt.isBusy
-                              ? 'bg-red-500/10 border-red-500/20 text-red-500/40 cursor-not-allowed'
-                              : 'bg-zinc-900/50 border-white/5 text-zinc-400 hover:border-primary/50 hover:text-primary hover:bg-primary/5'
-                          }
-                        `}
-                      >
-                        <span className="text-xs font-black tracking-tighter">{formatTime12h(opt.time)}</span>
-                        {opt.isBusy && (
-                          <div className="absolute -top-1 -right-1">
-                            <Badge variant="destructive" className="px-1 py-0 h-4 text-[7px] font-black">OCUPADO</Badge>
-                          </div>
-                        )}
-                      </button>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <Label className="text-xs font-black uppercase tracking-widest text-zinc-500">Motivo o Nota del Bloqueo</Label>
-                <Input 
-                  placeholder="Ej: Mantenimiento de cancha, Partido de liga predeterminado..." 
-                  value={manualResData.notes} 
-                  onChange={(e) => setManualResData({...manualResData, notes: e.target.value})}
-                  className="bg-zinc-900 border-white/10 h-14 rounded-2xl"
-                />
-              </div>
-
-              <div className="pt-6 border-t border-white/5">
-                <Button 
-                  type="submit" 
-                  disabled={manualPending || !manualResData.time}
-                  className="w-full sm:w-auto px-12 h-14 bg-primary hover:bg-primary/90 text-black font-black uppercase italic tracking-tighter rounded-2xl shadow-xl shadow-primary/20"
-                >
-                  {manualPending ? 'BLOQUEANDO...' : <><Shield className="w-4 h-4 mr-2" /> CONFIRMAR RESERVA PERSONALIZADA</>}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
+    <CardHeader className="border-b border-slate-100 pb-4">
+      <CardTitle className="flex items-center gap-2 text-lg text-slate-900"><Icon className="h-5 w-5 text-emerald-700" />{title}</CardTitle>
+      <CardDescription className="text-slate-500">{description}</CardDescription>
+    </CardHeader>
   )
 }
 
+function SaveBar({ pending, dirty, onDiscard, label = 'Guardar cambios' }: { pending: boolean; dirty: boolean; onDiscard: () => void; label?: string }) {
+  return (
+    <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-slate-500" aria-live="polite">{dirty ? 'Tienes cambios sin guardar.' : 'Todos los cambios están guardados.'}</p>
+      <div className="flex w-full gap-2 sm:w-auto">
+        <Button type="button" variant="outline" onClick={onDiscard} disabled={!dirty || pending} className="flex-1 border-slate-300 text-slate-700 sm:flex-none"><X className="mr-2 h-4 w-4" />Descartar</Button>
+        <Button type="submit" disabled={!dirty || pending} className="flex-1 bg-emerald-700 text-white hover:bg-emerald-800 sm:flex-none">{pending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : <><Save className="mr-2 h-4 w-4" />{label}</>}</Button>
+      </div>
+    </div>
+  )
+}
+
+export default function SettingsClient({ business, initialHours, initialExceptions = [] }: { business: Business; initialHours: Hour[]; initialExceptions?: Exception[] }) {
+  const params = useParams<{ slug: string }>()
+  const slug = params.slug
+  const [pending, setPending] = useState(false)
+  const [name, setName] = useState(business.name)
+  const [phone, setPhone] = useState((business.phone || '').replace(/-/g, ''))
+  const [whatsapp, setWhatsapp] = useState((business.whatsapp || '').replace(/-/g, ''))
+  const [location, setLocation] = useState(business.location || '')
+  const [coords, setCoords] = useState({ lat: business.latitude?.toString() || '', lng: business.longitude?.toString() || '' })
+  const [logoUrl, setLogoUrl] = useState(business.logo_url || '')
+  const [coverUrl, setCoverUrl] = useState(business.cover_image_url || '')
+  const [isMapOpen, setIsMapOpen] = useState(false)
+  const [uploadingCover, setUploadingCover] = useState(false)
+  const [exceptions, setExceptions] = useState<Exception[]>(initialExceptions)
+  const [newExDate, setNewExDate] = useState('')
+  const [newExReason, setNewExReason] = useState('')
+  const [branding, setBranding] = useState<Branding>({ ...defaultBranding, ...(business.branding || {}) })
+  const [savedBranding, setSavedBranding] = useState<Branding>({ ...defaultBranding, ...(business.branding || {}) })
+  const [brandingPending, setBrandingPending] = useState(false)
+
+  const generalDirty = name !== business.name || phone !== (business.phone || '') || whatsapp !== (business.whatsapp || '') || location !== (business.location || '') || coords.lat !== (business.latitude?.toString() || '') || coords.lng !== (business.longitude?.toString() || '') || logoUrl !== (business.logo_url || '')
+  const appearanceDirty = coverUrl !== (business.cover_image_url || '') || JSON.stringify(branding) !== JSON.stringify(savedBranding)
+  const portalUrl = `${typeof window !== 'undefined' ? window.location.origin : 'https://saasintetica.app'}/${slug}`
+
+  const captureLocation = () => {
+    if (!navigator.geolocation) return toast.error('La geolocalización no está disponible en este dispositivo.')
+    toast.promise(new Promise<GeolocationPosition>((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject)), {
+      loading: 'Solicitando ubicación...',
+      success: (position) => { setCoords({ lat: position.coords.latitude.toString(), lng: position.coords.longitude.toString() }); return 'Ubicación encontrada.' },
+      error: 'No se pudo obtener la ubicación. Revisa los permisos del navegador.',
+    })
+  }
+
+  const submitGeneral = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setPending(true)
+    const formData = new FormData()
+    formData.set('id', business.id); formData.set('name', name.trim()); formData.set('phone', phone); formData.set('whatsapp', whatsapp); formData.set('location', location); formData.set('latitude', coords.lat); formData.set('longitude', coords.lng); formData.set('logo_url', logoUrl)
+    const result = await updateBusiness(formData)
+    setPending(false)
+    if (result.error) toast.error(result.error); else toast.success('Información actualizada correctamente')
+  }
+
+  const uploadCover = async (file: File) => {
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp']
+    if (!validTypes.includes(file.type)) return toast.error('Formato no compatible. Usa JPG, PNG o WebP.')
+    if (file.size > 5 * 1024 * 1024) return toast.error('La imagen supera el tamaño permitido de 5 MB.')
+    setUploadingCover(true)
+    try {
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+      const path = `${business.id}/cover-${crypto.randomUUID()}.${extension}`
+      const { error } = await supabase.storage.from('logos').upload(path, file, { upsert: false, contentType: file.type })
+      if (error) throw error
+      const { data } = supabase.storage.from('logos').getPublicUrl(path)
+      setCoverUrl(data.publicUrl)
+      toast.success('Imagen de portada lista para guardar.')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo subir la imagen.')
+    } finally { setUploadingCover(false) }
+  }
+
+  const submitAppearance = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); setBrandingPending(true)
+    const brandingResult = await updateBranding(business.id, branding)
+    const coverResult = await updateCoverImage(business.id, coverUrl)
+    setBrandingPending(false)
+    if (brandingResult.error || coverResult.error) toast.error(brandingResult.error || coverResult.error); else { setSavedBranding(branding); toast.success('Apariencia actualizada correctamente') }
+  }
+
+  const addException = async () => {
+    if (!newExDate) return toast.error('Selecciona una fecha.')
+    const result = await createException({ business_id: business.id, exception_date: newExDate, reason: newExReason, is_closed: true })
+    if (result.success && result.data) { setExceptions([...exceptions, result.data as Exception].sort((a, b) => a.exception_date.localeCompare(b.exception_date))); setNewExDate(''); setNewExReason(''); toast.success('Cierre agregado.') } else toast.error(result.error)
+  }
+
+  const removeException = async (id: string) => { const result = await deleteException(id); if (result.success) { setExceptions(exceptions.filter((item) => item.id !== id)); toast.success('Cierre eliminado.') } else toast.error(result.error) }
+  const updateColor = (key: keyof Branding, value: string) => setBranding((current) => ({ ...current, [key]: value }))
+
+  return (
+    <Tabs defaultValue="general" className="settings-fields space-y-6">
+      <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+        <TabsTrigger value="general" className="h-11 gap-2 rounded-lg text-slate-600 data-[state=active]:bg-emerald-700 data-[state=active]:text-white"><Store className="h-4 w-4" />General</TabsTrigger>
+        <TabsTrigger value="horarios" className="h-11 gap-2 rounded-lg text-slate-600 data-[state=active]:bg-emerald-700 data-[state=active]:text-white"><CalendarDays className="h-4 w-4" />Horarios</TabsTrigger>
+        <TabsTrigger value="apariencia" className="h-11 gap-2 rounded-lg text-slate-600 data-[state=active]:bg-emerald-700 data-[state=active]:text-white"><Palette className="h-4 w-4" />Apariencia</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="general" className="space-y-5">
+        <form onSubmit={submitGeneral} className="space-y-5">
+          <Card className="border-slate-200 bg-white shadow-sm"><SectionHeader icon={Store} title="Identidad del negocio" description="Configura cómo se identifica tu complejo dentro de la plataforma." /><CardContent className="space-y-6 pt-5">
+            <div className="grid gap-6 lg:grid-cols-[180px_1fr]">
+              <div className="flex flex-col items-center gap-3"><div className="flex h-36 w-36 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-slate-50">{logoUrl ? <img src={logoUrl} alt="Logo del negocio" className="h-full w-full object-contain" /> : <Store className="h-10 w-10 text-slate-300" />}</div><label className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-emerald-700 hover:text-emerald-800"><Upload className="h-4 w-4" />Cambiar logo<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; if (file.size > 5 * 1024 * 1024) return toast.error('La imagen supera el tamaño permitido de 5 MB.'); const { createClient } = await import('@/lib/supabase/client'); const supabase = createClient(); const extension = file.name.split('.').pop() || 'png'; const path = `${business.id}/logo-${crypto.randomUUID()}.${extension}`; const { error } = await supabase.storage.from('logos').upload(path, file); if (error) return toast.error('No se pudo subir el logo.'); const { data } = supabase.storage.from('logos').getPublicUrl(path); setLogoUrl(data.publicUrl); toast.success('Logo listo para guardar.') }} /></label><button type="button" onClick={() => setLogoUrl('')} disabled={!logoUrl} className="text-xs text-rose-600 disabled:opacity-40"><Trash2 className="mr-1 inline h-3.5 w-3.5" />Eliminar logo</button><p className="text-center text-xs text-slate-500">JPG, PNG o WebP · máximo 5 MB</p></div>
+              <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2 sm:col-span-2"><Label htmlFor="business-name">Nombre del local</Label><Input id="business-name" value={name} onChange={(event) => setName(event.target.value)} required className="border-slate-300" /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="business-slug">Identificador del portal público</Label><div className="flex min-w-0 items-center rounded-md border border-slate-300 bg-slate-50"><span className="hidden px-3 text-sm text-slate-500 sm:inline">saasintetica.app/</span><Input id="business-slug" value={business.slug} readOnly className="border-0 bg-transparent focus-visible:ring-0" /></div><p className="break-all text-xs text-slate-500">{portalUrl}</p></div></div>
+            </div>
+            <Button type="button" variant="outline" onClick={() => window.open(`/${slug}`, '_blank')} className="border-slate-300 text-slate-700"><ExternalLink className="mr-2 h-4 w-4" />Ver portal</Button>
+          </CardContent></Card>
+
+          <Card className="border-slate-200 bg-white shadow-sm"><SectionHeader icon={Phone} title="Información de contacto" description="Datos para que clientes y administradores puedan comunicarse con el negocio." /><CardContent className="grid gap-4 pt-5 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="whatsapp">WhatsApp de contacto</Label><Input id="whatsapp" value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} placeholder="+506 8888-8888" inputMode="tel" className="border-slate-300" /><p className="text-xs text-slate-500">Incluye el prefijo +506 cuando corresponda.</p></div><div className="space-y-2"><Label htmlFor="phone">Teléfono secundario <span className="font-normal text-slate-400">(opcional)</span></Label><Input id="phone" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="8888-8888" inputMode="tel" className="border-slate-300" /></div>{business.email && <div className="space-y-2 sm:col-span-2"><Label>Correo electrónico</Label><Input value={business.email} readOnly className="border-slate-300 bg-slate-50" /></div>}<Button type="button" variant="outline" onClick={() => { const target = (whatsapp || phone).replace(/\D/g, ''); if (!target) return toast.error('Agrega un número de WhatsApp primero.'); window.open(`https://wa.me/506${target.slice(-8)}?text=${encodeURIComponent('Hola, este es un mensaje de prueba de SaaSintética.')}`, '_blank') }} className="w-fit border-emerald-200 text-emerald-700"><Phone className="mr-2 h-4 w-4" />Probar WhatsApp</Button></CardContent></Card>
+
+          <Card className="border-slate-200 bg-white shadow-sm"><SectionHeader icon={MapPin} title="Ubicación física" description="Define dónde se encuentra el complejo para que los clientes puedan ubicarlo." /><CardContent className="grid gap-5 pt-5 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]"><div className="space-y-4"><div className="space-y-2"><Label htmlFor="location">Dirección o referencia</Label><Input id="location" value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Frente al parque de Pital, San Carlos" className="border-slate-300" /></div><div className="flex flex-col gap-2 sm:flex-row lg:flex-col"><Button type="button" variant="outline" onClick={() => setIsMapOpen(true)} className="justify-start border-slate-300 text-slate-700"><Map className="mr-2 h-4 w-4" />Seleccionar en el mapa</Button><Button type="button" variant="outline" onClick={captureLocation} className="justify-start border-emerald-200 text-emerald-700"><MapPin className="mr-2 h-4 w-4" />Usar mi ubicación actual</Button></div><div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-500"><p className="font-semibold text-slate-700">Detalles de ubicación</p><p>Latitud: {coords.lat || 'Sin definir'}</p><p>Longitud: {coords.lng || 'Sin definir'}</p></div></div><MapPreview lat={coords.lat} lng={coords.lng} /></CardContent></Card>
+          <SaveBar pending={pending} dirty={generalDirty} onDiscard={() => { setName(business.name); setPhone(business.phone || ''); setWhatsapp(business.whatsapp || ''); setLocation(business.location || ''); setCoords({ lat: business.latitude?.toString() || '', lng: business.longitude?.toString() || '' }); setLogoUrl(business.logo_url || '') }} />
+        </form>
+        <MapPicker isOpen={isMapOpen} onOpenChange={setIsMapOpen} onSelect={(lat, lng, address) => { setCoords({ lat, lng }); if (address) setLocation(address) }} initialLat={coords.lat} initialLng={coords.lng} initialAddress={location} />
+      </TabsContent>
+
+      <TabsContent value="horarios" className="space-y-5"><BusinessHoursManager businessId={business.id} initialHours={initialHours} /><Card className="border-slate-200 bg-white shadow-sm"><SectionHeader icon={CalendarDays} title="Excepciones y cierres" description="Bloquea fechas especiales, mantenimiento, feriados o eventos." /><CardContent className="space-y-5 pt-5"><div className="grid gap-3 rounded-xl bg-slate-50 p-4 sm:grid-cols-[180px_1fr_auto]"><div className="space-y-2"><Label htmlFor="exception-date">Fecha</Label><Input id="exception-date" type="date" value={newExDate} onChange={(event) => setNewExDate(event.target.value)} className="border-slate-300 bg-white" /></div><div className="space-y-2"><Label htmlFor="exception-reason">Motivo <span className="font-normal text-slate-400">(opcional)</span></Label><Input id="exception-reason" value={newExReason} onChange={(event) => setNewExReason(event.target.value)} placeholder="Feriado, mantenimiento..." className="border-slate-300 bg-white" /></div><Button type="button" onClick={addException} className="self-end bg-emerald-700 text-white hover:bg-emerald-800"><CalendarDays className="mr-2 h-4 w-4" />Agregar cierre</Button></div><div className="space-y-2">{exceptions.length === 0 ? <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">No hay fechas bloqueadas.</div> : exceptions.map((item) => <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-4"><div><p className="font-semibold capitalize text-slate-800">{new Date(`${item.exception_date}T12:00:00`).toLocaleDateString('es-CR', { dateStyle: 'full' })}</p><p className="text-sm text-slate-500">{item.reason || 'Cierre del negocio'}</p></div><Button type="button" variant="ghost" size="icon" aria-label="Eliminar cierre" onClick={() => removeException(item.id)} className="text-rose-600 hover:bg-rose-50"><Trash2 className="h-4 w-4" /></Button></div>)}</div></CardContent></Card></TabsContent>
+
+      <TabsContent value="apariencia" className="space-y-5"><form onSubmit={submitAppearance} className="space-y-5"><div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"><Card className="border-slate-200 bg-white shadow-sm"><SectionHeader icon={Palette} title="Apariencia del portal" description="Personaliza los colores y la imagen que verán tus clientes." /><CardContent className="space-y-5 pt-5"><div className="grid gap-4 sm:grid-cols-2">{colorFields.map(({ key, label }) => <div key={key} className="space-y-2"><Label htmlFor={`color-${key}`}>{label}</Label><div className="flex gap-2"><Input type="color" value={branding[key] as string} onChange={(event) => updateColor(key, event.target.value)} className="h-10 w-12 cursor-pointer border-slate-300 p-1" /><Input id={`color-${key}`} value={branding[key] as string} onChange={(event) => updateColor(key, event.target.value)} pattern="^#[0-9A-Fa-f]{6}$" className="border-slate-300 font-mono uppercase" /></div></div>)}</div><div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4"><span className="w-full text-xs font-semibold text-slate-500">Paletas sugeridas</span>{[['#15803d','#f59e0b'],['#166534','#eab308'],['#0f766e','#fb923c']].map(([primary, secondary]) => <button type="button" key={primary} onClick={() => setBranding((current) => ({ ...current, primary, secondary }))} className="h-8 w-14 rounded-md border border-slate-300" style={{ background: `linear-gradient(90deg, ${primary} 50%, ${secondary} 50%)` }} aria-label={`Usar paleta ${primary}`} />)}<Button type="button" variant="ghost" onClick={() => setBranding(defaultBranding)} className="text-slate-600">Restablecer colores</Button></div><div className="space-y-3 border-t border-slate-100 pt-4"><div><Label>Imagen de portada</Label><p className="text-xs text-slate-500">JPG, PNG o WebP · máximo 5 MB · proporción recomendada 16:9.</p></div><label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-center hover:border-emerald-500">{uploadingCover ? <Loader2 className="h-6 w-6 animate-spin text-emerald-700" /> : <ImagePlus className="h-6 w-6 text-slate-400" />}<span className="mt-2 text-sm font-semibold text-slate-700">Seleccionar o reemplazar portada</span><input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={uploadingCover} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadCover(file) }} /></label>{coverUrl && <Button type="button" variant="outline" onClick={() => setCoverUrl('')} className="border-rose-200 text-rose-600"><Trash2 className="mr-2 h-4 w-4" />Eliminar portada</Button>}</div></CardContent></Card><Card className="border-slate-200 bg-white shadow-sm"><CardHeader className="border-b border-slate-100 pb-4"><CardTitle className="text-lg text-slate-900">Vista previa del portal</CardTitle><CardDescription className="text-slate-500">La vista se actualiza mientras editas.</CardDescription></CardHeader><CardContent className="pt-5"><div className="overflow-hidden rounded-2xl border border-slate-200" style={{ background: branding.background, color: branding.text }}><div className="relative flex h-36 items-end overflow-hidden p-5" style={{ background: coverUrl ? `url(${coverUrl}) center/cover` : branding.primary }}><div className="absolute inset-0 bg-black/25" /><div className="relative flex items-center gap-3 text-white"><div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-white shadow">{logoUrl ? <img src={logoUrl} alt="Logo" className="h-full w-full object-contain" /> : <Store className="h-6 w-6 text-emerald-700" />}</div><div><p className="font-bold">{name || 'Nombre del negocio'}</p><p className="text-xs text-white/80">Reserva tu cancha</p></div></div></div><div className="space-y-3 p-5"><div className="rounded-xl p-4 shadow-sm" style={{ background: branding.card_bg }}><p className="font-semibold">Cancha disponible</p><p className="mt-1 text-xs opacity-70">Selecciona un horario para reservar.</p></div><button type="button" className="w-full rounded-lg px-4 py-3 text-sm font-semibold text-white" style={{ background: branding.primary }}>Reservar ahora</button></div></div></CardContent></Card></div><SaveBar pending={brandingPending} dirty={appearanceDirty} onDiscard={() => { setBranding(savedBranding); setCoverUrl(business.cover_image_url || '') }} label="Guardar apariencia" /></form></TabsContent>
+    </Tabs>
+  )
+}

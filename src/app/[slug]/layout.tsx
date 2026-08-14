@@ -78,23 +78,24 @@ export default async function SlugLayout({
 
   const branding = business.branding || {}
   
-  // Mapeo de colores del branding a variables CSS
-  // Usamos los valores actuales como fallback
+  // Tema claro forzado: solo se hereda el color primario del branding.
+  // El fondo, texto y superficies siempre usan los tokens claros del tema
+  // para garantizar legibilidad y evitar fondos oscuros.
   const customStyles = {
-    '--primary': branding.primary || 'oklch(0.627 0.194 149.214)',
-    '--background': branding.background || 'oklch(0.13 0.02 260)',
-    '--foreground': branding.text || 'oklch(0.985 0 0)',
-    '--card': branding.card_bg || 'oklch(0.16 0.02 260)',
-    '--card-foreground': branding.text || 'oklch(0.985 0 0)',
-    '--popover': branding.card_bg || 'oklch(0.16 0.02 260)',
-    '--popover-foreground': branding.text || 'oklch(0.985 0 0)',
-    '--border': `${branding.text}20` || 'oklch(0.25 0.03 260)',
-    '--ring': branding.primary || 'oklch(0.627 0.194 149.214)',
+    '--primary': branding.primary || '#2f9565',
+    '--ring': branding.primary || '#2f9565',
+    '--background': '#f8f5ed',
+    '--foreground': '#071b21',
+    '--card': '#ffffff',
+    '--card-foreground': '#071b21',
+    '--popover': '#ffffff',
+    '--popover-foreground': '#071b21',
+    '--border': '#e6e1d5',
   } as React.CSSProperties
 
   return (
     <SuspensionCheck isActive={business.is_active ?? true} businessName={business.name}>
-      <div style={customStyles} className="min-h-screen bg-background text-foreground selection:bg-primary/30">
+      <div style={customStyles} className="min-h-screen bg-background text-foreground selection:bg-primary/30 pb-20 md:pb-0">
         {children}
         <PWAInstallPrompt 
           businessName={business.name} 

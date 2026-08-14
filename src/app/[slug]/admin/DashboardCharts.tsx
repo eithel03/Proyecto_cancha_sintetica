@@ -14,7 +14,7 @@ const dataRevenue = [
   { name: 'Jun', ingresos: 700000 },
 ]
 
-export function DashboardCharts({ data }: { data: any[] }) {
+export function DashboardCharts({ data, revenueData = [] }: { data: any[]; revenueData?: any[] }) {
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
@@ -24,15 +24,15 @@ export function DashboardCharts({ data }: { data: any[] }) {
   if (!isMounted) {
     return (
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md h-[400px] animate-pulse" />
-        <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md h-[400px] animate-pulse" />
+        <Card className="border-slate-200 bg-white shadow-sm h-[400px] animate-pulse" />
+        <Card className="border-slate-200 bg-white shadow-sm h-[400px] animate-pulse" />
       </div>
     )
   }
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md overflow-hidden group">
+      <Card className="border-slate-200 bg-white shadow-sm overflow-hidden group">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500/0 via-emerald-500/50 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
         <CardHeader>
           <CardTitle className="text-lg font-bold flex items-center gap-2">
@@ -50,27 +50,27 @@ export function DashboardCharts({ data }: { data: any[] }) {
                     <stop offset="100%" stopColor="#10b981" stopOpacity={0.4} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                 <XAxis 
                   dataKey="name" 
-                  stroke="#525252" 
+                  stroke="#6b7280" 
                   fontSize={10} 
                   fontWeight="bold"
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis 
-                  stroke="#525252" 
+                  stroke="#6b7280" 
                   fontSize={10} 
                   fontWeight="bold"
                   axisLine={false}
                   tickLine={false}
                 />
                 <Tooltip 
-                  cursor={{ fill: '#ffffff05' }}
+                  cursor={{ fill: '#f4f4f5' }}
                   contentStyle={{ 
-                    backgroundColor: '#09090b', 
-                    border: '1px solid #27272a',
+                    backgroundColor: '#ffffff', 
+                    border: '1px solid #e5e7eb',
                     borderRadius: '12px',
                     fontSize: '12px',
                     fontWeight: 'bold'
@@ -92,7 +92,7 @@ export function DashboardCharts({ data }: { data: any[] }) {
         </CardContent>
       </Card>
 
-      <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-md overflow-hidden group">
+      <Card className="border-slate-200 bg-white shadow-sm overflow-hidden group">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500/0 via-blue-500/50 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
         <CardHeader>
           <CardTitle className="text-lg font-bold flex items-center gap-2">
@@ -103,24 +103,24 @@ export function DashboardCharts({ data }: { data: any[] }) {
         <CardContent>
           <div className="h-[300px] w-full min-w-0">
             <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-              <AreaChart data={dataRevenue} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart data={revenueData.length > 0 ? revenueData : dataRevenue} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
                     <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                 <XAxis 
                   dataKey="name" 
-                  stroke="#525252" 
+                  stroke="#6b7280" 
                   fontSize={10} 
                   fontWeight="bold"
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis 
-                  stroke="#525252" 
+                  stroke="#6b7280" 
                   fontSize={10} 
                   fontWeight="bold"
                   axisLine={false}
@@ -128,8 +128,8 @@ export function DashboardCharts({ data }: { data: any[] }) {
                 />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: '#09090b', 
-                    border: '1px solid #27272a',
+                    backgroundColor: '#ffffff', 
+                    border: '1px solid #e5e7eb',
                     borderRadius: '12px',
                     fontSize: '12px',
                     fontWeight: 'bold'

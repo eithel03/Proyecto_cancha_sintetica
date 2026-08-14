@@ -1,20 +1,14 @@
 import { Metadata, Viewport } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { getAdminSession, getBusinessBySlug } from '@/lib/admin'
 import DashboardClientLayout from './DashboardClientLayout'
-import { Activity, ShieldAlert } from 'lucide-react'
-import { redirect } from 'next/navigation'
+import { ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
 export async function generateViewport({ params }: { params: Promise<{ slug: string }> }): Promise<Viewport> {
   const { slug } = await params
-  const supabase = await createClient()
-  
-  const { data: business } = await supabase
-    .from('businesses')
-    .select('branding')
-    .eq('slug', slug)
-    .single()
+  const business = await getBusinessBySlug(slug)
 
   return {
     themeColor: business?.branding?.primary || '#10b981',
@@ -26,13 +20,7 @@ export async function generateViewport({ params }: { params: Promise<{ slug: str
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const supabase = await createClient()
-
-  const { data: business } = await supabase
-    .from('businesses')
-    .select('name, logo_url')
-    .eq('slug', slug)
-    .single()
+  const business = await getBusinessBySlug(slug)
 
   if (!business) return { title: 'Admin - SaaSintética' }
 
@@ -57,16 +45,33 @@ export default async function Layout({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
+  const { user, business } = await getAdminSession(slug)
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) redirect('/login')
+  const today = getDateInTimeZone(new Date(), 'America/Costa_Rica')
 
-  const { data: business } = await supabase
-    .from('businesses')
-    .select('is_active, name')
-    .eq('slug', slug)
-    .single()
+  const [
+    { data: profile },
+    { count: pendingReservations },
+    { count: pendingChallenges },
+  ] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('full_name, first_name, last_name')
+      .eq('id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('reservations')
+      .select('*', { count: 'exact', head: true })
+      .eq('business_id', business.id)
+      .eq('status', 'pending')
+      .gte('reservation_date', today),
+    supabase
+      .from('challenges')
+      .select('*', { count: 'exact', head: true })
+      .eq('business_id', business.id)
+      .in('status', ['open', 'accepted']),
+  ])
 
   if (business && business.is_active === false) {
     return (
@@ -94,5 +99,38 @@ export default async function Layout({
     )
   }
 
-  return <DashboardClientLayout>{children}</DashboardClientLayout>
+  const profileName = profile?.full_name?.trim() || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ').trim()
+  const metadataName =
+    user.user_metadata?.full_name?.trim() ||
+    user.user_metadata?.name?.trim() ||
+    [user.user_metadata?.first_name, user.user_metadata?.last_name].filter(Boolean).join(' ').trim()
+  const userName = profileName || metadataName || 'Sin nombre registrado'
+
+  return (
+    <div className="dark admin-theme">
+      <DashboardClientLayout
+        businessName={business.name}
+        userName={userName}
+        pendingReservationsCount={pendingReservations || 0}
+        pendingChallengesCount={pendingChallenges || 0}
+      >
+        {children}
+      </DashboardClientLayout>
+    </div>
+  )
+}
+
+function getDateInTimeZone(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date)
+
+  const year = parts.find((part) => part.type === 'year')?.value
+  const month = parts.find((part) => part.type === 'month')?.value
+  const day = parts.find((part) => part.type === 'day')?.value
+
+  return `${year}-${month}-${day}`
 }

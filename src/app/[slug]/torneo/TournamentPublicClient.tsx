@@ -5,18 +5,78 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
-import { Trophy, Calendar, Users, BarChart3, User, Shield, Zap, X, ChevronLeft, Activity, Target, ShieldAlert, Clock, MapPin } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Trophy, CalendarDays, Users, BarChart3, User, Shield, X, Activity, Target, ShieldAlert, Clock, MapPin } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { cn, formatTime12h } from '@/lib/utils'
 import { autoStartMatches } from '../../dashboard/tournament/actions'
+import { HeroSection, MatchRow, EmptyState } from '@/components/portal'
 
-export default function TournamentPublicClient({ businessId, matches: initialMatches, standings: initialStandings, teams: initialTeams, stats }: {
+function getLocalDateKey(date = new Date()) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+type ClassificationZoneRow = {
+  gender: string | null
+  direct_count: number | null
+  playoff_count: number | null
+  eliminated_count: number | null
+}
+
+type ZoneCounts = { direct: number; playoff: number; eliminated: number }
+
+const ZONE_META = {
+  direct: {
+    label: 'Zona de clasificación',
+    shortLabel: 'Clasifican',
+    rowClassName: 'bg-primary-green-light/50 hover:bg-primary-green-light/70',
+    markerClassName: 'bg-primary-green',
+    badgeClassName: 'border-primary-green/30 bg-primary-green-light text-primary-green-dark',
+  },
+  playoff: {
+    label: 'Repechaje',
+    shortLabel: 'Repechaje',
+    rowClassName: 'bg-sky-50/60 hover:bg-sky-50',
+    markerClassName: 'bg-sky-500',
+    badgeClassName: 'border-sky-500/30 bg-sky-50 text-sky-700',
+  },
+  eliminated: {
+    label: 'Eliminados',
+    shortLabel: 'Eliminados',
+    rowClassName: 'bg-rose-50/60 hover:bg-rose-50',
+    markerClassName: 'bg-rose-500',
+    badgeClassName: 'border-rose-500/30 bg-rose-50 text-rose-600',
+  },
+} as const
+
+type ZoneKey = keyof typeof ZONE_META
+
+function getEffectiveZoneCounts(zone: ZoneCounts, totalRows: number): ZoneCounts {
+  const direct = Math.min(Math.max(0, zone.direct), totalRows)
+  const playoff = Math.min(Math.max(0, zone.playoff), Math.max(0, totalRows - direct))
+  const eliminated = Math.min(Math.max(0, zone.eliminated), Math.max(0, totalRows - direct - playoff))
+  return { direct, playoff, eliminated }
+}
+
+function getClassificationZone(index: number, totalRows: number, zones: ZoneCounts): ZoneKey | null {
+  const position = index + 1
+  if (position <= zones.direct) return 'direct'
+  if (position <= zones.direct + zones.playoff) return 'playoff'
+  if (zones.eliminated > 0 && position > totalRows - zones.eliminated) return 'eliminated'
+  return null
+}
+
+export default function TournamentPublicClient({ businessId, businessName: _businessName, matches: initialMatches, standings: initialStandings, teams: initialTeams, stats, classificationZones }: {
   businessId: string,
+  businessName: string,
   matches: any[],
   standings: any[],
   teams: any[],
-  stats: any[]
+  stats: any[],
+  classificationZones?: ClassificationZoneRow[]
 }) {
   const [matches, setMatches] = useState(initialMatches)
   const [selectedGender, setSelectedGender] = useState('masculino')
@@ -57,7 +117,7 @@ export default function TournamentPublicClient({ businessId, matches: initialMat
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'tournament_matches', filter: `business_id=eq.${businessId}` },
-          (payload) => {
+          (payload: { eventType: string; new: any }) => {
             if (payload.eventType === 'UPDATE') {
               setMatches((prev: any) => prev.map((m: any) => m.id === payload.new.id ? { ...m, ...payload.new } : m))
             }
@@ -73,29 +133,23 @@ export default function TournamentPublicClient({ businessId, matches: initialMat
     setupRealtime()
   }, [matches.length])
 
-  // AUTO-INICIO DE PARTIDOS
   useEffect(() => {
-    // Verificación inicial
     autoStartMatches(businessId)
-    
-    // Verificación periódica cada minuto
     const interval = setInterval(() => {
       autoStartMatches(businessId)
     }, 60000)
-
     return () => clearInterval(interval)
   }, [businessId])
 
-  // FILTROS POR GÉNERO
   const filteredMatches = matches.filter(m => (m.gender || 'masculino') === selectedGender)
   const filteredStandings = initialStandings.filter(s => (s.gender || 'masculino') === selectedGender)
   const filteredTeams = initialTeams.filter(t => (t.gender || 'masculino') === selectedGender)
   const filteredStats = (stats || []).filter(s => (s.team?.gender || 'masculino') === selectedGender)
 
-  const liveMatches = filteredMatches.filter(m => m.status === 'live' || m.status === 'halftime')
+  const todayKey = getLocalDateKey()
+  const hasTodayMatch = filteredMatches.some(m => m.match_date === todayKey)
   
   const matchesByDate = filteredMatches
-    .filter(m => m.status !== 'live' && m.status !== 'halftime')
     .reduce((acc: any, match: any) => {
       const date = match.match_date
       if (!acc[date]) acc[date] = []
@@ -139,26 +193,6 @@ export default function TournamentPublicClient({ businessId, matches: initialMat
   
   const topAssists = Object.values(assists).sort((a: any, b: any) => b.assists - a.assists).slice(0, 10)
 
-  const cards = filteredStats
-    .filter(e => e.event_type === 'yellow_card' || e.event_type === 'red_card')
-    .reduce((acc: any, event: any) => {
-      const playerId = event.player_id
-      if (!acc[playerId]) {
-        acc[playerId] = { 
-          name: `${event.player?.first_name} ${event.player?.last_name}`,
-          team: event.team?.name,
-          yellow: 0,
-          red: 0 
-        }
-      }
-      if (event.event_type === 'yellow_card') acc[playerId].yellow += (event.quantity || 1)
-      if (event.event_type === 'red_card') acc[playerId].red += (event.quantity || 1)
-      return acc
-    }, {})
-  
-  const topCards = Object.values(cards).sort((a: any, b: any) => (b.red * 2 + b.yellow) - (a.red * 2 + a.yellow)).slice(0, 10)
-
-  // Nota: liveStandings ahora debe usar filteredTeams y filteredMatches
   const liveStandings = filteredTeams.map(team => {
     let pj = 0, g = 0, e = 0, p = 0, gf = 0, gc = 0
     filteredMatches.forEach(m => {
@@ -190,327 +224,374 @@ export default function TournamentPublicClient({ businessId, matches: initialMat
     }
   }).sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf)
 
+  const finishedCount = filteredMatches.filter((m: any) => m.status === 'finished').length
+  const totalMatches = filteredMatches.length
+
+  const activeZones = getEffectiveZoneCounts({
+    direct: (classificationZones || []).find((z) => (z.gender || 'masculino') === selectedGender)?.direct_count || 0,
+    playoff: (classificationZones || []).find((z) => (z.gender || 'masculino') === selectedGender)?.playoff_count || 0,
+    eliminated: (classificationZones || []).find((z) => (z.gender || 'masculino') === selectedGender)?.eliminated_count || 0,
+  }, liveStandings.length)
+  const hasConfiguredZones = activeZones.direct + activeZones.playoff + activeZones.eliminated > 0
+
   return (
-    <div className="space-y-8 pb-20 animate-in fade-in duration-1000">
-      {/* Selector de Rama (Género) para el público */}
-      <div className="max-w-md mx-auto p-1.5 bg-zinc-900/50 border border-white/5 rounded-3xl flex gap-1 shadow-2xl backdrop-blur-xl">
-        <button 
-          onClick={() => setSelectedGender('masculino')}
-          className={`flex-1 py-3 px-6 rounded-2xl font-black italic uppercase tracking-wider text-xs transition-all duration-500 flex items-center justify-center gap-2 ${
-            selectedGender === 'masculino' 
-            ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 scale-[1.02]' 
-            : 'text-zinc-500 hover:text-zinc-300'
-          }`}
-        >
-          <Trophy className="w-4 h-4" /> Masculino
-        </button>
-        <button 
-          onClick={() => setSelectedGender('femenino')}
-          className={`flex-1 py-3 px-6 rounded-2xl font-black italic uppercase tracking-wider text-xs transition-all duration-500 flex items-center justify-center gap-2 ${
-            selectedGender === 'femenino' 
-            ? 'bg-pink-600 text-white shadow-lg shadow-pink-600/20 scale-[1.02]' 
-            : 'text-zinc-500 hover:text-zinc-300'
-          }`}
-        >
-          <Trophy className="w-4 h-4" /> Femenino
-        </button>
-      </div>
+    <div className="space-y-5 sm:space-y-6 pb-20 animate-in fade-in duration-1000">
+      {/* HERO DEL TORNEO */}
+      <HeroSection
+        icon={Trophy}
+        badge="Torneo activo"
+        title={selectedGender === 'femenino' ? 'Liga femenina' : 'Liga masculina'}
+        subtitle="Consulta partidos, posiciones y estadísticas del campeonato."
+        stats={[
+          { value: filteredTeams.length, label: 'Equipos' },
+          { value: totalMatches, label: 'Partidos' },
+          { value: finishedCount, label: 'Jugados' },
+        ]}
+        variant="green"
+        className="rounded-[20px]"
+      >
+        <div className="self-start inline-flex p-1 bg-[#08262D]/50 border border-white/15 rounded-[12px] gap-1">
+          <button
+            onClick={() => setSelectedGender('masculino')}
+            className={`flex-1 py-2.5 px-5 rounded-[10px] font-semibold text-sm transition-all duration-150 flex items-center justify-center gap-2 ${
+              selectedGender === 'masculino'
+              ? 'bg-[#0F3D3E] text-white shadow-sm border border-white/10'
+              : 'bg-white/10 text-[#D9E5E1] hover:bg-white/15 hover:text-white'
+            }`}
+          >
+            <Trophy className={`w-4 h-4 ${selectedGender === 'masculino' ? 'text-[#F5BF16]' : 'text-[#B8C9C4]'}`} /> Masculino
+          </button>
+          <button
+            onClick={() => setSelectedGender('femenino')}
+            className={`flex-1 py-2.5 px-5 rounded-[10px] font-semibold text-sm transition-all duration-150 flex items-center justify-center gap-2 ${
+              selectedGender === 'femenino'
+              ? 'bg-[#8F3657] text-white shadow-sm border border-white/10'
+              : 'bg-white/10 text-[#D9E5E1] hover:bg-white/15 hover:text-white'
+            }`}
+          >
+            <Trophy className={`w-4 h-4 ${selectedGender === 'femenino' ? 'text-[#FFD6E5]' : 'text-[#B8C9C4]'}`} /> Femenino
+          </button>
+        </div>
+      </HeroSection>
+
       <Tabs defaultValue="jornada" className="w-full">
-        <div className="sticky top-16 sm:top-20 z-30 py-4 bg-zinc-950/80 backdrop-blur-md mb-4 sm:mb-8 px-2">
-          <TabsList className="flex w-full max-w-3xl mx-auto h-14 sm:h-16 bg-zinc-900/50 border border-white/5 rounded-[20px] sm:rounded-[24px] p-1 sm:p-1.5 gap-1 sm:gap-1.5 shadow-2xl overflow-x-auto no-scrollbar">
+        <div className="sticky top-16 sm:top-20 z-30 py-2 sm:py-3 bg-background/80 backdrop-blur-md mb-4 sm:mb-5 px-1">
+          <TabsList className="flex w-full h-12 bg-white border border-border rounded-[14px] p-[5px] gap-1 shadow-soft overflow-x-auto no-scrollbar">
             {[
-              { id: 'jornada', label: 'FECHA', icon: Calendar },
-              { id: 'clasificacion', label: 'TABLA', icon: Trophy },
-              { id: 'estadisticas', label: 'STATS', icon: BarChart3 },
-              { id: 'equipos', label: 'EQUIPOS', icon: Users },
+              { id: 'jornada', label: 'Partidos', icon: CalendarDays },
+              { id: 'clasificacion', label: 'Tabla', icon: Trophy },
+              { id: 'estadisticas', label: 'Estadísticas', icon: BarChart3 },
+              { id: 'equipos', label: 'Equipos', icon: Users },
             ].map(tab => (
-              <TabsTrigger 
+              <TabsTrigger
                 key={tab.id}
-                value={tab.id} 
+                value={tab.id}
                 data-value={tab.id}
-                className="flex-1 min-w-[75px] sm:min-w-0 rounded-xl sm:rounded-2xl font-black text-[9px] sm:text-xs tracking-[0.05em] sm:tracking-[0.1em] data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 transition-all uppercase italic whitespace-nowrap px-2"
+                className="flex-1 min-w-[88px] rounded-[10px] font-semibold text-xs sm:text-sm text-[#52646A] hover:text-primary-green hover:bg-primary-green-subtle data-[state=active]:bg-primary-green data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:font-bold transition-all whitespace-nowrap px-2"
               >
-                <tab.icon className="w-3 h-3 mr-1.5 hidden xs:block md:block" /> {tab.label}
+                <tab.icon className="w-3.5 h-3.5 mr-1.5" /> {tab.label}
               </TabsTrigger>
             ))}
           </TabsList>
         </div>
 
-        <TabsContent value="jornada" className="space-y-8 sm:space-y-12">
-          {liveMatches.length > 0 && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-3 sm:gap-4 px-2">
-                <div className="w-2 sm:w-3 h-8 sm:h-10 bg-red-600 rounded-full shadow-[0_0_20px_rgba(220,38,38,0.6)]" />
-                <h3 className="text-3xl sm:text-4xl font-black italic tracking-tighter uppercase text-white">En Vivo</h3>
+        <TabsContent value="jornada" className="space-y-5 sm:space-y-6">
+          <Card className="gap-0 rounded-2xl border border-border bg-white py-0 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
+            <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-border px-4 sm:px-5 py-4">
+              <CardTitle className="flex items-center gap-2.5 text-lg sm:text-xl font-bold tracking-tight text-foreground">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary-green-light text-primary-green">
+                  <CalendarDays className="h-4 w-4" />
+                </span>
+                Próximos partidos
+              </CardTitle>
+              {hasTodayMatch && (
+                <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                  Partido de hoy
+                </span>
+              )}
+            </CardHeader>
+            <CardContent className="p-0">
+          {/* Matches grouped by date */}
+          {sortedDates.map(date => {
+            const isToday = date === todayKey
+            const dateLabel = isToday
+              ? `HOY · ${new Date(date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }).toUpperCase()}`
+              : new Date(date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()
+
+            return (
+              <div key={date} className="border-b border-border/70 last:border-b-0">
+                <h3 className="bg-[#FBF9F3] px-4 sm:px-5 py-2 text-xs sm:text-[13px] font-bold uppercase tracking-[0.12em] text-[#5D7076]">
+                  {dateLabel}
+                </h3>
+                <div>
+                        {matchesByDate[date].map((match: typeof filteredMatches[number]) => (
+                    <MatchRow
+                      key={match.id}
+                      match={match}
+                      isToday={isToday}
+                      onClick={() => { setSelectedMatch(match); setIsModalOpen(true); }}
+                    />
+                  ))}
+                </div>
               </div>
-              <div className="grid gap-6 sm:gap-8 md:grid-cols-2">
-                {liveMatches.map((match: any) => (
-                  <Card 
-                    key={match.id} 
-                    className="overflow-hidden border-red-500/30 bg-red-500/[0.03] backdrop-blur-md cursor-pointer hover:border-red-500/60 transition-all rounded-[32px] sm:rounded-[40px] group shadow-2xl shadow-red-950/20"
-                    onClick={() => { setSelectedMatch(match); setIsModalOpen(true); }}
-                  >
-                    <CardContent className="p-0">
-                      <div className="bg-red-600/20 px-6 sm:px-8 py-3 sm:py-4 flex justify-between items-center border-b border-red-500/10">
-                        <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-red-500 flex items-center gap-2">
-                          <MapPin className="w-3 h-3" /> {match.court?.name}
-                        </span>
-                        <div className="flex items-center gap-2 sm:gap-3 text-white font-black italic">
-                          <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-white"></span>
-                          </span>
-                          <span className="text-xs sm:text-sm tracking-widest">{match.status === 'live' ? `${match.current_minute || '0'}'` : 'MITAD'}</span>
-                        </div>
-                      </div>
-                      <div className="p-6 sm:p-10 flex items-center justify-between gap-2 sm:gap-4">
-                        <div className="text-center flex-1 space-y-3 sm:space-y-4">
-                          <div className="w-14 h-14 sm:w-20 sm:h-20 mx-auto bg-white rounded-[20px] sm:rounded-[28px] p-2 sm:p-3 shadow-2xl rotate-[-4deg] group-hover:rotate-0 transition-all duration-500">
-                            {match.home?.logo_url ? <img src={match.home.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-full h-full text-zinc-300" />}
-                          </div>
-                          <p className="font-black text-[10px] sm:text-sm uppercase tracking-tight text-white leading-tight">{match.home?.name}</p>
-                        </div>
-                        <div className="px-2 sm:px-4 flex flex-col items-center">
-                          <div className="flex items-baseline gap-2 sm:gap-4">
-                            <span className="text-4xl sm:text-7xl font-black italic text-white leading-none drop-shadow-xl">{match.home_score}</span>
-                            <span className="text-xl sm:text-3xl font-black text-red-500/40">:</span>
-                            <span className="text-4xl sm:text-7xl font-black italic text-white leading-none drop-shadow-xl">{match.away_score}</span>
-                          </div>
-                        </div>
-                        <div className="text-center flex-1 space-y-3 sm:space-y-4">
-                          <div className="w-14 h-14 sm:w-20 sm:h-20 mx-auto bg-white rounded-[20px] sm:rounded-[28px] p-2 sm:p-3 shadow-2xl rotate-[4deg] group-hover:rotate-0 transition-all duration-500">
-                            {match.away?.logo_url ? <img src={match.away.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-full h-full text-zinc-300" />}
-                          </div>
-                          <p className="font-black text-[10px] sm:text-sm uppercase tracking-tight text-white leading-tight">{match.away?.name}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+            )
+          })}
+
+          {sortedDates.length === 0 && (
+            <div className="p-10">
+              <EmptyState
+              icon={CalendarDays}
+              title="No hay partidos programados"
+              description="Aún no se han creado partidos para este torneo."
+              />
             </div>
           )}
-
-          {sortedDates.map(date => (
-            <div key={date} className="space-y-6 sm:space-y-8">
-              <div className="flex items-center gap-3 sm:gap-4 px-2">
-                <div className="w-2 sm:w-3 h-8 sm:h-10 bg-primary rounded-full shadow-[0_0_20px_rgba(var(--primary),0.6)]" />
-                <h3 className="text-2xl sm:text-3xl font-black italic tracking-tighter uppercase text-white">
-                  {new Date(date).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
-                </h3>
-              </div>
-              <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
-                {matchesByDate[date].map((match: any) => (
-                  <Card 
-                    key={match.id} 
-                    className="border-white/5 bg-zinc-900/30 hover:bg-zinc-900/60 transition-all cursor-pointer rounded-[24px] sm:rounded-[32px] group relative overflow-hidden"
-                    onClick={() => { setSelectedMatch(match); setIsModalOpen(true); }}
-                  >
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <CardContent className="p-5 sm:p-8">
-                      <div className="flex items-center justify-between gap-2 sm:gap-6">
-                        <div className="flex items-center gap-3 sm:gap-5 flex-1 min-w-0">
-                          <div className="w-8 h-8 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-2xl p-1.5 shadow-lg border border-white/10 group-hover:scale-110 transition-transform flex-shrink-0">
-                            {match.home?.logo_url ? <img src={match.home.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-full h-full text-zinc-200" />}
-                          </div>
-                          <span className="font-black text-[10px] sm:text-base uppercase tracking-tight text-zinc-300 group-hover:text-white transition-colors">{match.home?.name}</span>
-                        </div>
-                        
-                        <div className="flex flex-col items-center px-2 sm:px-6 border-x border-white/5 min-w-[60px] sm:min-w-[100px]">
-                          {match.status === 'finished' ? (
-                            <span className="text-xl sm:text-3xl font-black italic text-primary drop-shadow-sm">{match.home_score} - {match.away_score}</span>
-                          ) : (
-                            <span className="text-[10px] sm:text-sm font-black text-zinc-700 italic uppercase tracking-widest">VS</span>
-                          )}
-                          <span className="text-[8px] sm:text-[10px] font-black text-zinc-500 uppercase mt-1 sm:mt-2 flex items-center gap-1 whitespace-nowrap">
-                             <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {formatTime12h(match.match_time)}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-3 sm:gap-5 flex-1 justify-end min-w-0">
-                          <span className="font-black text-[10px] sm:text-base uppercase tracking-tight text-right text-zinc-300 group-hover:text-white transition-colors">{match.away?.name}</span>
-                          <div className="w-8 h-8 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-2xl p-1.5 shadow-lg border border-white/10 group-hover:scale-110 transition-transform flex-shrink-0">
-                            {match.away?.logo_url ? <img src={match.away.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-full h-full text-zinc-200" />}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          ))}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="clasificacion">
-          <Card className="border-white/5 bg-zinc-950/40 backdrop-blur-3xl rounded-[32px] sm:rounded-[40px] overflow-hidden shadow-2xl">
+          <Card className="border-border bg-card rounded-2xl overflow-hidden shadow-soft">
+            {hasConfiguredZones && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-surface/50 px-4 sm:px-5 py-3">
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Zonas</span>
+                {(Object.keys(ZONE_META) as ZoneKey[])
+                  .filter((key) => activeZones[key] > 0)
+                  .map((key) => (
+                    <span key={key} className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                      <span className={cn("h-2.5 w-2.5 rounded-full", ZONE_META[key].markerClassName)} />
+                      {ZONE_META[key].shortLabel}
+                    </span>
+                  ))}
+              </div>
+            )}
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader className="bg-white/[0.02]">
-                  <TableRow className="hover:bg-transparent border-white/5 h-12 sm:h-16">
-                    <TableHead className="w-12 sm:w-20 text-center font-black text-zinc-400 uppercase text-[9px] sm:text-[11px] tracking-widest italic">#</TableHead>
-                    <TableHead className="font-black text-zinc-400 uppercase text-[9px] sm:text-[11px] tracking-widest italic">Equipo</TableHead>
-                    <TableHead className="text-center font-black text-zinc-400 uppercase text-[9px] sm:text-[11px] tracking-widest italic">PJ</TableHead>
-                    <TableHead className="text-center font-black text-zinc-400 uppercase text-[9px] sm:text-[11px] tracking-widest italic hidden sm:table-cell">G</TableHead>
-                    <TableHead className="text-center font-black text-zinc-400 uppercase text-[9px] sm:text-[11px] tracking-widest italic hidden sm:table-cell">E</TableHead>
-                    <TableHead className="text-center font-black text-zinc-400 uppercase text-[9px] sm:text-[11px] tracking-widest italic hidden sm:table-cell">P</TableHead>
-                    <TableHead className="text-center font-black text-zinc-400 uppercase text-[9px] sm:text-[11px] tracking-widest italic">DG</TableHead>
-                    <TableHead className="text-center font-black text-primary uppercase text-[9px] sm:text-[11px] tracking-widest italic">Pts</TableHead>
+                <TableHeader className="bg-surface">
+                  <TableRow className="hover:bg-transparent border-slate-100 h-12">
+                    <TableHead className="w-12 sm:w-16 text-center font-semibold text-slate-500 text-xs uppercase tracking-wide">#</TableHead>
+                    <TableHead className="font-semibold text-slate-500 text-xs uppercase tracking-wide">Equipo</TableHead>
+                    <TableHead className="text-center font-semibold text-slate-500 text-xs uppercase tracking-wide">PJ</TableHead>
+                    <TableHead className="text-center font-semibold text-slate-500 text-xs uppercase tracking-wide hidden sm:table-cell">G</TableHead>
+                    <TableHead className="text-center font-semibold text-slate-500 text-xs uppercase tracking-wide hidden sm:table-cell">E</TableHead>
+                    <TableHead className="text-center font-semibold text-slate-500 text-xs uppercase tracking-wide hidden sm:table-cell">P</TableHead>
+                    <TableHead className="text-center font-semibold text-slate-500 text-xs uppercase tracking-wide">DG</TableHead>
+                    <TableHead className="text-center font-semibold text-primary text-xs uppercase tracking-wide">Pts</TableHead>
+                    {hasConfiguredZones && (
+                      <TableHead className="font-semibold text-slate-500 text-xs uppercase tracking-wide">Zona</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {liveStandings.map((row, idx) => (
-                    <TableRow key={row.team_id} className="border-white/5 hover:bg-white/[0.03] transition-all group h-16 sm:h-20">
+                  {liveStandings.map((row, idx) => {
+                    const zone = hasConfiguredZones ? getClassificationZone(idx, liveStandings.length, activeZones) : null
+                    const zoneMeta = zone ? ZONE_META[zone] : null
+
+                    return (
+                    <TableRow key={row.team_id} className={cn(
+                      "border-slate-100 transition-colors group h-14 sm:h-16",
+                      zoneMeta ? zoneMeta.rowClassName : "hover:bg-slate-50"
+                    )}>
                       <TableCell className="text-center">
-                        <span className={`inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl font-black italic text-sm sm:text-lg ${idx === 0 ? 'bg-primary text-black shadow-lg shadow-primary/30' : 'text-zinc-500'}`}>
+                        <span className={cn(
+                          "inline-flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg font-bold text-sm",
+                          idx === 0 ? 'bg-primary text-white' : 
+                          idx === 1 ? 'bg-primary/15 text-primary' : 'text-slate-400'
+                        )}>
                           {idx + 1}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2 sm:gap-5">
-                          <div className="w-6 h-6 sm:w-12 sm:h-12 bg-white rounded-md sm:rounded-2xl p-1 sm:p-2 shadow-xl border border-white/10 group-hover:scale-110 transition-transform flex-shrink-0">
-                            {row.logo_url ? <img src={row.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-full h-full text-zinc-200" />}
+                        <div className="flex items-center gap-2.5 sm:gap-3">
+                          <div className="w-7 h-7 sm:w-9 sm:h-9 bg-white rounded-lg p-1 border border-slate-100 flex-shrink-0">
+                            {row.logo_url ? <img src={row.logo_url} className="w-full h-full object-contain" alt={row.team_name} /> : <Shield className="w-full h-full text-slate-300" />}
                           </div>
-                          <span className="font-black uppercase tracking-tight text-white text-[10px] sm:text-lg truncate max-w-[80px] sm:max-w-none">{row.team_name}</span>
+                          <span className="font-semibold text-sm text-foreground truncate max-w-[110px] sm:max-w-none">{row.team_name}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-center font-bold text-zinc-300 text-xs sm:text-sm">{row.pj}</TableCell>
-                      <TableCell className="text-center text-emerald-500/80 font-bold text-xs sm:text-sm hidden sm:table-cell">{row.g}</TableCell>
-                      <TableCell className="text-center text-zinc-400 font-bold text-xs sm:text-sm hidden sm:table-cell">{row.e}</TableCell>
-                      <TableCell className="text-center text-red-500/80 font-bold text-xs sm:text-sm hidden sm:table-cell">{row.p}</TableCell>
-                      <TableCell className="text-center text-zinc-400 font-black italic text-xs sm:text-sm">{row.dg > 0 ? `+${row.dg}` : row.dg}</TableCell>
+                      <TableCell className="text-center font-medium text-slate-600 text-sm">{row.pj}</TableCell>
+                      <TableCell className="text-center text-green-700 font-medium text-sm hidden sm:table-cell">{row.g}</TableCell>
+                      <TableCell className="text-center text-slate-400 font-medium text-sm hidden sm:table-cell">{row.e}</TableCell>
+                      <TableCell className="text-center text-red-500 font-medium text-sm hidden sm:table-cell">{row.p}</TableCell>
+                      <TableCell className="text-center text-slate-500 font-medium text-sm">{row.dg > 0 ? `+${row.dg}` : row.dg}</TableCell>
                       <TableCell className="text-center">
-                         <span className="text-lg sm:text-2xl font-black italic text-primary drop-shadow-md">{row.pts}</span>
+                         <span className="text-base sm:text-lg font-bold text-primary">{row.pts}</span>
                       </TableCell>
+                      {hasConfiguredZones && (
+                        <TableCell>
+                          {zoneMeta ? (
+                            <Badge variant="outline" className={zoneMeta.badgeClassName}>{zoneMeta.shortLabel}</Badge>
+                          ) : (
+                            <span className="text-sm text-slate-300">-</span>
+                          )}
+                        </TableCell>
+                      )}
                     </TableRow>
-                  ))}
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>
+            {liveStandings.length === 0 && (
+              <div className="p-10">
+                <EmptyState
+                  icon={Trophy}
+                  title="No hay posiciones aún"
+                  description="Las posiciones aparecerán cuando se juguen partidos."
+                />
+              </div>
+            )}
           </Card>
         </TabsContent>
 
-        <TabsContent value="estadisticas" className="space-y-8 sm:space-y-12">
-          <div className="grid gap-6 sm:gap-10 md:grid-cols-2">
-            <Card className="border-white/5 bg-zinc-900/30 rounded-[32px] sm:rounded-[40px] overflow-hidden shadow-2xl">
-              <CardHeader className="bg-white/[0.02] border-b border-white/5 p-6 sm:p-8">
-                <CardTitle className="text-xl sm:text-2xl font-black italic uppercase tracking-tighter flex items-center gap-3 sm:gap-4 text-white">
-                  <div className="p-2 sm:p-3 bg-primary/10 rounded-xl sm:rounded-2xl"><Target className="w-5 h-5 sm:w-6 sm:h-6 text-primary" /></div> Goleadores
+        <TabsContent value="estadisticas" className="space-y-6 sm:space-y-8">
+          <div className="grid gap-6 sm:gap-8 md:grid-cols-2">
+            <Card className="border-border bg-card rounded-2xl overflow-hidden shadow-soft">
+              <CardHeader className="border-b border-border p-5">
+                <CardTitle className="text-lg font-semibold tracking-tight flex items-center gap-2.5 text-foreground">
+                  <div className="p-2 bg-primary/10 rounded-lg"><Target className="w-4 h-4 text-primary" /></div> Goleadores
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                {topScorers.map((scorer: any, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-5 sm:p-8 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-all group">
-                    <div className="flex items-center gap-4 sm:gap-6">
-                      <span className="text-2xl sm:text-4xl font-black italic text-zinc-900 group-hover:text-primary/20 transition-colors">{idx + 1}</span>
-                      <div>
-                        <p className="font-black uppercase tracking-tight text-white text-sm sm:text-lg">{scorer.name}</p>
-                        <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 mt-1">{scorer.team}</p>
+                {topScorers.length === 0 ? (
+                  <div className="p-10">
+                    <EmptyState
+                      icon={Target}
+                      title="No hay goleadores aún"
+                      description="Las estadísticas aparecerán cuando se registren goles."
+                    />
+                  </div>
+                ) : (
+                  topScorers.map((scorer: any, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                      <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                        <span className="text-xl sm:text-2xl font-bold text-slate-200 w-8 text-center flex-shrink-0">{idx + 1}</span>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm text-foreground truncate">{scorer.name}</p>
+                          <p className="text-xs text-slate-500 mt-0.5 truncate">{scorer.team}</p>
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <span className="text-xl sm:text-2xl font-bold text-primary">{scorer.goals}</span>
+                        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mt-0.5">Goles</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-2xl sm:text-4xl font-black italic text-primary drop-shadow-lg">{scorer.goals}</span>
-                      <p className="text-[8px] sm:text-[9px] font-black uppercase text-zinc-700 tracking-[0.3em] mt-1">GOLES</p>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </CardContent>
             </Card>
 
-            <Card className="border-white/5 bg-zinc-900/30 rounded-[32px] sm:rounded-[40px] overflow-hidden shadow-2xl">
-              <CardHeader className="bg-white/[0.02] border-b border-white/5 p-6 sm:p-8">
-                <CardTitle className="text-xl sm:text-2xl font-black italic uppercase tracking-tighter flex items-center gap-3 sm:gap-4 text-white">
-                   <div className="p-2 sm:p-3 bg-blue-500/10 rounded-xl sm:rounded-2xl"><Activity className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" /></div> Asistencias
+            <Card className="border-border bg-card rounded-2xl overflow-hidden shadow-soft">
+              <CardHeader className="border-b border-border p-5">
+                <CardTitle className="text-lg font-semibold tracking-tight flex items-center gap-2.5 text-foreground">
+                   <div className="p-2 bg-blue-50 rounded-lg"><Activity className="w-4 h-4 text-blue-500" /></div> Asistencias
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                {topAssists.map((player: any, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-5 sm:p-8 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-all group">
-                    <div className="flex items-center gap-4 sm:gap-6">
-                      <span className="text-2xl sm:text-4xl font-black italic text-zinc-900 group-hover:text-blue-500/20 transition-colors">{idx + 1}</span>
-                      <div>
-                        <p className="font-black uppercase tracking-tight text-white text-sm sm:text-lg">{player.name}</p>
-                        <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 mt-1">{player.team}</p>
+                {topAssists.length === 0 ? (
+                  <div className="p-10">
+                    <EmptyState
+                      icon={Activity}
+                      title="No hay asistencias aún"
+                      description="Las estadísticas aparecerán cuando se registren asistencias."
+                    />
+                  </div>
+                ) : (
+                  topAssists.map((player: any, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                      <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                        <span className="text-xl sm:text-2xl font-bold text-slate-200 w-8 text-center flex-shrink-0">{idx + 1}</span>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm text-foreground truncate">{player.name}</p>
+                          <p className="text-xs text-slate-500 mt-0.5 truncate">{player.team}</p>
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <span className="text-xl sm:text-2xl font-bold text-blue-500">{player.assists}</span>
+                        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mt-0.5">Pases</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-2xl sm:text-4xl font-black italic text-blue-500 drop-shadow-lg">{player.assists}</span>
-                      <p className="text-[8px] sm:text-[9px] font-black uppercase text-zinc-700 tracking-[0.3em] mt-1">PASES</p>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
         <TabsContent value="equipos">
-          <div className="grid gap-4 sm:gap-8 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <div className="grid gap-4 sm:gap-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {filteredTeams.map((team, idx) => (
               <motion.div
                 key={team.id}
-                whileHover={{ y: -8, scale: 1.02 }}
+                whileHover={{ y: -4 }}
                 onClick={() => { setSelectedTeam(team); setIsTeamModalOpen(true); }}
                 className="cursor-pointer"
               >
-                <Card className="border-white/5 bg-zinc-900/30 hover:bg-zinc-900/60 transition-all rounded-[24px] sm:rounded-[40px] text-center p-6 sm:p-8 h-full flex flex-col items-center group shadow-xl">
-                  <div className="w-16 h-16 sm:w-24 sm:h-24 bg-white rounded-2xl sm:rounded-[32px] p-2 sm:p-4 shadow-2xl mb-4 sm:mb-6 group-hover:shadow-primary/10 transition-all">
-                    {team.logo_url ? <img src={team.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-full h-full text-zinc-300" />}
+                <Card className="border-border bg-card hover:border-slate-300 transition-all duration-200 rounded-2xl text-center p-5 sm:p-6 h-full flex flex-col items-center group shadow-soft hover:shadow-card-hover">
+                  <div className="w-14 h-14 sm:w-20 sm:h-20 bg-white rounded-xl sm:rounded-2xl p-2 sm:p-3 border border-slate-100 mb-3 group-hover:scale-105 transition-transform">
+                    {team.logo_url ? <img src={team.logo_url} className="w-full h-full object-contain" alt={team.name} /> : <Shield className="w-full h-full text-slate-300" />}
                   </div>
-                  <h4 className="font-black uppercase tracking-tighter text-white text-sm sm:text-lg mb-2 sm:mb-3 leading-tight">{team.name}</h4>
-                  <div className="mt-auto inline-flex items-center gap-1 sm:gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-white/5 text-[8px] sm:text-[10px] font-black uppercase text-zinc-500 tracking-widest border border-white/5">
-                    <User className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary" /> {team.captain_name || 'Sin capitán'}
+                  <h4 className="font-semibold text-sm text-foreground mb-2 leading-tight">{team.name}</h4>
+                  <div className="mt-auto inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-medium">
+                    <User className="w-3 h-3 text-primary" /> {team.captain_name || 'Sin capitán'}
                   </div>
                 </Card>
               </motion.div>
             ))}
           </div>
+          {filteredTeams.length === 0 && (
+            <EmptyState
+              icon={Users}
+              title="No hay equipos registrados"
+              description="Los equipos aparecerán cuando se creen para este torneo."
+            />
+          )}
         </TabsContent>
       </Tabs>
 
       {/* Match Details Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden bg-zinc-950 border-white/10 text-white rounded-[40px] shadow-2xl">
+        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden bg-white border-slate-200 text-foreground rounded-2xl shadow-2xl">
           {selectedMatch && (
             <div className="flex flex-col h-[85vh]">
-              <div className="relative bg-gradient-to-b from-zinc-900 to-zinc-950 p-12 flex flex-col items-center border-b border-white/5">
-                <div className="absolute top-6 left-8 flex items-center gap-2 text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em]">
-                  <MapPin className="w-3 h-3 text-primary" /> {selectedMatch.court?.name}
+              <div className="relative bg-gradient-to-b from-green-50 to-white p-8 sm:p-10 flex flex-col items-center border-b border-slate-200">
+                <div className="absolute top-5 left-6 sm:left-8 flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                  <MapPin className="w-3.5 h-3.5 text-primary" /> {selectedMatch.court?.name}
                 </div>
                 
-                <div className="flex items-center justify-between w-full mt-6">
-                  <div className="flex-1 flex flex-col items-center gap-4 text-center">
-                    <div className="w-24 h-24 bg-white rounded-[32px] flex items-center justify-center p-4 shadow-2xl">
-                      {selectedMatch.home?.logo_url ? <img src={selectedMatch.home.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-12 h-12 text-zinc-200" />}
+                <div className="flex items-center justify-between w-full mt-4">
+                  <div className="flex-1 flex flex-col items-center gap-3 text-center min-w-0">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-2xl flex items-center justify-center p-2.5 shadow-sm border border-slate-100">
+                      {selectedMatch.home?.logo_url ? <img src={selectedMatch.home.logo_url} className="w-full h-full object-contain" alt={selectedMatch.home.name} /> : <Shield className="w-8 h-8 text-slate-300" />}
                     </div>
-                    <span className="font-black uppercase italic tracking-tighter text-lg">{selectedMatch.home?.name}</span>
+                    <span className="font-semibold text-sm sm:text-base text-foreground truncate max-w-[130px] sm:max-w-[180px]">{selectedMatch.home?.name}</span>
                   </div>
 
-                  <div className="flex flex-col items-center px-10">
-                    <div className="flex items-baseline gap-4">
-                      <span className="text-7xl font-black italic text-white drop-shadow-2xl">{selectedMatch.home_score}</span>
-                      <span className="text-3xl font-black text-zinc-800">:</span>
-                      <span className="text-7xl font-black italic text-white drop-shadow-2xl">{selectedMatch.away_score}</span>
+                  <div className="flex flex-col items-center px-6 sm:px-8">
+                    <div className="flex items-baseline gap-2.5 sm:gap-4">
+                      <span className="text-4xl sm:text-6xl font-bold tracking-tight text-foreground">{selectedMatch.home_score}</span>
+                      <span className="text-xl sm:text-2xl font-semibold text-slate-300">:</span>
+                      <span className="text-4xl sm:text-6xl font-bold tracking-tight text-foreground">{selectedMatch.away_score}</span>
                     </div>
                     {selectedMatch.status === 'live' && (
-                       <Badge className="bg-red-600 text-white font-black px-4 py-1 mt-4 animate-pulse uppercase tracking-widest italic">{selectedMatch.current_minute}' LIVE</Badge>
+                       <Badge className="bg-red-600 text-white font-semibold px-3 py-1 mt-3 animate-pulse uppercase tracking-wide text-xs">{selectedMatch.current_minute}' LIVE</Badge>
                     )}
                   </div>
 
-                  <div className="flex-1 flex flex-col items-center gap-4 text-center">
-                    <div className="w-24 h-24 bg-white rounded-[32px] flex items-center justify-center p-4 shadow-2xl">
-                      {selectedMatch.away?.logo_url ? <img src={selectedMatch.away.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-12 h-12 text-zinc-200" />}
+                  <div className="flex-1 flex flex-col items-center gap-3 text-center min-w-0">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-2xl flex items-center justify-center p-2.5 shadow-sm border border-slate-100">
+                      {selectedMatch.away?.logo_url ? <img src={selectedMatch.away.logo_url} className="w-full h-full object-contain" alt={selectedMatch.away.name} /> : <Shield className="w-8 h-8 text-slate-300" />}
                     </div>
-                    <span className="font-black uppercase italic tracking-tighter text-lg">{selectedMatch.away?.name}</span>
+                    <span className="font-semibold text-sm sm:text-base text-foreground truncate max-w-[130px] sm:max-w-[180px]">{selectedMatch.away?.name}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex-1 min-h-0 overflow-y-auto p-12 bg-zinc-950 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
-                <h3 className="text-xs font-black uppercase tracking-[0.4em] text-zinc-600 mb-10 text-center">Timeline</h3>
+              <div className="flex-1 min-h-0 overflow-y-auto p-8 sm:p-10 bg-white scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 mb-8 text-center">Timeline</h3>
                 
-                <div className="relative space-y-8">
-                  <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/5 -translate-x-1/2" />
+                <div className="relative space-y-6">
+                  <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-200 -translate-x-1/2" />
 
                   {stats
                     .filter(e => e.match_id === selectedMatch.id)
@@ -519,31 +600,31 @@ export default function TournamentPublicClient({ businessId, matches: initialMat
                       const isHome = event.team_id === selectedMatch.home_team_id
                       return (
                         <div key={idx} className={`flex items-center w-full ${isHome ? 'flex-row' : 'flex-row-reverse'}`}>
-                          <div className={`flex-1 ${isHome ? 'text-right pr-10' : 'text-left pl-10'} space-y-1`}>
+                          <div className={`flex-1 ${isHome ? 'text-right pr-6' : 'text-left pl-6'} space-y-0.5`}>
                             <p className={cn(
-                              "font-black uppercase italic tracking-tight",
-                              event.event_type === 'own_goal' ? "text-red-500" : "text-white"
+                              "font-semibold text-sm tracking-tight",
+                              event.event_type === 'own_goal' ? "text-red-500" : "text-foreground"
                             )}>
                               {event.player?.first_name} {event.player?.last_name}
                             </p>
                             <p className={cn(
-                              "text-[10px] font-black uppercase tracking-widest",
-                              event.event_type === 'own_goal' ? "text-red-600" : "text-zinc-600"
+                              "text-xs font-medium uppercase tracking-wide",
+                              event.event_type === 'own_goal' ? "text-red-500" : "text-slate-400"
                             )}>
-                               {event.event_type === 'goal' ? 'GOAL' : 
-                                event.event_type === 'own_goal' ? 'AUTOGOL' : 
-                                event.event_type === 'assist' ? 'ASISTENCIA' : 
+                               {event.event_type === 'goal' ? 'Gol' : 
+                                event.event_type === 'own_goal' ? 'Autogol' : 
+                                event.event_type === 'assist' ? 'Asistencia' : 
                                 event.event_type.replace('_', ' ')}
                             </p>
                           </div>
                           
-                          <div className="relative z-10 w-12 h-12 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center shadow-xl">
-                            {event.event_type === 'goal' && <span className="text-lg">⚽</span>}
-                            {event.event_type === 'own_goal' && <span className="text-lg">⚽❌</span>}
-                            {event.event_type === 'assist' && <span className="text-lg">👟</span>}
-                            {event.event_type === 'yellow_card' && <div className="w-3 h-5 bg-yellow-400 rounded-sm shadow-lg shadow-yellow-500/20" />}
-                            {event.event_type === 'red_card' && <div className="w-3 h-5 bg-red-600 rounded-sm shadow-lg shadow-red-500/20" />}
-                            <span className="absolute -top-2 -right-2 bg-primary text-black text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-lg">{event.minute}'</span>
+                          <div className="relative z-10 w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                            {event.event_type === 'goal' && <span className="text-base">⚽</span>}
+                            {event.event_type === 'own_goal' && <span className="text-base">⚽❌</span>}
+                            {event.event_type === 'assist' && <span className="text-base">👟</span>}
+                            {event.event_type === 'yellow_card' && <div className="w-2.5 h-4 bg-yellow-400 rounded-sm" />}
+                            {event.event_type === 'red_card' && <div className="w-2.5 h-4 bg-red-600 rounded-sm" />}
+                            <span className="absolute -top-1.5 -right-1.5 bg-primary text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-md">{event.minute}'</span>
                           </div>
                           
                           <div className="flex-1" />
@@ -559,9 +640,8 @@ export default function TournamentPublicClient({ businessId, matches: initialMat
 
       {/* Team Details Modal */}
       <Dialog open={isTeamModalOpen} onOpenChange={setIsTeamModalOpen}>
-        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden bg-zinc-950 border-white/10 text-white rounded-[40px] shadow-2xl">
+        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden bg-white border-slate-200 text-foreground rounded-2xl shadow-2xl">
           {selectedTeam && (() => {
-            // Calculate Team Stats
             let pj = 0, g = 0, e = 0, p = 0, gf = 0, gc = 0
             const teamMatches = matches.filter(m => m.home_team_id === selectedTeam.id || m.away_team_id === selectedTeam.id)
             
@@ -584,91 +664,88 @@ export default function TournamentPublicClient({ businessId, matches: initialMat
 
             return (
               <div className="flex flex-col h-[90vh]">
-                <div className="relative bg-gradient-to-b from-zinc-900 to-zinc-950 p-8 sm:p-12 flex flex-col items-center border-b border-white/5">
-                  <div className="w-24 h-24 sm:w-32 sm:h-32 bg-white rounded-[32px] sm:rounded-[40px] flex items-center justify-center p-4 sm:p-6 shadow-2xl mb-6">
-                    {selectedTeam.logo_url ? <img src={selectedTeam.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-12 h-12 sm:w-16 sm:h-16 text-zinc-200" />}
+                <div className="relative bg-gradient-to-b from-green-50 to-white p-6 sm:p-10 flex flex-col items-center border-b border-slate-200">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-2xl flex items-center justify-center p-3 sm:p-4 shadow-sm border border-slate-100 mb-4">
+                    {selectedTeam.logo_url ? <img src={selectedTeam.logo_url} className="w-full h-full object-contain" alt={selectedTeam.name} /> : <Shield className="w-10 h-10 sm:w-12 sm:h-12 text-slate-300" />}
                   </div>
-                  <h2 className="text-3xl sm:text-4xl font-black uppercase italic tracking-tighter text-white mb-2 text-center">{selectedTeam.name}</h2>
-                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-zinc-500 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">
-                    <User className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" /> Capitán: {selectedTeam.captain_name || 'Sin capitán'}
+                  <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mb-2 text-center">{selectedTeam.name}</h2>
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 text-slate-500 text-xs font-medium shadow-sm">
+                    <User className="w-3.5 h-3.5 text-primary" /> Capitán: {selectedTeam.captain_name || 'Sin capitán'}
                   </div>
                 </div>
 
-                <div className="flex-1 min-h-0 overflow-hidden bg-zinc-950 flex flex-col">
+                <div className="flex-1 min-h-0 overflow-hidden bg-white flex flex-col">
                   <Tabs defaultValue="general" className="flex-1 min-h-0 flex flex-col">
-                    <div className="px-6 sm:px-12 pt-6 flex-shrink-0">
-                      <TabsList className="grid w-full grid-cols-4 h-12 bg-zinc-900/50 border border-white/5 rounded-xl p-1 gap-1">
-                        <TabsTrigger value="general" className="rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-black">GENERAL</TabsTrigger>
-                        <TabsTrigger value="partidos" className="rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-black">PARTIDOS</TabsTrigger>
-                        <TabsTrigger value="disciplina" className="rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-black">DISCIPLINA</TabsTrigger>
-                        <TabsTrigger value="plantilla" className="rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-black">PLANTILLA</TabsTrigger>
+                    <div className="px-5 sm:px-10 pt-5 flex-shrink-0">
+                      <TabsList className="grid w-full grid-cols-4 h-11 bg-surface rounded-xl p-1 gap-1">
+                        <TabsTrigger value="general" className="rounded-lg text-xs font-medium text-muted-foreground hover:text-primary-green hover:bg-primary-green-subtle data-[state=active]:bg-primary-green data-[state=active]:text-white data-[state=active]:font-semibold">General</TabsTrigger>
+                        <TabsTrigger value="partidos" className="rounded-lg text-xs font-medium text-muted-foreground hover:text-primary-green hover:bg-primary-green-subtle data-[state=active]:bg-primary-green data-[state=active]:text-white data-[state=active]:font-semibold">Partidos</TabsTrigger>
+                        <TabsTrigger value="disciplina" className="rounded-lg text-xs font-medium text-muted-foreground hover:text-primary-green hover:bg-primary-green-subtle data-[state=active]:bg-primary-green data-[state=active]:text-white data-[state=active]:font-semibold">Disciplina</TabsTrigger>
+                        <TabsTrigger value="plantilla" className="rounded-lg text-xs font-medium text-muted-foreground hover:text-primary-green hover:bg-primary-green-subtle data-[state=active]:bg-primary-green data-[state=active]:text-white data-[state=active]:font-semibold">Plantilla</TabsTrigger>
                       </TabsList>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-6 sm:p-12 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
-                      <TabsContent value="general" className="mt-0 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        {/* General Stats */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <div className="flex-1 overflow-y-auto p-5 sm:p-10 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+                      <TabsContent value="general" className="mt-0 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                           {[
-                            { label: 'Partidos Jugados', val: pj, icon: Activity },
-                            { label: 'Victorias', val: g, color: 'text-emerald-400', icon: Trophy },
-                            { label: 'Empates', val: e, color: 'text-amber-400', icon: Clock },
-                            { label: 'Derrotas', val: p, color: 'text-red-400', icon: X },
-                            { label: 'Goles Favor', val: gf, color: 'text-primary', icon: Target },
-                            { label: 'Goles Contra', val: gc, color: 'text-zinc-500', icon: ShieldAlert },
+                            { label: 'Partidos jugados', val: pj, icon: Activity },
+                            { label: 'Victorias', val: g, color: 'text-green-700', icon: Trophy },
+                            { label: 'Empates', val: e, color: 'text-amber-500', icon: Clock },
+                            { label: 'Derrotas', val: p, color: 'text-red-500', icon: X },
+                            { label: 'Goles a favor', val: gf, color: 'text-primary', icon: Target },
+                            { label: 'Goles contra', val: gc, color: 'text-slate-400', icon: ShieldAlert },
                           ].map((st, i) => (
-                            <div key={i} className="bg-zinc-900/40 border border-white/5 p-6 rounded-[28px] flex flex-col items-center justify-center text-center group hover:bg-zinc-900/80 transition-all">
-                              <st.icon className={`w-4 h-4 mb-3 opacity-20 ${st.color || 'text-white'}`} />
-                              <span className={`text-3xl sm:text-5xl font-black italic mb-1 ${st.color || 'text-white'} drop-shadow-md`}>{st.val}</span>
-                              <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">{st.label}</span>
+                            <div key={i} className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+                              <st.icon className={`w-4 h-4 mb-2 ${st.color || 'text-foreground'}`} />
+                              <span className={`text-2xl sm:text-3xl font-bold mb-0.5 ${st.color || 'text-foreground'}`}>{st.val}</span>
+                              <span className="text-[10px] font-medium text-slate-500">{st.label}</span>
                             </div>
                           ))}
                         </div>
                         
-                        <div className="bg-primary/5 border border-primary/10 p-6 rounded-[28px] flex flex-col items-center justify-center text-center">
-                          <span className="text-4xl sm:text-6xl font-black italic text-primary mb-1 drop-shadow-lg">{(g * 3) + (e * 1)}</span>
-                          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/60">PUNTOS TOTALES</span>
+                        <div className="bg-primary/5 border border-primary/15 p-5 rounded-xl flex flex-col items-center justify-center text-center">
+                          <span className="text-3xl sm:text-4xl font-bold text-primary mb-0.5">{(g * 3) + (e * 1)}</span>
+                          <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-primary/70">Puntos totales</span>
                         </div>
                       </TabsContent>
 
-                      <TabsContent value="partidos" className="mt-0 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      <TabsContent value="partidos" className="mt-0 space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {teamMatches.length === 0 ? (
-                          <div className="text-center py-20 bg-zinc-900/20 rounded-[32px] border border-dashed border-white/5">
-                            <Calendar className="w-12 h-12 text-zinc-800 mx-auto mb-4" />
-                            <p className="text-zinc-500 font-black uppercase italic tracking-tighter text-lg">No hay historial aún</p>
-                          </div>
+                          <EmptyState
+                            icon={CalendarDays}
+                            title="No hay historial aún"
+                          />
                         ) : (
                           teamMatches.sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()).map(m => {
                             const isHome = m.home_team_id === selectedTeam.id
                             const opp = isHome ? m.away : m.home
                             return (
-                              <div key={m.id} className="bg-zinc-900/40 border border-white/5 p-5 sm:p-6 rounded-[24px] flex items-center justify-between gap-6 group hover:bg-zinc-900/80 transition-all">
-                                <div className="flex flex-col gap-2">
+                              <div key={m.id} className="bg-slate-50 border border-slate-200 p-4 sm:p-5 rounded-xl flex items-center justify-between gap-4">
+                                <div className="flex flex-col gap-1.5 min-w-0">
                                    <div className="flex items-center gap-2">
-                                     <span className="bg-white/5 px-2 py-0.5 rounded text-[8px] font-black text-zinc-500 uppercase">
+                                     <span className="bg-white border border-slate-200 px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-500">
                                        {new Date(m.match_date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                                      </span>
-                                     <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">{formatTime12h(m.match_time)}</span>
+                                     <span className="text-xs font-medium text-slate-400">{formatTime12h(m.match_time)}</span>
                                    </div>
-                                   <div className="flex items-center gap-3">
-                                      <div className="w-8 h-8 bg-white rounded-xl p-1.5 shadow-xl border border-white/10 group-hover:scale-110 transition-transform">
-                                        {opp?.logo_url ? <img src={opp.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-full h-full text-zinc-200" />}
+                                   <div className="flex items-center gap-2.5">
+                                      <div className="w-7 h-7 bg-white rounded-lg p-1 border border-slate-100 flex-shrink-0">
+                                        {opp?.logo_url ? <img src={opp.logo_url} className="w-full h-full object-contain" alt={opp.name} /> : <Shield className="w-full h-full text-slate-300" />}
                                       </div>
-                                      <span className="text-sm sm:text-lg font-black uppercase text-zinc-100 italic tracking-tight">vs {opp?.name}</span>
+                                      <span className="text-sm font-semibold text-foreground truncate">vs {opp?.name}</span>
                                    </div>
                                 </div>
-                                <div className="flex flex-col items-end gap-1">
+                                <div className="flex flex-col items-end gap-1 flex-shrink-0">
                                    {m.status === 'finished' ? (
-                                     <div className="flex items-center gap-3">
-                                       <span className={`text-2xl sm:text-3xl font-black italic ${
-                                         (isHome ? m.home_score : m.away_score) > (isHome ? m.away_score : m.home_score) ? 'text-primary' : 
-                                         (isHome ? m.home_score : m.away_score) < (isHome ? m.away_score : m.home_score) ? 'text-red-500' : 'text-zinc-400'
-                                       }`}>
-                                         {isHome ? `${m.home_score} - ${m.away_score}` : `${m.away_score} - ${m.home_score}`}
-                                       </span>
-                                     </div>
+                                     <span className={`text-lg sm:text-xl font-bold ${
+                                       (isHome ? m.home_score : m.away_score) > (isHome ? m.away_score : m.home_score) ? 'text-primary' : 
+                                       (isHome ? m.home_score : m.away_score) < (isHome ? m.away_score : m.home_score) ? 'text-red-500' : 'text-slate-400'
+                                     }`}>
+                                       {isHome ? `${m.home_score} - ${m.away_score}` : `${m.away_score} - ${m.home_score}`}
+                                     </span>
                                    ) : (
-                                     <Badge className="bg-zinc-800 text-zinc-500 text-[8px] font-black uppercase tracking-widest px-3 py-1">Programado</Badge>
+                                     <Badge className="bg-slate-100 text-slate-500 text-[10px] font-medium px-3 py-1 border border-slate-200">Programado</Badge>
                                    )}
                                 </div>
                               </div>
@@ -677,28 +754,28 @@ export default function TournamentPublicClient({ businessId, matches: initialMat
                         )}
                       </TabsContent>
 
-                      <TabsContent value="disciplina" className="mt-0 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="grid grid-cols-2 gap-6">
-                          <div className="bg-yellow-500/[0.03] border border-yellow-500/10 p-8 sm:p-10 rounded-[32px] flex flex-col items-center group hover:bg-yellow-500/[0.06] transition-all">
-                            <div className="w-6 h-10 bg-yellow-400 rounded-md mb-4 shadow-[0_0_20px_rgba(250,204,21,0.4)] group-hover:scale-110 transition-transform" />
-                            <span className="text-5xl sm:text-7xl font-black italic text-yellow-500 mb-2 drop-shadow-md">{yellowCards}</span>
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500/60">Tarjetas Amarillas</span>
+                      <TabsContent value="disciplina" className="mt-0 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-yellow-50 border border-yellow-200 p-6 rounded-2xl flex flex-col items-center">
+                            <div className="w-4 h-7 bg-yellow-400 rounded mb-3" />
+                            <span className="text-3xl sm:text-4xl font-bold text-yellow-500 mb-1">{yellowCards}</span>
+                            <span className="text-[10px] font-medium uppercase tracking-wide text-yellow-600/80 text-center">Amarillas</span>
                           </div>
-                          <div className="bg-red-500/[0.03] border border-red-500/10 p-8 sm:p-10 rounded-[32px] flex flex-col items-center group hover:bg-red-500/[0.06] transition-all">
-                            <div className="w-6 h-10 bg-red-600 rounded-md mb-4 shadow-[0_0_20px_rgba(220,38,38,0.4)] group-hover:scale-110 transition-transform" />
-                            <span className="text-5xl sm:text-7xl font-black italic text-red-600 mb-2 drop-shadow-md">{redCards}</span>
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-red-500/60">Tarjetas Rojas</span>
+                          <div className="bg-red-50 border border-red-200 p-6 rounded-2xl flex flex-col items-center">
+                            <div className="w-4 h-7 bg-red-600 rounded mb-3" />
+                            <span className="text-3xl sm:text-4xl font-bold text-red-600 mb-1">{redCards}</span>
+                            <span className="text-[10px] font-medium uppercase tracking-wide text-red-500/80 text-center">Rojas</span>
                           </div>
                         </div>
                         
-                        <div className="bg-zinc-900/30 p-6 rounded-[28px] border border-white/5 text-center">
-                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Puntos de Disciplina</p>
-                          <p className="text-2xl font-black italic text-white mt-2">{(yellowCards * 1) + (redCards * 3)} <span className="text-xs text-zinc-700 ml-1">ACUMULADOS</span></p>
+                        <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 text-center">
+                          <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500">Puntos de disciplina</p>
+                          <p className="text-xl font-bold text-foreground mt-1">{(yellowCards * 1) + (redCards * 3)} <span className="text-xs text-slate-400 font-medium ml-1">acumulados</span></p>
                         </div>
                       </TabsContent>
 
-                      <TabsContent value="plantilla" className="mt-0 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="grid gap-3">
+                      <TabsContent value="plantilla" className="mt-0 space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="grid gap-2">
                           {selectedTeam.players?.sort((a: any, b: any) => {
                              const aGoals = stats.filter(s => s.player_id === a.id && s.event_type === 'goal').length
                              const bGoals = stats.filter(s => s.player_id === b.id && s.event_type === 'goal').length
@@ -709,28 +786,26 @@ export default function TournamentPublicClient({ businessId, matches: initialMat
                             const pRed = stats.filter(s => s.player_id === player.id && s.event_type === 'red_card').length
                             
                             return (
-                              <div key={player.id} className="flex items-center justify-between p-5 rounded-[20px] bg-zinc-900/40 border border-white/5 hover:bg-zinc-900/80 transition-all group">
-                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center font-black italic text-zinc-600 group-hover:text-primary/50 transition-colors">
+                              <div key={player.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-200 hover:bg-white transition-colors">
+                                 <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-slate-400 flex-shrink-0">
                                       #{idx + 1}
                                     </div>
-                                    <div>
-                                      <p className="font-black uppercase tracking-tight text-white text-sm sm:text-base italic">{player.first_name} {player.last_name}</p>
-                                      <div className="flex items-center gap-3 mt-1">
-                                        <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">{player.position || 'Jugador'}</span>
-                                      </div>
+                                    <div className="min-w-0">
+                                      <p className="font-semibold text-sm text-foreground truncate">{player.first_name} {player.last_name}</p>
+                                      <p className="text-xs text-slate-400">{player.position || 'Jugador'}</p>
                                     </div>
                                  </div>
-                                 <div className="flex items-center gap-6">
+                                 <div className="flex items-center gap-4 flex-shrink-0">
                                     {pGoals > 0 && (
                                       <div className="flex flex-col items-center">
-                                        <span className="text-xl font-black italic text-primary">{pGoals}</span>
-                                        <span className="text-[7px] font-black text-zinc-700 uppercase">Goles</span>
+                                        <span className="text-base font-bold text-primary">{pGoals}</span>
+                                        <span className="text-[9px] font-medium text-slate-400 uppercase">Goles</span>
                                       </div>
                                     )}
-                                    <div className="flex gap-1.5">
-                                      {pYellow > 0 && <div className="w-2.5 h-4 bg-yellow-400 rounded-sm shadow-lg shadow-yellow-500/10" />}
-                                      {pRed > 0 && <div className="w-2.5 h-4 bg-red-600 rounded-sm shadow-lg shadow-red-500/10" />}
+                                    <div className="flex gap-1">
+                                      {pYellow > 0 && <div className="w-2 h-3.5 bg-yellow-400 rounded-sm" />}
+                                      {pRed > 0 && <div className="w-2 h-3.5 bg-red-600 rounded-sm" />}
                                     </div>
                                  </div>
                               </div>
