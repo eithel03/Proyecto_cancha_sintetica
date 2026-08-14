@@ -42,7 +42,7 @@ export async function updateBusiness(formData: FormData) {
   const cover_image_url = formData.get('cover_image_url') as string
   if (cover_image_url) updateData.cover_image_url = cover_image_url
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('businesses')
     .update(updateData)
     .eq('id', id)

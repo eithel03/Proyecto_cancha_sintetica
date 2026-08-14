@@ -43,6 +43,12 @@ export default async function TournamentPage({ params }: PageProps) {
     .select('gender, direct_count, playoff_count, eliminated_count')
     .eq('business_id', business.id)
 
+  // Fetch stats (match events) for team details
+  const { data: stats } = await supabase
+    .from('tournament_match_events')
+    .select('*, player:player_id(first_name, last_name, team_id), team:team_id(name)')
+    .eq('business_id', business.id)
+
   return (
     <TournamentClient
       businessId={business.id}

@@ -39,25 +39,60 @@ export function PWAInstallPrompt({ businessName, businessLogo, slug }: PWAInstal
         setPlatform('android')
       }
 
+      // Check for previously captured event
+      if ((window as any).deferredPWAEvent) {
+        setDeferredPrompt((window as any).deferredPWAEvent)
+      }
+
       // Handle Android Install Prompt
-      window.addEventListener('beforeinstallprompt', (e) => {
+      const handleBeforeInstallPrompt = (e: any) => {
         e.preventDefault()
         setDeferredPrompt(e)
-      })
+        ;(window as any).deferredPWAEvent = e
+      }
+
+      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      return () => {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      }
     }
   }, [])
 
   const handleInstallClick = async () => {
-    if (platform === 'android' && deferredPrompt) {
-      deferredPrompt.prompt()
-      const { outcome } = await deferredPrompt.userChoice
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null)
-        setIsOpen(false)
-        toast.success('¡Instalación iniciada!')
+    if (deferredPrompt) {
+      try {
+        deferredPrompt.prompt()
+        const { outcome } = await deferredPrompt.userChoice
+        if (outcome === 'accepted') {
+          setDeferredPrompt(null)
+          ;(window as any).deferredPWAEvent = null
+          setIsOpen(false)
+          toast.success('¡Instalación iniciada!')
+        }
+      } catch (e) {
+        console.error(e)
       }
     } else {
       setIsOpen(true)
+    }
+  }
+
+  const handleModalInstallClick = async () => {
+    if (deferredPrompt) {
+      try {
+        deferredPrompt.prompt()
+        const { outcome } = await deferredPrompt.userChoice
+        if (outcome === 'accepted') {
+          setDeferredPrompt(null)
+          ;(window as any).deferredPWAEvent = null
+          setIsOpen(false)
+          toast.success('¡Instalación iniciada!')
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    } else {
+      toast.info("Toca el menú de tu navegador (⋮) y selecciona 'Instalar aplicación' o 'Agregar a la pantalla principal'.", { duration: 6000 })
     }
   }
 
@@ -214,7 +249,7 @@ export function PWAInstallPrompt({ businessName, businessLogo, slug }: PWAInstal
                 >
                   Cerrar
                 </Button>
-                {platform === 'android' && deferredPrompt ? (
+                {platform === 'ios' ? (
                   <Button 
                     onClick={handleInstallClick}
                     className="rounded-xl h-12 bg-primary text-white font-semibold text-sm"

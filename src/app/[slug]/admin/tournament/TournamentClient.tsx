@@ -216,6 +216,9 @@ export default function TournamentClient({
   const [zonesDirty, setZonesDirty] = useState(false)
   const [zonesSaveState, setZonesSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
+  const [selectedViewTeam, setSelectedViewTeam] = useState<any>(null)
+  const [isViewTeamModalOpen, setIsViewTeamModalOpen] = useState(false)
+
   const [isUploading, setIsUploading] = useState(false)
   const [logoUrl, setLogoUrl] = useState('')
   const [selectedEventType, setSelectedEventType] = useState('goal')
@@ -793,7 +796,7 @@ export default function TournamentClient({
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium">{team.name}</TableCell>
+                    <TableCell className="font-medium text-white group-hover:text-primary transition-colors">{team.name}</TableCell>
                     <TableCell>{team.captain_name || '-'}</TableCell>
                     <TableCell>{team.captain_phone || '-'}</TableCell>
                     <TableCell className="py-4">
@@ -819,7 +822,7 @@ export default function TournamentClient({
                       <Button variant="outline" size="icon" onClick={() => { setEditingTeam(team); setLogoUrl(team.logo_url || ''); setIsTeamDialogOpen(true); }}>
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Button variant="outline" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDeleteTeam(team.id)}>
+                      <Button variant="outline" size="icon" className="text-destructive hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); handleDeleteTeam(team.id); }}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </TableCell>
@@ -1639,6 +1642,208 @@ export default function TournamentClient({
         description={confirmConfig.description}
         variant={confirmConfig.variant}
       />
+
+      {/* Team Details Modal (Admin View) */}
+      <Dialog open={isViewTeamModalOpen} onOpenChange={setIsViewTeamModalOpen}>
+        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden bg-zinc-950 border-white/10 text-white rounded-[40px] shadow-2xl">
+          {selectedViewTeam && (() => {
+            // Calculate Team Stats
+            let pj = 0, g = 0, e = 0, p = 0, gf = 0, gc = 0
+            const teamMatches = matches.filter(m => m.home_team_id === selectedViewTeam.id || m.away_team_id === selectedViewTeam.id)
+            
+            teamMatches.forEach(m => {
+              if (m.status === 'finished' || m.status === 'live' || m.status === 'halftime') {
+                pj++
+                const isHome = m.home_team_id === selectedViewTeam.id
+                const teamScore = isHome ? m.home_score : m.away_score
+                const oppScore = isHome ? m.away_score : m.home_score
+                gf += teamScore
+                gc += oppScore
+                if (teamScore > oppScore) g++
+                else if (teamScore === oppScore) e++
+                else p++
+              }
+            })
+
+            const yellowCards = stats.filter(s => s.team_id === selectedViewTeam.id && s.event_type === 'yellow_card').length
+            const redCards = stats.filter(s => s.team_id === selectedViewTeam.id && s.event_type === 'red_card').length
+            const teamPlayers = initialPlayers.filter(p => p.team_id === selectedViewTeam.id)
+
+            return (
+              <div className="flex flex-col h-[90vh]">
+                <div className="relative bg-gradient-to-b from-zinc-900 to-zinc-950 p-8 sm:p-12 flex flex-col items-center border-b border-white/5">
+                  <div className="w-24 h-24 sm:w-32 sm:h-32 bg-white rounded-[32px] sm:rounded-[40px] flex items-center justify-center p-4 sm:p-6 shadow-2xl mb-6">
+                    {selectedViewTeam.logo_url ? <img src={selectedViewTeam.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-12 h-12 sm:w-16 sm:h-16 text-zinc-200" />}
+                  </div>
+                  <h2 className="text-3xl sm:text-4xl font-black uppercase italic tracking-tighter text-white mb-2 text-center">{selectedViewTeam.name}</h2>
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-zinc-400 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">
+                    <User className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" /> Capitán: {selectedViewTeam.captain_name || 'Sin capitán'} {selectedViewTeam.captain_phone ? `(${selectedViewTeam.captain_phone})` : ''}
+                  </div>
+                </div>
+
+                <div className="flex-1 min-h-0 overflow-hidden bg-zinc-950 flex flex-col">
+                  <Tabs defaultValue="general" className="flex-1 min-h-0 flex flex-col">
+                    <div className="px-6 sm:px-12 pt-6 flex-shrink-0">
+                      <TabsList className="grid w-full grid-cols-4 h-12 bg-zinc-900/50 border border-white/5 rounded-xl p-1 gap-1">
+                        <TabsTrigger value="general" className="rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-black">GENERAL</TabsTrigger>
+                        <TabsTrigger value="partidos" className="rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-black">PARTIDOS</TabsTrigger>
+                        <TabsTrigger value="disciplina" className="rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-black">DISCIPLINA</TabsTrigger>
+                        <TabsTrigger value="plantilla" className="rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-black">PLANTILLA</TabsTrigger>
+                      </TabsList>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-6 sm:p-12 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
+                      <TabsContent value="general" className="mt-0 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {/* General Stats */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                          {[
+                            { label: 'Partidos Jugados', val: pj, icon: Activity },
+                            { label: 'Victorias', val: g, color: 'text-emerald-400', icon: Trophy },
+                            { label: 'Empates', val: e, color: 'text-amber-400', icon: Clock },
+                            { label: 'Derrotas', val: p, color: 'text-red-400', icon: X },
+                            { label: 'Goles Favor', val: gf, color: 'text-primary', icon: Target },
+                            { label: 'Goles Contra', val: gc, color: 'text-zinc-500', icon: ShieldAlert },
+                          ].map((st, i) => (
+                            <div key={i} className="bg-zinc-900/40 border border-white/5 p-6 rounded-[28px] flex flex-col items-center justify-center text-center group hover:bg-zinc-900/80 transition-all">
+                              <st.icon className={`w-4 h-4 mb-3 opacity-20 ${st.color || 'text-white'}`} />
+                              <span className={`text-3xl sm:text-5xl font-black italic mb-1 ${st.color || 'text-white'} drop-shadow-md`}>{st.val}</span>
+                              <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">{st.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <div className="bg-primary/5 border border-primary/10 p-6 rounded-[28px] flex flex-col items-center justify-center text-center">
+                          <span className="text-4xl sm:text-6xl font-black italic text-primary mb-1 drop-shadow-lg">{(g * 3) + (e * 1)}</span>
+                          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/60">PUNTOS TOTALES</span>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="partidos" className="mt-0 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {teamMatches.length === 0 ? (
+                          <div className="text-center py-20 bg-zinc-900/20 rounded-[32px] border border-dashed border-white/5">
+                            <Calendar className="w-12 h-12 text-zinc-800 mx-auto mb-4" />
+                            <p className="text-zinc-500 font-black uppercase italic tracking-tighter text-lg">No hay historial aún</p>
+                          </div>
+                        ) : (
+                          teamMatches.sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()).map(m => {
+                            const isHome = m.home_team_id === selectedViewTeam.id
+                            const opp = isHome ? m.away : m.home
+                            return (
+                              <div key={m.id} className="bg-zinc-900/40 border border-white/5 p-5 sm:p-6 rounded-[24px] flex items-center justify-between gap-6 group hover:bg-zinc-900/80 transition-all">
+                                <div className="flex flex-col gap-2">
+                                   <div className="flex items-center gap-2">
+                                     <span className="bg-white/5 px-2 py-0.5 rounded text-[8px] font-black text-zinc-500 uppercase">
+                                       {new Date(m.match_date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                                     </span>
+                                     <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">{formatTime12h(m.match_time)}</span>
+                                   </div>
+                                   <div className="flex items-center gap-2">
+                                     <div className="w-7 h-7 bg-white rounded-lg p-1 shadow-md border border-white/10 flex-shrink-0">
+                                       {selectedViewTeam.logo_url ? <img src={selectedViewTeam.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-full h-full text-zinc-300" />}
+                                     </div>
+                                     <span className="text-[10px] font-black text-zinc-500 italic uppercase">VS</span>
+                                     <div className="w-7 h-7 bg-white rounded-lg p-1 shadow-md border border-white/10 flex-shrink-0">
+                                       {opp?.logo_url ? <img src={opp.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-full h-full text-zinc-300" />}
+                                     </div>
+                                     <span className="text-sm sm:text-lg font-black uppercase text-zinc-100 italic tracking-tight ml-1">{opp?.name}</span>
+                                   </div>
+                                </div>
+                                <div className="flex flex-col items-end gap-1">
+                                   {m.status === 'finished' ? (
+                                     <div className="flex items-center gap-3">
+                                       <span className={`text-2xl sm:text-3xl font-black italic ${
+                                         (isHome ? m.home_score : m.away_score) > (isHome ? m.away_score : m.home_score) ? 'text-primary' : 
+                                         (isHome ? m.home_score : m.away_score) < (isHome ? m.away_score : m.home_score) ? 'text-red-500' : 'text-zinc-400'
+                                       }`}>
+                                         {isHome ? `${m.home_score} - ${m.away_score}` : `${m.away_score} - ${m.home_score}`}
+                                       </span>
+                                     </div>
+                                   ) : (
+                                     <Badge className="bg-zinc-800 text-zinc-500 text-[8px] font-black uppercase tracking-widest px-3 py-1">Programado</Badge>
+                                   )}
+                                </div>
+                              </div>
+                            )
+                          })
+                        )}
+                      </TabsContent>
+
+                      <TabsContent value="disciplina" className="mt-0 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="grid grid-cols-2 gap-6">
+                          <div className="bg-yellow-500/[0.03] border border-yellow-500/10 p-8 sm:p-10 rounded-[32px] flex flex-col items-center group hover:bg-yellow-500/[0.06] transition-all">
+                            <div className="w-6 h-10 bg-yellow-400 rounded-md mb-4 shadow-[0_0_20px_rgba(250,204,21,0.4)] group-hover:scale-110 transition-transform" />
+                            <span className="text-5xl sm:text-7xl font-black italic text-yellow-500 mb-2 drop-shadow-md">{yellowCards}</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500/60">Tarjetas Amarillas</span>
+                          </div>
+                          <div className="bg-red-500/[0.03] border border-red-500/10 p-8 sm:p-10 rounded-[32px] flex flex-col items-center group hover:bg-red-500/[0.06] transition-all">
+                            <div className="w-6 h-10 bg-red-600 rounded-md mb-4 shadow-[0_0_20px_rgba(220,38,38,0.4)] group-hover:scale-110 transition-transform" />
+                            <span className="text-5xl sm:text-7xl font-black italic text-red-600 mb-2 drop-shadow-md">{redCards}</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-red-500/60">Tarjetas Rojas</span>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-zinc-900/30 p-6 rounded-[28px] border border-white/5 text-center">
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Puntos de Disciplina</p>
+                          <p className="text-2xl font-black italic text-white mt-2">{(yellowCards * 1) + (redCards * 3)} <span className="text-xs text-zinc-700 ml-1">ACUMULADOS</span></p>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="plantilla" className="mt-0 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {teamPlayers.length === 0 ? (
+                          <div className="text-center py-20 bg-zinc-900/20 rounded-[32px] border border-dashed border-white/5">
+                            <User className="w-12 h-12 text-zinc-800 mx-auto mb-4" />
+                            <p className="text-zinc-500 font-black uppercase italic tracking-tighter text-lg">No hay jugadores registrados en este equipo</p>
+                          </div>
+                        ) : (
+                          <div className="grid gap-3">
+                            {teamPlayers.sort((a: any, b: any) => {
+                               const aGoals = stats.filter(s => s.player_id === a.id && s.event_type === 'goal').length
+                               const bGoals = stats.filter(s => s.player_id === b.id && s.event_type === 'goal').length
+                               return bGoals - aGoals
+                            }).map((player: any, idx: number) => {
+                              const pGoals = stats.filter(s => s.player_id === player.id && s.event_type === 'goal').length
+                              const pYellow = stats.filter(s => s.player_id === player.id && s.event_type === 'yellow_card').length
+                              const pRed = stats.filter(s => s.player_id === player.id && s.event_type === 'red_card').length
+                              
+                              return (
+                                <div key={player.id} className="flex items-center justify-between p-5 rounded-[20px] bg-zinc-900/40 border border-white/5 hover:bg-zinc-900/80 transition-all group">
+                                   <div className="flex items-center gap-4">
+                                      <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center font-black italic text-zinc-400 group-hover:text-primary transition-colors">
+                                        #{player.jersey_number || idx + 1}
+                                      </div>
+                                      <div>
+                                        <p className="font-black uppercase tracking-tight text-white text-sm sm:text-base italic">{player.first_name} {player.last_name}</p>
+                                        <div className="flex items-center gap-3 mt-1">
+                                          <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">{player.position || 'Jugador'}</span>
+                                        </div>
+                                      </div>
+                                   </div>
+                                   <div className="flex items-center gap-6">
+                                      {pGoals > 0 && (
+                                        <div className="flex flex-col items-center">
+                                          <span className="text-xl font-black italic text-primary">{pGoals}</span>
+                                          <span className="text-[7px] font-black text-zinc-600 uppercase">Goles</span>
+                                        </div>
+                                      )}
+                                      <div className="flex gap-1.5">
+                                        {pYellow > 0 && <div className="w-2.5 h-4 bg-yellow-400 rounded-sm shadow-lg shadow-yellow-500/10" />}
+                                        {pRed > 0 && <div className="w-2.5 h-4 bg-red-600 rounded-sm shadow-lg shadow-red-500/10" />}
+                                      </div>
+                                   </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </TabsContent>
+                    </div>
+                  </Tabs>
+                </div>
+              </div>
+            )
+          })()}
+        </DialogContent>
+      </Dialog>
       </Tabs>
     </div>
   )
