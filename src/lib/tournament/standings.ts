@@ -27,8 +27,14 @@ export type TournamentStanding = {
   pts: number
 }
 
-export function isPlayedTournamentMatch(match: StandingsMatch) {
-  return match.status === 'finished' || match.status === 'live' || match.status === 'halftime'
+export function isPlayedTournamentMatch(
+  match: StandingsMatch,
+): match is StandingsMatch & { home_score: number; away_score: number } {
+  return (
+    (match.status === 'finished' || match.status === 'live' || match.status === 'halftime') &&
+    match.home_score !== null &&
+    match.away_score !== null
+  )
 }
 
 export function calculateTournamentStandings(teams: StandingsTeam[], matches: StandingsMatch[]): TournamentStanding[] {
@@ -40,8 +46,8 @@ export function calculateTournamentStandings(teams: StandingsTeam[], matches: St
           if (match.home_team_id !== team.id && match.away_team_id !== team.id) return result
 
           const isHome = match.home_team_id === team.id
-          const teamScore = isHome ? (match.home_score || 0) : (match.away_score || 0)
-          const opponentScore = isHome ? (match.away_score || 0) : (match.home_score || 0)
+          const teamScore = isHome ? match.home_score : match.away_score
+          const opponentScore = isHome ? match.away_score : match.home_score
 
           result.pj += 1
           result.gf += teamScore

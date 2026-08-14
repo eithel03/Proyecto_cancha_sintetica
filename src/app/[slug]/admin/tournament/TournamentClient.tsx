@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import {
   Activity, BarChart3, Calendar, Clock, Minus, Pencil, Plus, Search, Settings2, Shield, ShieldAlert, Target, Timer, Trash2,
-  Trophy, UserPlus, Users, X, Zap, type LucideIcon
+  Trophy, User, UserPlus, Users, X, Zap, type LucideIcon
 } from 'lucide-react'
 import { upsertTeam, deleteTeam, upsertPlayer, deletePlayer, upsertMatch, deleteMatch, addMatchEvent, deleteFullTournament, autoStartMatches, saveClassificationZones } from './actions'
 import { toast } from 'sonner'
@@ -1652,7 +1652,10 @@ export default function TournamentClient({
             const teamMatches = matches.filter(m => m.home_team_id === selectedViewTeam.id || m.away_team_id === selectedViewTeam.id)
             
             teamMatches.forEach(m => {
-              if (m.status === 'finished' || m.status === 'live' || m.status === 'halftime') {
+              if (
+                (m.status === 'finished' || m.status === 'live' || m.status === 'halftime') &&
+                m.home_score !== null && m.away_score !== null
+              ) {
                 pj++
                 const isHome = m.home_team_id === selectedViewTeam.id
                 const teamScore = isHome ? m.home_score : m.away_score
@@ -1665,8 +1668,8 @@ export default function TournamentClient({
               }
             })
 
-            const yellowCards = stats.filter(s => s.team_id === selectedViewTeam.id && s.event_type === 'yellow_card').length
-            const redCards = stats.filter(s => s.team_id === selectedViewTeam.id && s.event_type === 'red_card').length
+            const yellowCards = initialEvents.filter(s => s.team_id === selectedViewTeam.id && s.event_type === 'yellow_card').length
+            const redCards = initialEvents.filter(s => s.team_id === selectedViewTeam.id && s.event_type === 'red_card').length
             const teamPlayers = initialPlayers.filter(p => p.team_id === selectedViewTeam.id)
 
             return (
@@ -1749,7 +1752,7 @@ export default function TournamentClient({
                                    </div>
                                 </div>
                                 <div className="flex flex-col items-end gap-1">
-                                   {m.status === 'finished' ? (
+                                    {m.status === 'finished' && m.home_score !== null && m.away_score !== null ? (
                                      <div className="flex items-center gap-3">
                                        <span className={`text-2xl sm:text-3xl font-black italic ${
                                          (isHome ? m.home_score : m.away_score) > (isHome ? m.away_score : m.home_score) ? 'text-primary' : 
@@ -1797,13 +1800,13 @@ export default function TournamentClient({
                         ) : (
                           <div className="grid gap-3">
                             {teamPlayers.sort((a: any, b: any) => {
-                               const aGoals = stats.filter(s => s.player_id === a.id && s.event_type === 'goal').length
-                               const bGoals = stats.filter(s => s.player_id === b.id && s.event_type === 'goal').length
+                               const aGoals = initialEvents.filter(s => s.player_id === a.id && s.event_type === 'goal').length
+                               const bGoals = initialEvents.filter(s => s.player_id === b.id && s.event_type === 'goal').length
                                return bGoals - aGoals
                             }).map((player: any, idx: number) => {
-                              const pGoals = stats.filter(s => s.player_id === player.id && s.event_type === 'goal').length
-                              const pYellow = stats.filter(s => s.player_id === player.id && s.event_type === 'yellow_card').length
-                              const pRed = stats.filter(s => s.player_id === player.id && s.event_type === 'red_card').length
+                               const pGoals = initialEvents.filter(s => s.player_id === player.id && s.event_type === 'goal').length
+                               const pYellow = initialEvents.filter(s => s.player_id === player.id && s.event_type === 'yellow_card').length
+                               const pRed = initialEvents.filter(s => s.player_id === player.id && s.event_type === 'red_card').length
                               
                               return (
                                 <div key={player.id} className="flex items-center justify-between p-5 rounded-[20px] bg-zinc-900/40 border border-white/5 hover:bg-zinc-900/80 transition-all group">
