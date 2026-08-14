@@ -61,7 +61,7 @@ export function MapPreview({ lat, lng }: MapPreviewProps) {
   }, [mapLoaded, lat, lng])
 
   return (
-    <div className="mt-4 rounded-2xl overflow-hidden border border-white/10 h-[200px] bg-zinc-900 relative">
+    <div className="relative z-0 isolate mt-4 h-[200px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
       {!lat || !lng ? (
         <div className="absolute inset-0 flex items-center justify-center text-zinc-500 text-xs font-bold uppercase tracking-widest">
           Sin ubicación seleccionada

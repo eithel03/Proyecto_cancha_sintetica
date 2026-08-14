@@ -1,14 +1,11 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { Flag, CalendarCheck, Swords, User } from 'lucide-react'
 import ProfileClient from './ProfileClient'
-import { revalidatePath } from 'next/cache'
 import { PublicNav } from '@/components/PublicNav'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-
 
 type PageProps = {
   params: Promise<{ slug: string }>
@@ -18,7 +15,6 @@ export default async function ProfilePage({ params }: PageProps) {
   const { slug } = await params
   const supabase = await createClient()
 
-  // 1. Obtener Negocio
   const { data: business } = await supabase
     .from('businesses')
     .select('*')
@@ -27,13 +23,11 @@ export default async function ProfilePage({ params }: PageProps) {
 
   if (!business) notFound()
 
-  // 2. Auth Check
   const { data: { user } } = await supabase.auth.getUser()
   if (!user || !user.id) {
     redirect(`/cliente/login?redirectTo=/${slug}/perfil`)
   }
 
-  // 3. Obtener Perfil (Asegurar que es el del usuario logueado)
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
@@ -42,24 +36,20 @@ export default async function ProfilePage({ params }: PageProps) {
 
   if (!profile) redirect('/cliente/login')
 
-  // 4. Obtener Reservas (ESTRICTO: Solo las del usuario actual y que no estén ocultas)
-  // Nota: Si aún no corres el SQL, esta consulta podría dar error. 
-  // Pero es necesario para que el historial funcione.
   const { data: reservations } = await supabase
     .from('reservations')
     .select('*, courts(name)')
     .eq('customer_id', user.id)
     .eq('business_id', business.id)
-    .eq('hidden_by_customer', false) // Filtro de historial
+    .eq('hidden_by_customer', false)
     .order('reservation_date', { ascending: false })
 
-  // 5. Obtener Retos (ESTRICTO: Donde el usuario sea creador o oponente)
   const { data: challenges } = await supabase
     .from('challenges')
     .select('*, courts(name)')
     .or(`creator_id.eq.${user.id},opponent_id.eq.${user.id}`)
     .eq('business_id', business.id)
-    .eq('hidden_by_customer', false) // Filtro de historial
+    .eq('hidden_by_customer', false)
     .order('challenge_date', { ascending: false })
 
   return (
@@ -75,7 +65,7 @@ export default async function ProfilePage({ params }: PageProps) {
         />
       </main>
 
-      <footer className="text-center py-8 text-sm text-muted-foreground border-t border-white/10 bg-zinc-950 mt-auto">
+      <footer className="text-center py-8 text-sm text-muted-foreground border-t border-border mt-auto">
         Potenciado por <Link href="/" className="text-primary font-medium hover:underline">SaaSintética</Link>
       </footer>
     </div>

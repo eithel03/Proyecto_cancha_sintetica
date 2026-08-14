@@ -1,128 +1,33 @@
 'use client'
 
 import { useState } from 'react'
+import { CalendarDays, Check, Clock, Copy, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Clock, CalendarOff } from 'lucide-react'
-import { updateBusinessHours } from './actions'
-import { toast } from 'sonner'
 import { formatTime12h } from '@/lib/utils'
+import { updateBusinessHours } from './actions'
 
-const DAYS = [
-  'Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'
-]
+type Hour = { id?: string; business_id?: string; day_of_week: number; open_time: string; close_time: string; is_closed: boolean }
+const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
-export default function BusinessHoursManager({ businessId, initialHours }: { businessId: string, initialHours: any[] }) {
-  // Inicializar con valores por defecto si no hay nada en la BD
-  const [hours, setHours] = useState(() => {
-    const defaultHours = Array.from({ length: 7 }, (_, i) => ({
-      day_of_week: i,
-      open_time: '08:00',
-      close_time: '22:00',
-      is_closed: false
-    }))
+function normalizeHour(hour: Partial<Hour>, day: number): Hour { return { day_of_week: day, open_time: (hour.open_time || '08:00').slice(0, 5), close_time: (hour.close_time || '22:00').slice(0, 5), is_closed: Boolean(hour.is_closed) } }
 
-    if (initialHours && initialHours.length > 0) {
-      initialHours.forEach(h => {
-        defaultHours[h.day_of_week] = {
-          ...h,
-          open_time: h.open_time.substring(0, 5),
-          close_time: h.close_time.substring(0, 5)
-        }
-      })
-    }
-    return defaultHours
-  })
-
+export default function BusinessHoursManager({ businessId, initialHours }: { businessId: string; initialHours: Hour[] }) {
+  const [hours, setHours] = useState<Hour[]>(() => Array.from({ length: 7 }, (_, day) => normalizeHour(initialHours.find((item) => item.day_of_week === day) || {}, day)))
   const [pending, setPending] = useState(false)
 
-  const handleToggle = (dayIndex: number) => {
-    setHours((prev: any) => prev.map((h: any) => h.day_of_week === dayIndex ? { ...h, is_closed: !h.is_closed } : h))
-  }
-
-  const handleTimeChange = (dayIndex: number, field: 'open_time' | 'close_time', value: string) => {
-    setHours((prev: any) => prev.map((h: any) => h.day_of_week === dayIndex ? { ...h, [field]: value } : h))
-  }
-
+  const changeHour = (day: number, field: keyof Pick<Hour, 'open_time' | 'close_time' | 'is_closed'>, value: string | boolean) => setHours((current) => current.map((item) => item.day_of_week === day ? { ...item, [field]: value } : item))
+  const copySchedule = (sourceDay: number) => { const source = hours[sourceDay]; setHours((current) => current.map((item) => item.day_of_week === sourceDay ? item : { ...item, open_time: source.open_time, close_time: source.close_time, is_closed: source.is_closed })); toast.success('Horario copiado a los demás días.') }
   const saveHours = async () => {
-    setPending(true)
-    const result = await updateBusinessHours(businessId, hours)
-    setPending(false)
-    if (result.error) {
-      toast.error(result.error)
-    } else {
-      toast.success('Horarios actualizados correctamente')
-    }
+    const invalid = hours.find((item) => !item.is_closed && item.close_time <= item.open_time)
+    if (invalid) return toast.error(`Revisa el horario del ${DAYS[invalid.day_of_week]}. El cierre debe ser posterior a la apertura.`)
+    setPending(true); const result = await updateBusinessHours(businessId, hours); setPending(false)
+    if (result.error) toast.error(result.error); else toast.success('Horarios actualizados correctamente')
   }
 
-  return (
-    <Card className="border-white/10 bg-zinc-950/50 backdrop-blur-xl">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Clock className="w-5 h-5 text-primary" /> Horarios de Atención
-        </CardTitle>
-        <CardDescription>Configura las horas en las que tu sintética está disponible para reservas.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid gap-4">
-          {DAYS.map((day, index) => (
-            <div key={day} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border transition-all ${hours[index].is_closed ? 'bg-zinc-900/20 border-white/5 opacity-60' : 'bg-white/5 border-white/10'}`}>
-              <div className="flex items-center gap-4 mb-2 sm:mb-0">
-                <div className={`w-2 h-2 rounded-full ${hours[index].is_closed ? 'bg-red-500' : 'bg-emerald-500 animate-pulse'}`} />
-                <span className="font-bold w-24">{day}</span>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full sm:w-auto">
-                {!hours[index].is_closed ? (
-                  <div className="flex items-center gap-4 animate-in fade-in zoom-in-95 duration-300 w-full sm:w-auto justify-center sm:justify-start">
-                    <div className="flex flex-col items-center gap-1">
-                      <Input 
-                        type="time" 
-                        value={hours[index].open_time} 
-                        onChange={(e) => handleTimeChange(index, 'open_time', e.target.value)}
-                        className="w-24 bg-zinc-900 border-white/10 h-10 text-sm text-center"
-                      />
-                      <span className="text-[10px] font-bold text-primary uppercase">{formatTime12h(hours[index].open_time)}</span>
-                    </div>
-                    <span className="text-muted-foreground font-bold self-center mb-4">-</span>
-                    <div className="flex flex-col items-center gap-1">
-                      <Input 
-                        type="time" 
-                        value={hours[index].close_time} 
-                        onChange={(e) => handleTimeChange(index, 'close_time', e.target.value)}
-                        className="w-24 bg-zinc-900 border-white/10 h-10 text-sm text-center"
-                      />
-                      <span className="text-[10px] font-bold text-primary uppercase">{formatTime12h(hours[index].close_time)}</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-zinc-500 font-medium italic animate-in slide-in-from-right-4 py-2">
-                    <CalendarOff className="w-4 h-4" /> Cerrado
-                  </div>
-                )}
-                
-                <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto border-t sm:border-t-0 sm:border-l border-white/5 sm:border-white/10 pt-3 sm:pt-0 sm:pl-6 sm:ml-2">
-                  <Label htmlFor={`closed-${index}`} className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-zinc-500 cursor-pointer">
-                    {hours[index].is_closed ? 'CERRADO' : 'ABIERTO'}
-                  </Label>
-                  <Switch 
-                    id={`closed-${index}`}
-                    checked={!hours[index].is_closed} 
-                    onCheckedChange={() => handleToggle(index)}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <Button onClick={saveHours} className="w-full font-black text-lg py-6 shadow-xl shadow-primary/20" disabled={pending}>
-          {pending ? 'Guardando cambios...' : 'Confirmar Horarios Semanales'}
-        </Button>
-      </CardContent>
-    </Card>
-  )
+  return <Card className="border-slate-200 bg-white shadow-sm"><CardHeader className="border-b border-slate-100 pb-4"><CardTitle className="flex items-center gap-2 text-lg text-slate-900"><Clock className="h-5 w-5 text-emerald-700" />Horarios de atención</CardTitle><CardDescription className="text-slate-500">Define cuándo pueden realizarse reservas en tu complejo.</CardDescription></CardHeader><CardContent className="space-y-3 pt-5"><div className="hidden grid-cols-[minmax(150px,1fr)_120px_1fr_100px] gap-4 px-4 text-xs font-semibold uppercase tracking-wide text-slate-400 sm:grid"><span>Día</span><span>Estado</span><span>Horario</span><span /></div>{hours.slice(1).concat(hours[0]).map((item) => <div key={item.day_of_week} className="grid gap-4 rounded-xl border border-slate-200 p-4 sm:grid-cols-[minmax(150px,1fr)_120px_1fr_100px] sm:items-center"><div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-sm font-bold text-emerald-700">{DAYS[item.day_of_week].slice(0, 2)}</span><span className="font-semibold text-slate-800">{DAYS[item.day_of_week]}</span></div><div className="flex items-center gap-2"><Switch id={`day-${item.day_of_week}`} checked={!item.is_closed} onCheckedChange={(checked) => changeHour(item.day_of_week, 'is_closed', !checked)} /><Label htmlFor={`day-${item.day_of_week}`} className="text-sm text-slate-600">{item.is_closed ? 'Cerrado' : 'Abierto'}</Label></div>{item.is_closed ? <div className="text-sm italic text-slate-400">Sin reservas este día</div> : <div className="flex items-center gap-2"><div><Input aria-label={`Apertura ${DAYS[item.day_of_week]}`} type="time" value={item.open_time} onChange={(event) => changeHour(item.day_of_week, 'open_time', event.target.value)} className="w-32 border-slate-300" /><p className="mt-1 text-xs text-slate-500">{formatTime12h(item.open_time)}</p></div><span className="text-slate-400">a</span><div><Input aria-label={`Cierre ${DAYS[item.day_of_week]}`} type="time" value={item.close_time} onChange={(event) => changeHour(item.day_of_week, 'close_time', event.target.value)} className="w-32 border-slate-300" /><p className="mt-1 text-xs text-slate-500">{formatTime12h(item.close_time)}</p></div></div>}<Button type="button" variant="outline" onClick={() => copySchedule(item.day_of_week)} className="w-full border-slate-300 text-slate-600 sm:w-auto"><Copy className="mr-2 h-4 w-4" />Copiar</Button></div>)}<div className="flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-slate-500"><CalendarDays className="mr-1 inline h-4 w-4" />Puedes copiar cualquier horario a los demás días.</p><Button type="button" onClick={saveHours} disabled={pending} className="bg-emerald-700 text-white hover:bg-emerald-800">{pending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : <><Check className="mr-2 h-4 w-4" />Guardar horarios</>}</Button></div></CardContent></Card>
 }

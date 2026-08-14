@@ -90,18 +90,24 @@ export async function deleteBusiness(businessId: string, ownerId: string) {
   const adminClient = createAdminClient()
 
   try {
-    // 1. Eliminar primero el negocio (esto debería eliminar en cascada reservas y canchas si la BD está configurada así)
+    // 1. Eliminar primero el usuario dueño (si falla, el negocio queda intacto)
+    if (ownerId) {
+      const { error: authError } = await adminClient.auth.admin.deleteUser(ownerId)
+      if (authError) {
+        console.error('Failed to delete owner user:', authError.message)
+        return { error: 'Error al eliminar el usuario del dueño: ' + authError.message }
+      }
+    }
+
+    // 2. Eliminar el negocio (cascada a reservas, canchas, etc.)
     const { error: businessError } = await adminClient
       .from('businesses')
       .delete()
       .eq('id', businessId)
 
-    if (businessError) throw new Error('Error al eliminar negocio: ' + businessError.message)
-
-    // 2. Eliminar el usuario dueño usando Admin API (eliminación en cascada total de perfil y accesos)
-    if (ownerId) {
-      const { error: authError } = await adminClient.auth.admin.deleteUser(ownerId)
-      if (authError) throw new Error('El negocio se eliminó, pero hubo un error al eliminar al usuario: ' + authError.message)
+    if (businessError) {
+      console.error('Business deleted owner user but failed to delete business:', businessError.message)
+      return { error: 'El usuario del dueño se eliminó, pero el negocio no pudo eliminarse: ' + businessError.message + '. Contacta soporte para limpiar manualmente.' }
     }
 
     revalidatePath('/admin/businesses')

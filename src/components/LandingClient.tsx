@@ -24,7 +24,7 @@ export function LandingHero() {
           </div>
           
           <h1 className="max-w-4xl text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black italic tracking-tighter uppercase leading-[0.9] sm:leading-tight">
-            Lleva tu <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">cancha sintética</span> al siguiente nivel
+            Lleva tu <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-green-400">cancha sintética</span> al siguiente nivel
           </h1>
           
           <p className="mx-auto max-w-2xl text-base sm:text-xl text-muted-foreground leading-relaxed font-medium">
@@ -38,7 +38,7 @@ export function LandingHero() {
               </Button>
             </Link>
             <Link href="/login" className="w-full sm:w-auto">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto h-14 sm:h-16 px-8 sm:px-10 text-xs sm:text-lg rounded-2xl sm:rounded-full border-white/10 hover:bg-white/5 font-black uppercase tracking-widest transition-all">
+              <Button size="lg" variant="outline" className="w-full sm:w-auto h-14 sm:h-16 px-8 sm:px-10 text-xs sm:text-lg rounded-2xl sm:rounded-full border-slate-300 hover:bg-slate-100 font-bold tracking-tight transition-all">
                 Panel de Dueño
               </Button>
             </Link>
@@ -54,7 +54,7 @@ export function LandingHero() {
 
 export function LandingFeatures() {
   return (
-    <section className="relative w-full py-20 sm:py-24 bg-zinc-950/50 border-t border-white/5">
+    <section className="relative w-full py-20 sm:py-24 bg-slate-50 border-t border-slate-200">
       <div className="container px-4 md:px-6 mx-auto">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -63,7 +63,7 @@ export function LandingFeatures() {
           transition={{ duration: 0.5 }}
           className="text-center mb-12 sm:mb-16"
         >
-          <h2 className="text-3xl sm:text-5xl font-black italic uppercase tracking-tighter mb-4">Todo lo que necesitas para triunfar</h2>
+          <h2 className="text-3xl sm:text-5xl font-bold tracking-tight mb-4">Todo lo que necesitas para triunfar</h2>
           <p className="text-muted-foreground text-sm sm:text-lg max-w-2xl mx-auto font-medium">Herramientas diseñadas específicamente para optimizar tu tiempo y mejorar la experiencia de tus jugadores.</p>
         </motion.div>
 
@@ -95,14 +95,14 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode, titl
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="group relative overflow-hidden rounded-[24px] sm:rounded-3xl border border-white/10 bg-card p-6 sm:p-8 hover:border-primary/50 transition-colors"
+      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-card p-6 sm:p-8 shadow-sm hover:border-primary/50 transition-colors"
     >
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       <div className="relative z-10 flex flex-col items-start space-y-3 sm:space-y-4">
         <div className="p-3 bg-primary/10 rounded-xl sm:rounded-2xl">
           {icon}
         </div>
-        <h3 className="text-xl sm:text-2xl font-black italic uppercase tracking-tighter">{title}</h3>
+        <h3 className="text-xl sm:text-2xl font-bold tracking-tight">{title}</h3>
         <p className="text-muted-foreground text-sm sm:text-base leading-relaxed font-medium">
           {description}
         </p>

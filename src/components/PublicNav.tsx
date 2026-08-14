@@ -2,131 +2,172 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useSearchParams } from 'next/navigation'
-import { CalendarCheck, Flag, Swords, User, Menu, X, Trophy, BarChart3, Users, Calendar } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { CalendarDays, Trophy, Swords, User, Menu, X, Flag } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 
-export function PublicNav({ slug, businessName }: { slug: string, businessName: string }) {
+export function PublicNav({ slug, businessName }: { slug: string; businessName: string }) {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
   const [isOpen, setIsOpen] = useState(false)
 
-  const isTournamentPage = pathname.endsWith('/torneo')
-
   const tabs = [
-    { label: 'RESERVAS', icon: CalendarCheck, href: `/${slug}` },
-    { label: 'TORNEO', icon: Flag, href: `/${slug}/torneo` },
-    { label: 'RETOS', icon: Swords, href: `/${slug}/retos` },
-    { label: 'MI PERFIL', icon: User, href: `/${slug}/perfil` },
+    { label: 'Reservas', icon: CalendarDays, href: `/${slug}` },
+    { label: 'Torneo', icon: Trophy, href: `/${slug}/torneo` },
+    { label: 'Retos', icon: Swords, href: `/${slug}/retos` },
+    { label: 'Mi perfil', icon: User, href: `/${slug}/perfil` },
   ]
 
-  const tournamentTabs = [
-    { id: 'jornada', label: 'JORNADA', icon: Calendar },
-    { id: 'clasificacion', label: 'TABLA', icon: Trophy },
-    { id: 'estadisticas', label: 'STATS', icon: BarChart3 },
-    { id: 'equipos', label: 'EQUIPOS', icon: Users },
-  ]
+  const isActiveTab = (tab: { label: string; href: string }) =>
+    pathname === tab.href ||
+    (tab.label === 'Reservas' && pathname === `/${slug}`)
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full bg-zinc-950/90 backdrop-blur-xl border-b border-white/5 px-4 sm:px-8 h-16 sm:h-20 flex items-center justify-between">
-        {/* Brand/Logo */}
-        <Link href={`/${slug}`} className="flex items-center gap-3 group">
-          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <Flag className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-          </div>
-          <span className="text-base sm:text-xl font-black italic uppercase tracking-tighter text-white">
-            {businessName}
-          </span>
-        </Link>
+      {/* Desktop + Tablet Navbar */}
+      <header className="sticky top-0 z-50 w-full bg-navy hidden md:block border-b border-white/5">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <Link href={`/${slug}`} className="flex items-center gap-3 min-w-0 group">
+            <div className="w-9 h-9 rounded-xl bg-gold/15 flex items-center justify-center flex-shrink-0 group-hover:bg-gold/20 transition-colors">
+              <Flag className="w-4 h-4 text-gold" />
+            </div>
+            <span className="flex flex-col min-w-0 leading-none">
+              <span className="text-base sm:text-lg font-bold tracking-tight text-white truncate">
+                {businessName}
+              </span>
+              <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.3em] text-white/40 mt-1">
+                Complejo deportivo
+              </span>
+            </span>
+          </Link>
 
-        {/* Desktop Nav - Cleaner text links */}
-        <nav className="hidden md:flex items-center gap-8">
-          {tabs.map((tab) => {
-            const isActive = pathname === tab.href || (tab.label === 'RESERVAS' && pathname === `/${slug}`)
-            return (
-              <Link 
-                key={tab.label}
-                href={tab.href} 
-                className={`text-[11px] font-black uppercase tracking-[0.2em] transition-all hover:text-primary ${
-                  isActive ? 'text-primary' : 'text-zinc-500'
-                }`}
-              >
-                {tab.label}
-              </Link>
-            )
-          })}
-        </nav>
+          <nav className="flex items-center gap-1">
+            {tabs.map((tab) => {
+              const isActive = isActiveTab(tab)
+              return (
+                <Link
+                  key={tab.label}
+                  href={tab.href}
+                  className={`relative px-4 py-2 rounded-xl text-sm transition-all duration-200 flex items-center gap-2 ${
+                    isActive
+                      ? 'bg-gold/10 text-gold font-semibold'
+                      : 'text-white/55 font-medium hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <tab.icon className={`w-4 h-4 ${isActive ? 'text-gold' : ''}`} />
+                  {tab.label}
+                  {isActive && (
+                    <span className="absolute -bottom-[11px] left-3 right-3 h-[3px] rounded-full bg-gold" />
+                  )}
+                </Link>
+              )
+            })}
+          </nav>
+        </div>
+      </header>
 
-        {/* Mobile Toggle */}
-        <div className="md:hidden">
-          <Button 
-            variant="ghost" 
-            size="icon" 
+      {/* Mobile Top Bar */}
+      <header className="sticky top-0 z-50 w-full bg-navy md:hidden border-b border-white/5">
+        <div className="px-4 h-14 flex items-center justify-between">
+          <Link href={`/${slug}`} className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-gold/15 flex items-center justify-center flex-shrink-0">
+              <Flag className="w-4 h-4 text-gold" />
+            </div>
+            <span className="text-sm font-bold tracking-tight text-white truncate">
+              {businessName}
+            </span>
+          </Link>
+
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setIsOpen(!isOpen)}
-            className="text-white h-10 w-10 rounded-xl bg-white/5 border border-white/5"
+            aria-label={isOpen ? 'Cerrar menú' : 'Abrir menú'}
+            className="text-white h-9 w-9 rounded-lg bg-white/5 border border-white/10"
           >
-            {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {isOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </Button>
         </div>
       </header>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Slide Menu */}
       <AnimatePresence>
         {isOpen && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] md:hidden"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] md:hidden"
             />
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 50 }}
-              className="fixed top-0 right-0 bottom-0 w-[85%] max-w-sm bg-zinc-950 border-l border-white/10 p-8 flex flex-col z-[70] md:hidden shadow-2xl"
+              transition={{ duration: 0.2 }}
+              className="fixed top-0 right-0 bottom-0 w-[80%] max-w-sm bg-navy border-l border-white/10 p-6 flex flex-col z-[70] md:hidden shadow-xl"
             >
-              <div className="flex justify-between items-center mb-12">
-                 <span className="text-xl font-black italic uppercase tracking-tighter text-white">{businessName}</span>
-                 <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="text-zinc-500">
-                    <X className="w-6 h-6" />
-                 </Button>
+              <div className="flex justify-between items-center mb-8">
+                <span className="text-sm font-bold text-white">Menú</span>
+                <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} aria-label="Cerrar menú" className="h-9 w-9 text-white/70">
+                  <X className="w-5 h-5" />
+                </Button>
               </div>
 
-              <div className="space-y-6">
-                <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mb-4">Navegación</p>
-                <div className="grid gap-2">
-                  {tabs.map((tab) => {
-                    const isActive = pathname === tab.href || (tab.label === 'RESERVAS' && pathname === `/${slug}`)
-                    return (
-                      <Link 
-                        key={tab.label}
-                        href={tab.href}
-                        onClick={() => setIsOpen(false)}
-                        className={`flex items-center gap-4 p-4 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${
-                          isActive 
-                            ? 'bg-primary text-black shadow-lg shadow-primary/20' 
-                            : 'bg-white/5 text-zinc-400'
-                        }`}
-                      >
-                        <tab.icon className="w-5 h-5" />
-                        {tab.label}
-                      </Link>
-                    )
-                  })}
-                </div>
+              <div className="grid gap-1.5">
+                {tabs.map((tab) => {
+                  const isActive = isActiveTab(tab)
+                  return (
+                    <Link
+                      key={tab.label}
+                      href={tab.href}
+                      onClick={() => setIsOpen(false)}
+                      className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-sm transition-colors min-h-11 ${
+                        isActive ? 'bg-white/10 text-gold font-semibold' : 'text-white/65 font-medium hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      <tab.icon className={`w-5 h-5 ${isActive ? 'text-gold' : ''}`} />
+                      {tab.label}
+                      {isActive && <span className="ml-auto h-2 w-2 rounded-full bg-gold" />}
+                    </Link>
+                  )
+                })}
               </div>
 
-              <div className="mt-auto pt-12 text-center">
-                <p className="text-[10px] font-bold text-zinc-700 uppercase tracking-[0.2em]">SaaSintética v1.0</p>
+              <div className="mt-auto pt-10 text-center">
+                <p className="text-xs font-medium text-white/30">Sintetica Pital</p>
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="fixed bottom-0 inset-x-0 z-50 bg-white border-t border-border md:hidden safe-area-pb">
+        <div className="flex items-center justify-around h-16 px-2">
+          {tabs.map((tab) => {
+            const isActive = isActiveTab(tab)
+            return (
+              <Link
+                key={tab.label}
+                href={tab.href}
+                className={`flex flex-col items-center justify-center gap-1 min-w-0 flex-1 py-1.5 transition-colors relative ${
+                  isActive ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <tab.icon className={`w-5 h-5 ${isActive ? 'text-primary' : ''}`} />
+                <span className={`text-[10px] font-semibold ${isActive ? 'text-primary' : ''}`}>
+                  {tab.label}
+                </span>
+                {isActive && (
+                  <span className="absolute top-0 w-8 h-0.5 rounded-full bg-primary" />
+                )}
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
     </>
   )
 }

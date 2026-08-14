@@ -39,11 +39,21 @@ export async function updateSession(request: NextRequest) {
     !user &&
     !request.nextUrl.pathname.startsWith('/login') &&
     !request.nextUrl.pathname.startsWith('/register') &&
-    request.nextUrl.pathname.startsWith('/dashboard')
+    !request.nextUrl.pathname.startsWith('/cliente/login') &&
+    !request.nextUrl.pathname.startsWith('/cliente/registro') &&
+    !request.nextUrl.pathname.startsWith('/admin/login') &&
+    (request.nextUrl.pathname.startsWith('/dashboard') ||
+     request.nextUrl.pathname.startsWith('/admin') ||
+     /^\/[^/]+\/admin(\/|$)/.test(request.nextUrl.pathname))
   ) {
-    // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
+    const slugMatch = request.nextUrl.pathname.match(/^\/([^/]+)\/admin/)
+    if (slugMatch) {
+      url.pathname = `/${slugMatch[1]}/admin`
+      url.searchParams.set('auth', 'required')
+    } else {
+      url.pathname = '/login'
+    }
     return NextResponse.redirect(url)
   }
 

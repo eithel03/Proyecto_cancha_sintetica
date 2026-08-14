@@ -3,6 +3,33 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { validatePhone } from '@/lib/phone'
+import { verifyBusinessAccess } from '@/lib/auth'
+
+type MatchPayload = {
+  business_id: string
+  home_team_id: string
+  away_team_id: string
+  court_id: string | null
+  match_date: string
+  match_time: string
+  status: string
+  gender: string
+  home_score: number
+  away_score: number
+  current_minute: number
+  live_started_at?: string | null
+  elapsed_seconds?: number | null
+}
+
+type MatchEventPayload = {
+  business_id: string
+  match_id: string
+  team_id: string
+  player_id: string
+  event_type: string
+  minute: number
+  quantity: number
+}
 
 // --- EQUIPOS ---
 
@@ -10,6 +37,9 @@ export async function upsertTeam(formData: FormData) {
   const supabase = await createClient()
   const id = formData.get('id') as string
   const business_id = formData.get('business_id') as string
+
+  const access = await verifyBusinessAccess(business_id)
+  if (access.error) return { error: access.error }
   
   const data = {
     business_id,
@@ -52,15 +82,21 @@ export async function upsertTeam(formData: FormData) {
   }
 
   if (error) return { error: error.message }
-  revalidatePath('/dashboard/tournament')
+  if (formData.get('slug')) revalidatePath(`/${formData.get('slug')}/admin/tournament`)
   return { success: true }
 }
 
-export async function deleteTeam(id: string) {
+export async function deleteTeam(id: string, slug?: string) {
   const supabase = await createClient()
+  // Verify ownership via team's business_id
+  const { data: team } = await supabase.from('tournament_teams').select('business_id').eq('id', id).single()
+  if (team) {
+    const access = await verifyBusinessAccess(team.business_id)
+    if (access.error) return { error: access.error }
+  }
   const { error } = await supabase.from('tournament_teams').delete().eq('id', id)
   if (error) return { error: error.message }
-  revalidatePath('/dashboard/tournament')
+  if (slug) revalidatePath(`/${slug}/admin/tournament`)
   return { success: true }
 }
 
@@ -70,6 +106,9 @@ export async function upsertPlayer(formData: FormData) {
   const supabase = await createClient()
   const id = formData.get('id') as string
   const business_id = formData.get('business_id') as string
+
+  const access = await verifyBusinessAccess(business_id)
+  if (access.error) return { error: access.error }
   
   const data = {
     business_id,
@@ -90,15 +129,21 @@ export async function upsertPlayer(formData: FormData) {
   }
 
   if (error) return { error: error.message }
-  revalidatePath('/dashboard/tournament')
+  if (formData.get('slug')) revalidatePath(`/${formData.get('slug')}/admin/tournament`)
   return { success: true }
 }
 
-export async function deletePlayer(id: string) {
+export async function deletePlayer(id: string, slug?: string) {
   const supabase = await createClient()
+  // Verify ownership via player's business_id
+  const { data: player } = await supabase.from('tournament_players').select('business_id').eq('id', id).single()
+  if (player) {
+    const access = await verifyBusinessAccess(player.business_id)
+    if (access.error) return { error: access.error }
+  }
   const { error } = await supabase.from('tournament_players').delete().eq('id', id)
   if (error) return { error: error.message }
-  revalidatePath('/dashboard/tournament')
+  if (slug) revalidatePath(`/${slug}/admin/tournament`)
   return { success: true }
 }
 
@@ -108,10 +153,13 @@ export async function upsertMatch(formData: FormData) {
   const supabase = await createClient()
   const id = formData.get('id') as string
   const business_id = formData.get('business_id') as string
+
+  const access = await verifyBusinessAccess(business_id)
+  if (access.error) return { error: access.error }
   
   const status = formData.get('status') as string || 'scheduled'
   
-  const data: any = {
+  const data: MatchPayload = {
     business_id,
     home_team_id: formData.get('home_team_id') as string,
     away_team_id: formData.get('away_team_id') as string,
@@ -229,27 +277,38 @@ export async function upsertMatch(formData: FormData) {
   }
 
   if (error) return { error: error.message }
-  revalidatePath('/dashboard/tournament')
+  if (formData.get('slug')) revalidatePath(`/${formData.get('slug')}/admin/tournament`)
   return { success: true }
 }
 
-export async function deleteMatch(id: string) {
+export async function deleteMatch(id: string, slug?: string) {
   const supabase = await createClient()
+  // Verify ownership via match's business_id
+  const { data: match } = await supabase.from('tournament_matches').select('business_id').eq('id', id).single()
+  if (match) {
+    const access = await verifyBusinessAccess(match.business_id)
+    if (access.error) return { error: access.error }
+  }
   const { error } = await supabase.from('tournament_matches').delete().eq('id', id)
   if (error) return { error: error.message }
-  revalidatePath('/dashboard/tournament')
+  if (slug) revalidatePath(`/${slug}/admin/tournament`)
   return { success: true }
 }
 
 // --- EVENTOS (GOLES, ETC) ---
 
-export async function addMatchEvent(data: any) {
+export async function addMatchEvent(data: MatchEventPayload) {
   const supabase = await createClient()
+
+  const access = await verifyBusinessAccess(data.business_id)
+  if (access.error) return { error: access.error }
+
   const { error } = await supabase.from('tournament_match_events').insert(data)
   if (error) return { error: error.message }
   
   // Si es un gol, también actualizamos el marcador del partido automáticamente
-  if (data.event_type === 'goal') {
+  // Nota: para autogol, el cliente envía como team_id el equipo que RECIBE el gol
+  if (data.event_type === 'goal' || data.event_type === 'own_goal') {
     const { data: match } = await supabase
       .from('tournament_matches')
       .select('home_team_id, home_score, away_score')
@@ -266,12 +325,18 @@ export async function addMatchEvent(data: any) {
     }
   }
 
-  revalidatePath('/dashboard/tournament')
+  if (data.business_id) {
+    const { data: biz } = await supabase.from('businesses').select('slug').eq('id', data.business_id).single()
+    if (biz?.slug) revalidatePath(`/${biz.slug}/admin/tournament`)
+  }
   return { success: true }
 }
 
 export async function deleteFullTournament(business_id: string, gender: string) {
   const supabase = await createClient()
+
+  const access = await verifyBusinessAccess(business_id)
+  if (access.error) return { error: access.error }
   
   try {
     // 1. Obtener IDs de equipos de este género para borrar sus jugadores
@@ -303,16 +368,58 @@ export async function deleteFullTournament(business_id: string, gender: string) 
       await supabase.from('tournament_teams').delete().in('id', teamIds)
     }
 
-    revalidatePath('/dashboard/tournament')
+    const { data: biz } = await supabase.from('businesses').select('slug').eq('id', business_id).single()
+    if (biz?.slug) revalidatePath(`/${biz.slug}/admin/tournament`)
     return { success: true }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error al eliminar torneo:', error)
-    return { error: error.message || 'Error desconocido al eliminar el torneo' }
+    return { error: error instanceof Error ? error.message : 'Error desconocido al eliminar el torneo' }
   }
+}
+
+export async function saveClassificationZones(data: {
+  businessId: string
+  gender: 'masculino' | 'femenino'
+  directCount: number
+  playoffCount: number
+  eliminatedCount: number
+}) {
+  const supabase = await createClient()
+
+  const access = await verifyBusinessAccess(data.businessId)
+  if (access.error) return { error: access.error }
+
+  const safeCounts = {
+    direct_count: Math.max(0, Math.floor(data.directCount)),
+    playoff_count: Math.max(0, Math.floor(data.playoffCount)),
+    eliminated_count: Math.max(0, Math.floor(data.eliminatedCount)),
+  }
+
+  const { error } = await supabase
+    .from('tournament_classification_zones')
+    .upsert({
+      business_id: data.businessId,
+      gender: data.gender,
+      ...safeCounts,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'business_id,gender' })
+
+  if (error) return { error: error.message }
+  
+  const { data: biz } = await supabase.from('businesses').select('slug').eq('id', data.businessId).single()
+  if (biz?.slug) {
+    revalidatePath(`/${biz.slug}/admin/tournament`)
+    revalidatePath(`/${biz.slug}/torneo`, 'page')
+  }
+  return { success: true }
 }
 
 export async function autoStartMatches(businessId: string) {
   const supabase = await createClient()
+
+  const access = await verifyBusinessAccess(businessId)
+  if (access.error) return { error: access.error }
+
   const now = new Date()
   
   // Ajuste a zona horaria local (asumimos la del servidor/usuario por simplicidad en este paso)
@@ -346,7 +453,10 @@ export async function autoStartMatches(businessId: string) {
 
   if (error) return { error: error.message }
   
-  revalidatePath('/dashboard/tournament')
-  revalidatePath(`/[slug]/torneo`, 'page')
+  const { data: biz } = await supabase.from('businesses').select('slug').eq('id', businessId).single()
+  if (biz?.slug) {
+    revalidatePath(`/${biz.slug}/admin/tournament`)
+    revalidatePath(`/${biz.slug}/torneo`, 'page')
+  }
   return { success: true, count: ids.length }
 }

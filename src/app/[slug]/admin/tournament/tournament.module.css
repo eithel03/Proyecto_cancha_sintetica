@@ -1,0 +1,591 @@
+.shell {
+  color: #0f172a;
+  max-width: 1480px;
+  margin-inline: auto;
+}
+
+.pageHeader {
+  background: linear-gradient(115deg, #064e3b 0%, #047857 58%, #0f766e 100%);
+  border-bottom: 1px solid rgba(6, 78, 59, 0.45);
+}
+
+.contentIntro {
+  padding: 0.25rem 0.25rem 0;
+}
+
+.contentIntro h2 {
+  letter-spacing: -0.035em;
+}
+
+.shell .titleBanner h2 {
+  color: #ffffff !important;
+}
+
+.tabsNav {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 transparent;
+}
+
+/* The tournament screens still contain legacy translucent utility classes.
+   Keep their layout, but make the text fully readable on the light surfaces. */
+.shell :global([class*="opacity-"]) {
+  opacity: 1 !important;
+}
+
+.shell :global([class*="text-muted-foreground"]),
+.shell :global([class*="placeholder:text-"]),
+.shell :global([class*="text-slate-400"]),
+.shell :global([class*="text-slate-500"]),
+.shell :global([class*="text-slate-600"]),
+.shell :global([class*="text-gray-400"]),
+.shell :global([class*="text-gray-500"]),
+.shell :global([class*="text-gray-600"]) {
+  color: #475569 !important;
+}
+
+.shell :global([class*="bg-zinc-950"]),
+.shell :global([class*="bg-zinc-900"]),
+.shell :global([class*="bg-zinc-800"]),
+.shell :global([class*="bg-black"]) {
+  background-color: #ffffff !important;
+}
+
+.shell :global([class*="text-white"]),
+.shell :global([class*="text-zinc-200"]),
+.shell :global([class*="text-zinc-300"]),
+.shell :global([class*="text-zinc-400"]),
+.shell :global([class*="text-zinc-500"]),
+.shell :global([class*="text-zinc-600"]),
+.shell :global([class*="text-zinc-700"]) {
+  color: #334155 !important;
+}
+
+.shell :global([class*="border-white"]),
+.shell :global([class*="border-zinc"]) {
+  border-color: #e2e8f0 !important;
+}
+
+.shell :global([class*="hover\\:bg-white"]:hover),
+.shell :global([class*="hover\\:bg-zinc"]:hover) {
+  background-color: #f8fafc !important;
+}
+
+.shell :global([data-state="active"]) {
+  background-color: #047857 !important;
+  color: #ffffff !important;
+}
+
+.shell :global([class*="text-emerald-300"]),
+.shell :global([class*="text-emerald-400"]) {
+  color: #047857 !important;
+}
+
+.shell :global([class*="text-amber-300"]),
+.shell :global([class*="text-amber-400"]) {
+  color: #b45309 !important;
+}
+
+.shell :global([class*="text-rose-300"]),
+.shell :global([class*="text-rose-400"]) {
+  color: #be123c !important;
+}
+
+.shell :global([class*="text-sky-300"]),
+.shell :global([class*="text-sky-400"]) {
+  color: #0369a1 !important;
+}
+
+.hero {
+  background: linear-gradient(135deg, #064e3b 0%, #047857 56%, #0f766e 100%) !important;
+  border-color: #065f46 !important;
+  color: #ffffff;
+  box-shadow: 0 18px 38px rgba(6, 78, 59, 0.16) !important;
+}
+
+.hero :global([class*="text-white"]),
+.hero :global([class*="text-zinc-"]) {
+  color: #ffffff !important;
+}
+
+.hero :global([class*="bg-zinc-950"]),
+.hero :global([class*="bg-zinc-900"]),
+.hero :global([class*="bg-zinc-800"]) {
+  background-color: rgba(2, 44, 34, 0.72) !important;
+}
+
+.hero :global([class*="border-white"]),
+.hero :global([class*="border-zinc"]) {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.hero :global([class*="opacity-"]) {
+  opacity: 1 !important;
+}
+
+.sectionCard {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06) !important;
+}
+
+.sectionCard :global([class*="bg-zinc-950"]),
+.sectionCard :global([class*="bg-zinc-900"]),
+.sectionCard :global([class*="bg-zinc-800"]) {
+  background-color: #f8fafc !important;
+}
+
+.sectionCard :global(thead),
+.sectionCard :global([class*="bg-zinc-950"]),
+.sectionCard :global([class*="bg-zinc-900"]) {
+  border-color: #e2e8f0 !important;
+}
+
+.sectionCard :global(tbody tr) {
+  border-color: #eef2f6 !important;
+  transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.sectionCard :global(tbody tr:hover) {
+  background-color: #f8fafc !important;
+  box-shadow: inset 3px 0 0 #10b981;
+}
+
+.sectionCard :global(input),
+.sectionCard :global(button[role="combobox"]),
+.sectionCard :global([role="combobox"]) {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.sectionCard :global(input:focus),
+.sectionCard :global(button[role="combobox"]:focus),
+.sectionCard :global([role="combobox"]:focus) {
+  border-color: #059669 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.16) !important;
+}
+
+.sectionCard :global(button:not([data-state="active"]):hover) {
+  background-color: #f1f5f9 !important;
+}
+
+.sectionCard :global(table) {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.sectionCard :global(th) {
+  color: #64748b !important;
+  background-color: #f8fafc !important;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
+.sectionCard :global(td) {
+  color: #334155 !important;
+}
+
+.sectionCard :global(td .font-black),
+.sectionCard :global(td .font-bold) {
+  color: #0f172a !important;
+}
+
+.matchRow {
+  min-height: 5.5rem;
+}
+
+.matchDateCell,
+.matchupCell,
+.matchScoreCell,
+.matchStatusCell,
+.matchActionsCell {
+  vertical-align: middle !important;
+}
+
+.matchupCell {
+  min-width: 16rem;
+}
+
+.matchupCell p:first-child {
+  color: #0f172a !important;
+  font-size: 0.95rem;
+}
+
+.matchupCell p:nth-child(2) {
+  color: #64748b !important;
+}
+
+.matchScoreCell :global([class*="bg-blue-500"]) {
+  min-width: 4.25rem;
+  justify-content: center;
+  border-color: #bfdbfe !important;
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  font-size: 0.95rem;
+}
+
+.matchStatusBadge {
+  min-width: 6.5rem;
+  justify-content: center;
+  border-radius: 999px !important;
+  padding: 0.35rem 0.65rem !important;
+  font-size: 0.68rem !important;
+  letter-spacing: 0.04em;
+}
+
+.matchActionsCell :global(button) {
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.matchActionsCell :global(button:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.1);
+}
+
+.matchSection > :global(.p-0) {
+  display: none !important;
+}
+
+.matchList {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.matchCard {
+  position: relative;
+  display: grid;
+  grid-template-columns: 10.5rem minmax(20rem, 1fr) minmax(10rem, 13rem) auto;
+  align-items: center;
+  gap: 1.25rem;
+  min-height: 7.75rem;
+  overflow: hidden;
+  padding: 1rem 1.25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.matchCard:hover {
+  border-color: #a7f3d0;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.matchCardLive {
+  border-color: #fed7aa;
+  box-shadow: 0 8px 20px rgba(249, 115, 22, 0.1);
+}
+
+.matchCardCancelled {
+  background: #fffafa;
+}
+
+.matchWhen,
+.matchCourt,
+.matchActions,
+.matchTeam,
+.matchTime,
+.matchStatus {
+  display: flex;
+  align-items: center;
+}
+
+.matchWhen {
+  gap: 0.75rem;
+}
+
+.matchDateIcon {
+  display: grid;
+  place-items: center;
+  height: 2.25rem;
+  width: 2.25rem;
+  flex: 0 0 auto;
+  border-radius: 0.7rem;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.matchDate {
+  color: #0f172a;
+  font-size: 0.9rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.matchTime {
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.matchup {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.matchTeam {
+  min-width: 0;
+  gap: 0.65rem;
+  color: #0f172a;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.matchTeam span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.25;
+}
+
+.matchTeamAway {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.matchTeamMark {
+  display: grid;
+  place-items: center;
+  height: 2.75rem;
+  width: 2.75rem;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid #dbe5e1;
+  border-radius: 0.85rem;
+  background: #f8fafc;
+  color: #047857;
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.matchScore {
+  display: grid;
+  place-items: center;
+  min-width: 5.25rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #dbeafe;
+  border-radius: 0.75rem;
+  background: #eff6ff;
+  color: #1e40af;
+  text-align: center;
+}
+
+.matchScore strong {
+  font-size: 1rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.matchScore small {
+  margin-top: 0.15rem;
+  color: #64748b;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.matchDetails {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.matchCourt {
+  gap: 0.45rem;
+  min-width: 0;
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.matchCourt span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.matchStatus {
+  width: fit-content;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.matchStatusDot {
+  height: 0.4rem;
+  width: 0.4rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.matchStatusScheduled { background: #eff6ff; color: #1d4ed8; }
+.matchStatusLive { background: #fff7ed; color: #c2410c; }
+.matchStatusHalftime { background: #fffbeb; color: #b45309; }
+.matchStatusFinished { background: #f0fdf4; color: #15803d; }
+.matchStatusCancelled { background: #fef2f2; color: #b91c1c; }
+.matchStatusDefault { background: #f1f5f9; color: #475569; }
+
+.matchActions {
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.matchIconButton,
+.matchEventButton {
+  display: inline-flex;
+  min-height: 2.35rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.65rem;
+  background: #ffffff;
+  color: #475569;
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.matchIconButton { width: 2.35rem; }
+
+.matchEventButton {
+  gap: 0.35rem;
+  padding: 0 0.7rem;
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.matchIconButton:hover { border-color: #6ee7b7; background: #ecfdf5; color: #047857; }
+.matchEventButton:hover { background: #ffedd5; }
+.matchDeleteButton { color: #be123c; }
+.matchDeleteButton:hover { border-color: #fecdd3; background: #fff1f2; color: #be123c; }
+
+.matchCardAccent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  display: grid;
+  width: 0.2rem;
+  place-items: center;
+  color: transparent;
+  background: #10b981;
+}
+
+.matchCardLive .matchCardAccent { background: #f97316; }
+.matchCardCancelled .matchCardAccent { background: #ef4444; }
+
+.matchEmpty {
+  display: grid;
+  justify-items: center;
+  gap: 0.8rem;
+  padding: 3.5rem 1rem;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.matchEmpty p { color: #475569; font-size: 0.95rem; font-weight: 700; }
+
+.matchPagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1rem;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+  .matchCard {
+    grid-template-columns: 9.5rem minmax(18rem, 1fr) minmax(9rem, 11rem) auto;
+    gap: 0.8rem;
+    padding-inline: 1rem;
+  }
+}
+
+@media (max-width: 820px) {
+  .matchCard {
+    grid-template-columns: 1fr auto;
+    gap: 0.9rem 1rem;
+  }
+
+  .matchWhen { grid-column: 1; }
+  .matchDetails { grid-column: 1; grid-row: 2; }
+  .matchup { grid-column: 1 / -1; grid-row: 1; }
+  .matchActions { grid-column: 2; grid-row: 2; }
+}
+
+@media (max-width: 560px) {
+  .matchCard {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+    padding: 1rem;
+    padding-left: 1.15rem;
+  }
+
+  .matchWhen { order: 1; }
+  .matchup { order: 2; gap: 0.5rem; }
+  .matchDetails { order: 3; }
+  .matchActions { order: 4; justify-content: stretch; }
+  .matchActions > * { flex: 1; }
+  .matchIconButton { width: auto; }
+  .matchTeamMark { height: 2.4rem; width: 2.4rem; }
+  .matchTeam { font-size: 0.82rem; }
+  .matchScore { min-width: 4.5rem; }
+  .matchPagination { align-items: flex-start; flex-direction: column; }
+}
+
+@media (max-width: 760px) {
+  .matchupCell {
+    min-width: 14rem;
+  }
+
+  .matchDateCell {
+    min-width: 10.5rem;
+  }
+
+  .matchActionsCell {
+    min-width: 9rem;
+  }
+}
+
+.sectionCard :global([class*="text-white"]),
+.sectionCard :global([class*="text-zinc-"]) {
+  color: #334155 !important;
+}
+
+.sectionCard :global([class*="text-muted-foreground"]),
+.sectionCard :global([class*="text-slate-"]),
+.sectionCard :global([class*="text-gray-"]) {
+  color: #475569 !important;
+}
+
+@media (max-width: 640px) {
+  .shell :global(table) {
+    min-width: 760px;
+  }
+
+  .hero {
+    border-radius: 1rem !important;
+    padding: 1rem !important;
+  }
+
+  .contentIntro h2 {
+    font-size: 1.5rem;
+  }
+}

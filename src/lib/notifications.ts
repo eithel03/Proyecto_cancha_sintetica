@@ -1,70 +1,105 @@
 /**
  * SaaSintética - Sistema de Notificaciones
- * Este módulo centraliza el envío de avisos a dueños y clientes.
+ * Genera links de WhatsApp y gestiona avisos a dueños y clientes.
  */
+
+type NotificationType = 'reservation_new' | 'reservation_confirmed' | 'challenge_accepted' | 'challenge_confirmed'
 
 type NotificationPayload = {
-  to: string; // Puede ser un ID de usuario, email o teléfono
-  title: string;
-  message: string;
-  type: 'reservation_new' | 'reservation_confirmed' | 'challenge_accepted' | 'challenge_confirmed';
-  metadata?: any;
+  to: string
+  title: string
+  message: string
+  type: NotificationType
+  phone?: string
+  metadata?: Record<string, string>
 }
 
-export async function sendNotification(payload: NotificationPayload) {
-  const { to, title, message, type, metadata } = payload;
-
-  // LOG EN CONSOLA (Para desarrollo y depuración)
-  console.log(`\n🔔 [NOTIFICACIÓN - ${type.toUpperCase()}]`);
-  console.log(`Para: ${to}`);
-  console.log(`Título: ${title}`);
-  console.log(`Mensaje: ${message}`);
-  if (metadata) console.log(`Metadata:`, metadata);
-  console.log('------------------------------------\n');
-
-  /**
-   * INTEGRACIONES FUTURAS (Comentar/Descomentar según proveedor)
-   */
-
-  // 1. WhatsApp (vía link o API)
-  // if (metadata?.phone) { ... }
-
-  // 2. Email (vía Resend/SendGrid)
-  // await resend.emails.send({ ... });
-
-  return { success: true };
+export type NotificationResult = {
+  success: boolean
+  whatsappLink?: string
+  message: string
 }
 
-/**
- * Helpers específicos para flujos de negocio
- */
+function normalizePhoneForWhatsApp(phone: string): string {
+  const digits = phone.replace(/\D/g, '')
+  if (digits.length === 8) return `506${digits}`
+  if (digits.length >= 10) return digits
+  return `506${digits}`
+}
 
-export async function notifyAdminNewReservation(businessName: string, customerName: string, date: string, time: string) {
+function buildWhatsAppLink(phone: string, message: string): string {
+  const encoded = encodeURIComponent(message)
+  return `https://wa.me/${phone}?text=${encoded}`
+}
+
+export async function sendNotification(payload: NotificationPayload): Promise<NotificationResult> {
+  const { to, title, message, phone } = payload
+
+  console.log(`[NOTIFICACION - ${payload.type.toUpperCase()}] Para: ${to} | ${title}`)
+
+  if (phone) {
+    const whatsappLink = buildWhatsAppLink(phone, message)
+    return { success: true, whatsappLink, message }
+  }
+
+  return { success: true, message }
+}
+
+export async function notifyAdminNewReservation(
+  businessName: string,
+  customerName: string,
+  date: string,
+  time: string,
+  adminPhone?: string
+): Promise<NotificationResult> {
+  const msg = `Hola! ${customerName} ha solicitado una reserva en ${businessName} para el dia ${date} a las ${time}. Ingresa al panel para gestionarla.`
+
   return await sendNotification({
     to: 'ADMIN_OWNER',
-    title: '⚽ ¡Nueva Reserva Recibida!',
-    message: `${customerName} ha solicitado una reserva en ${businessName} para el día ${date} a las ${time}.`,
+    title: 'Nueva Reserva Recibida',
+    message: msg,
     type: 'reservation_new',
+    phone: adminPhone,
     metadata: { businessName, customerName, date, time }
-  });
+  })
 }
 
-export async function notifyUserReservationConfirmed(customerName: string, businessName: string, date: string, time: string, phone?: string) {
+export async function notifyUserReservationConfirmed(
+  customerName: string,
+  businessName: string,
+  date: string,
+  time: string,
+  customerPhone?: string
+): Promise<NotificationResult> {
+  const msg = `Hola ${customerName}! Tu reserva en ${businessName} para el ${date} a las ${time} ha sido confirmada.`
+
   return await sendNotification({
     to: customerName,
-    title: '✅ Reserva Confirmada',
-    message: `¡Hola ${customerName}! Tu reserva en ${businessName} para el ${date} a las ${time} ha sido confirmada por el administrador.`,
+    title: 'Reserva Confirmada',
+    message: msg,
     type: 'reservation_confirmed',
-    metadata: { businessName, customerName, date, time, phone }
-  });
+    phone: customerPhone,
+    metadata: { businessName, customerName, date, time }
+  })
 }
 
-export async function notifyUserChallengeConfirmed(customerName: string, opponentName: string, date: string, time: string) {
+export async function notifyUserChallengeConfirmed(
+  customerName: string,
+  opponentName: string,
+  date: string,
+  time: string,
+  customerPhone?: string
+): Promise<NotificationResult> {
+  const msg = `Hola ${customerName}! Tu reto contra ${opponentName} para el ${date} a las ${time} ha sido confirmado. Preparate!`
+
   return await sendNotification({
     to: customerName,
-    title: '⚔️ ¡Reto Confirmado!',
-    message: `El administrador ha confirmado tu reto contra ${opponentName} para el ${date} a las ${time}. ¡Prepárate!`,
+    title: 'Reto Confirmado',
+    message: msg,
     type: 'challenge_confirmed',
+    phone: customerPhone,
     metadata: { customerName, opponentName, date, time }
-  });
+  })
 }
+
+export { buildWhatsAppLink, normalizePhoneForWhatsApp }

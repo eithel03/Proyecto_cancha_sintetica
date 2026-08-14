@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Plus, Users, Flag, CalendarDays, ShieldAlert } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { BusinessTableClient } from './BusinessTableClient'
 
 export default async function AdminBusinessesPage() {
@@ -20,7 +20,7 @@ export default async function AdminBusinessesPage() {
 
   if (profile?.role !== 'super_admin') redirect('/login')
 
-  const { data: businesses, error } = await supabase
+  const { data: businesses } = await supabase
     .from('businesses')
     .select('*')
     .order('created_at', { ascending: false })
@@ -35,7 +35,7 @@ export default async function AdminBusinessesPage() {
     .select('id, business_id')
     .eq('reservation_date', today)
 
-  let profiles: any[] = []
+  let profiles: { id: string; full_name: string | null; phone: string | null }[] = []
   if (businesses && businesses.length > 0) {
     const ownerIds = businesses.map(b => b.owner_id).filter(Boolean)
     if (ownerIds.length > 0) {
@@ -72,8 +72,8 @@ export default async function AdminBusinessesPage() {
     <div className="space-y-8 pb-10">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
         <div>
-          <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">SaaSintética <span className="text-primary">—</span> Panel Central</h2>
-          <p className="text-muted-foreground mt-1 text-sm font-medium">
+          <h2 className="text-3xl font-black uppercase tracking-tight text-slate-950">Panel central de negocios</h2>
+          <p className="mt-1 text-sm font-medium text-slate-500">
             Gestión global de la red de complejos deportivos.
           </p>
         </div>
@@ -86,12 +86,12 @@ export default async function AdminBusinessesPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-white/5 bg-zinc-900/50 backdrop-blur-xl rounded-2xl">
+        <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Total Negocios</p>
-                <h3 className="text-3xl font-black text-white italic">{stats.total}</h3>
+                <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-slate-500">Total negocios</p>
+                <h3 className="text-3xl font-black text-slate-950">{stats.total}</h3>
               </div>
               <div className="p-3 bg-primary/10 rounded-xl">
                 <Users className="h-6 w-6 text-primary" />
@@ -104,48 +104,48 @@ export default async function AdminBusinessesPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-white/5 bg-zinc-900/50 backdrop-blur-xl rounded-2xl">
+        <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Canchas Totales</p>
-                <h3 className="text-3xl font-black text-white italic">{stats.totalCourts}</h3>
+                <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-slate-500">Canchas totales</p>
+                <h3 className="text-3xl font-black text-slate-950">{stats.totalCourts}</h3>
               </div>
               <div className="p-3 bg-blue-500/10 rounded-xl">
                 <Flag className="h-6 w-6 text-blue-500" />
               </div>
             </div>
-            <p className="mt-4 text-[10px] text-muted-foreground font-medium">Capacidad operativa global</p>
+            <p className="mt-4 text-[10px] font-medium text-slate-500">Capacidad operativa global</p>
           </CardContent>
         </Card>
 
-        <Card className="border-white/5 bg-zinc-900/50 backdrop-blur-xl rounded-2xl">
+        <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Reservas Hoy</p>
-                <h3 className="text-3xl font-black text-white italic">{stats.totalTodayReservations}</h3>
+                <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-slate-500">Reservas hoy</p>
+                <h3 className="text-3xl font-black text-slate-950">{stats.totalTodayReservations}</h3>
               </div>
               <div className="p-3 bg-amber-500/10 rounded-xl">
                 <CalendarDays className="h-6 w-6 text-amber-500" />
               </div>
             </div>
-            <p className="mt-4 text-[10px] text-muted-foreground font-medium">Movimiento en las últimas 24h</p>
+            <p className="mt-4 text-[10px] font-medium text-slate-500">Movimiento en las últimas 24h</p>
           </CardContent>
         </Card>
 
-        <Card className="border-white/5 bg-zinc-900/50 backdrop-blur-xl rounded-2xl">
+        <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Estado General</p>
-                <h3 className="text-2xl font-black text-emerald-500 italic">ÓPTIMO</h3>
+                <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-slate-500">Estado general</p>
+                <h3 className="text-2xl font-black text-emerald-700">ÓPTIMO</h3>
               </div>
               <div className="p-3 bg-emerald-500/10 rounded-xl">
                 <ShieldAlert className="h-6 w-6 text-emerald-500" />
               </div>
             </div>
-            <p className="mt-4 text-[10px] text-muted-foreground font-medium">Plataforma estable</p>
+            <p className="mt-4 text-[10px] font-medium text-slate-500">Plataforma estable</p>
           </CardContent>
         </Card>
       </div>

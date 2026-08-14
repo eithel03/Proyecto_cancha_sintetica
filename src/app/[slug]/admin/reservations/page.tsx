@@ -1,45 +1,55 @@
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getAdminSession } from '@/lib/admin'
 import ReservationsClient from './ReservationsClient'
 
 export default async function ReservationsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
+  const { business } = await getAdminSession(slug)
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) redirect('/login')
+  const twelveMonthsAgo = getDateInTimeZone(new Date(new Date().getTime() - 365 * 24 * 60 * 60 * 1000), 'America/Costa_Rica')
 
-  const { data: business } = await supabase
-    .from('businesses')
-    .select('id')
-    .eq('owner_id', user.id)
-    .single()
+  const [{ data: reservations }, { data: matches }, { data: allCourts }, { data: hours }] = await Promise.all([
+    // Fetch reservations
+    supabase
+      .from('reservations')
+      .select(`
+        *,
+        courts ( name, description ),
+        customer:customer_id ( phone )
+      `)
+      .eq('business_id', business.id)
+      .gte('reservation_date', twelveMonthsAgo)
+      .order('reservation_date', { ascending: false })
+      .order('start_time', { ascending: true })
+      .limit(1500),
 
-  if (!business) redirect('/onboarding')
+    // Fetch tournament matches
+    supabase
+      .from('tournament_matches')
+      .select(`
+        *,
+        courts ( name, description ),
+        home:home_team_id ( name ),
+        away:away_team_id ( name )
+      `)
+      .eq('business_id', business.id)
+      .gte('match_date', twelveMonthsAgo)
+      .order('match_date', { ascending: false })
+      .limit(500),
 
-  // Fetch reservations
-  const { data: reservations } = await supabase
-    .from('reservations')
-    .select(`
-      *,
-      courts ( name ),
-      customer:customer_id ( phone )
-    `)
-    .eq('business_id', business.id)
-    .order('reservation_date', { ascending: false })
-    .order('start_time', { ascending: true })
+    // Fetch all courts (including inactive) for display purposes
+    supabase
+      .from('courts')
+      .select('*')
+      .eq('business_id', business.id),
 
-  // Fetch tournament matches
-  const { data: matches } = await supabase
-    .from('tournament_matches')
-    .select(`
-      *,
-      courts ( name ),
-      home:home_team_id ( name ),
-      away:away_team_id ( name )
-    `)
-    .eq('business_id', business.id)
-    .order('match_date', { ascending: false })
+    // Fetch business hours
+    supabase
+      .from('business_hours')
+      .select('*')
+      .eq('business_id', business.id),
+  ])
 
   // Format matches to look like reservations for the client
   const formattedMatches = (matches || []).map(m => ({
@@ -60,26 +70,33 @@ export default async function ReservationsPage({ params }: { params: Promise<{ s
     return dateTimeB - dateTimeA // Recientes primero
   })
 
-  const { data: courts } = await supabase
-    .from('courts')
-    .select('*')
-    .eq('business_id', business.id)
-    .eq('is_active', true)
-
-  const { data: hours } = await supabase
-    .from('business_hours')
-    .select('*')
-    .eq('business_id', business.id)
+  const courts = (allCourts || []).filter((court) => court.is_active === true)
 
   return (
     <div className="space-y-6">
       <ReservationsClient 
         initialReservations={allEvents} 
-        courts={courts || []} 
+        courts={courts}
+        allCourts={allCourts || []}
         businessId={business.id}
         businessHours={hours || []}
         slug={slug}
       />
     </div>
   )
+}
+
+function getDateInTimeZone(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date)
+
+  const year = parts.find((part) => part.type === 'year')?.value
+  const month = parts.find((part) => part.type === 'month')?.value
+  const day = parts.find((part) => part.type === 'day')?.value
+
+  return `${year}-${month}-${day}`
 }

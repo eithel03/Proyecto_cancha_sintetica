@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatTime12h(time: string | number) {
   if (!time && time !== 0) return ''
-  
+
   let hours: number
   let minutes: number
 
@@ -20,10 +20,12 @@ export function formatTime12h(time: string | number) {
     minutes = m || 0
   }
 
-  const ampm = hours >= 12 ? 'PM' : 'AM'
-  const displayHours = hours % 12 || 12
-  const displayMinutes = minutes.toString().padStart(2, '0')
-
-  return `${displayHours}:${displayMinutes} ${ampm}`
+  const date = new Date()
+  date.setHours(hours, minutes, 0, 0)
+  return new Intl.DateTimeFormat('es-CR', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date)
 }
 
