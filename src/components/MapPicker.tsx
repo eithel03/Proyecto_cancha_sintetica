@@ -80,23 +80,30 @@ export function MapPicker({ isOpen, onOpenChange, onSelect, initialLat, initialL
 
   useEffect(() => {
     if (!isOpen || !mapLoaded) return
-    const L = window.L
-    const container = document.getElementById('location-picker-map')
-    if (!L || !container) return
 
-    if (mapRef.current) mapRef.current.remove()
-    const lat = Number(coordinates.lat) || Number(DEFAULT_COORDINATES.lat)
-    const lng = Number(coordinates.lng) || Number(DEFAULT_COORDINATES.lng)
-    const map = L.map(container, { zoomControl: true }).setView([lat, lng], 15)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map)
-    const marker = L.marker([lat, lng], { draggable: true }).addTo(map)
-    marker.on('dragend', (event) => { const point = event.target.getLatLng(); updateMapPosition(String(point.lat), String(point.lng)) })
-    map.on('click', (event) => updateMapPosition(String(event.latlng.lat), String(event.latlng.lng)))
-    mapRef.current = map
-    markerRef.current = marker
-    window.setTimeout(() => map.invalidateSize(), 150)
+    const initMap = () => {
+      const L = window.L
+      const container = document.getElementById('location-picker-map')
+      if (!L || !container || container.offsetHeight === 0) return
 
-    return () => { map.remove(); mapRef.current = null; markerRef.current = null }
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; markerRef.current = null }
+      container.innerHTML = ''
+
+      const lat = Number(coordinates.lat) || Number(DEFAULT_COORDINATES.lat)
+      const lng = Number(coordinates.lng) || Number(DEFAULT_COORDINATES.lng)
+      const map = L.map(container, { zoomControl: true }).setView([lat, lng], 15)
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map)
+      const marker = L.marker([lat, lng], { draggable: true }).addTo(map)
+      marker.on('dragend', (event) => { const point = event.target.getLatLng(); updateMapPosition(String(point.lat), String(point.lng)) })
+      map.on('click', (event) => updateMapPosition(String(event.latlng.lat), String(event.latlng.lng)))
+      mapRef.current = map
+      markerRef.current = marker
+      window.setTimeout(() => map.invalidateSize(), 100)
+    }
+
+    const timer = window.setTimeout(initMap, 50)
+
+    return () => { window.clearTimeout(timer); if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; markerRef.current = null } }
   // updateMapPosition intentionally uses the current map instance instead of recreating it.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, mapLoaded])

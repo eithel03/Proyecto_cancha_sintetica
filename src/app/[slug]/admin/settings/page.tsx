@@ -15,7 +15,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ slug:
   return <div className="min-w-0 space-y-6 animate-in fade-in duration-300">
     <header className="space-y-2">
       <h2 className="text-3xl font-black tracking-tight text-slate-900">Configuración</h2>
-      <p className="font-medium text-slate-500">Administra la información, horarios y apariencia de tu negocio.</p>
+      <p className="font-medium text-slate-500">Administra la información y horarios de tu negocio.</p>
     </header>
     <SettingsClient business={business} initialHours={hours || []} initialExceptions={exceptions || []} />
   </div>
