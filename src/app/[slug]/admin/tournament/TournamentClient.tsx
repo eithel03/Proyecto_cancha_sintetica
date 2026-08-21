@@ -745,21 +745,22 @@ export default function TournamentClient({
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {/* Desktop: tabla */}
+            <div className="hidden overflow-x-auto md:block">
             <Table className="min-w-[820px]">
               <TableHeader className="bg-slate-50">
-                <TableRow className="border-zinc-800/60">
-                  <TableHead className="w-16 px-6 font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Logo</TableHead>
-                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Nombre</TableHead>
-                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Capitán</TableHead>
-                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Teléfono</TableHead>
-                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Jugadores</TableHead>
-                  <TableHead className="text-center font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">PJ</TableHead>
-                  <TableHead className="text-center font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">PG</TableHead>
-                  <TableHead className="text-center font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">PE</TableHead>
-                  <TableHead className="text-center font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">PP</TableHead>
-                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Record</TableHead>
-                  <TableHead className="text-right px-6 font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Acciones</TableHead>
+                <TableRow className="border-slate-200">
+                  <TableHead className="w-16 px-6 font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Logo</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Nombre</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Capitán</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Teléfono</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Jugadores</TableHead>
+                  <TableHead className="text-center font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">PJ</TableHead>
+                  <TableHead className="text-center font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">PG</TableHead>
+                  <TableHead className="text-center font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">PE</TableHead>
+                  <TableHead className="text-center font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">PP</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Record</TableHead>
+                  <TableHead className="text-right px-6 font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -779,47 +780,44 @@ export default function TournamentClient({
                         openTeamDetail(team)
                       }
                     }}
-                    className="cursor-pointer border-zinc-800/40 transition-colors hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 group"
+                    className="cursor-pointer border-slate-100 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 group"
                   >
                     <TableCell className="px-6">
                        <div className="w-10 h-10 bg-slate-100 rounded-full border border-slate-200 flex items-center justify-center overflow-hidden">
                         {team.logo_url ? (
-                          <>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={team.logo_url} className="w-full h-full object-contain" alt={team.name} />
-                          </>
+                          <img src={team.logo_url} className="w-full h-full object-contain" alt={team.name} />
                         ) : (
-                          <Shield className="w-5 h-5 text-muted-foreground" />
+                          <Shield className="w-5 h-5 text-slate-400" />
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium text-white group-hover:text-primary transition-colors">{team.name}</TableCell>
+                    <TableCell className="font-medium text-slate-900 group-hover:text-emerald-700 transition-colors">{team.name}</TableCell>
                     <TableCell>{team.captain_name || '-'}</TableCell>
                     <TableCell>{team.captain_phone || '-'}</TableCell>
                     <TableCell className="py-4">
-                      <Badge variant="outline" className="border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
+                      <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">
                         {playerCount}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-center font-semibold">{stats.pj}</TableCell>
-                    <TableCell className="text-center font-semibold text-emerald-300">{stats.g}</TableCell>
-                    <TableCell className="text-center font-semibold text-amber-300">{stats.e}</TableCell>
-                    <TableCell className="text-center font-semibold text-rose-300">{stats.p}</TableCell>
+                    <TableCell className="text-center font-semibold text-slate-700">{stats.pj}</TableCell>
+                    <TableCell className="text-center font-semibold text-emerald-600">{stats.g}</TableCell>
+                    <TableCell className="text-center font-semibold text-amber-600">{stats.e}</TableCell>
+                    <TableCell className="text-center font-semibold text-rose-600">{stats.p}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
-                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" title="Victorias" />
-                        <span className="text-xs text-zinc-400">{stats.g}</span>
-                        <span className="h-2.5 w-2.5 rounded-full bg-amber-400" title="Empates" />
-                        <span className="text-xs text-zinc-400">{stats.e}</span>
-                        <span className="h-2.5 w-2.5 rounded-full bg-rose-400" title="Derrotas" />
-                        <span className="text-xs text-zinc-400">{stats.p}</span>
+                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" title="Victorias" />
+                        <span className="text-xs text-slate-600">{stats.g}</span>
+                        <span className="h-2.5 w-2.5 rounded-full bg-amber-500" title="Empates" />
+                        <span className="text-xs text-slate-600">{stats.e}</span>
+                        <span className="h-2.5 w-2.5 rounded-full bg-rose-500" title="Derrotas" />
+                        <span className="text-xs text-slate-600">{stats.p}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-right space-x-2" onClick={(event) => event.stopPropagation()}>
-                      <Button variant="outline" size="icon" onClick={() => { setEditingTeam(team); setLogoUrl(team.logo_url || ''); setIsTeamDialogOpen(true); }}>
+                      <Button variant="outline" size="icon" className="border-slate-200 bg-white hover:bg-slate-50" onClick={() => { setEditingTeam(team); setLogoUrl(team.logo_url || ''); setIsTeamDialogOpen(true); }}>
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Button variant="outline" size="icon" className="text-destructive hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); handleDeleteTeam(team.id); }}>
+                      <Button variant="outline" size="icon" className="border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100" onClick={(e) => { e.stopPropagation(); handleDeleteTeam(team.id); }}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </TableCell>
@@ -838,6 +836,48 @@ export default function TournamentClient({
                 )}
               </TableBody>
             </Table>
+            </div>
+
+            {/* Mobile: tarjetas simples */}
+            <div className="md:hidden space-y-2 p-4">
+              {filteredTeams.map((team) => (
+                <div
+                  key={team.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openTeamDetail(team)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      openTeamDetail(team)
+                    }
+                  }}
+                  className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm cursor-pointer active:bg-slate-50 transition-colors"
+                >
+                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-slate-200 bg-slate-50 flex items-center justify-center">
+                    {team.logo_url ? (
+                      <img src={team.logo_url} className="h-full w-full object-contain" alt={team.name} />
+                    ) : (
+                      <Shield className="h-5 w-5 text-slate-400" />
+                    )}
+                  </div>
+                  <p className="min-w-0 flex-1 truncate text-sm font-bold text-slate-900">{team.name}</p>
+                  <div className="flex shrink-0 items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    <Button variant="outline" size="icon" className="h-8 w-8 border-slate-200 bg-white hover:bg-slate-50" onClick={() => { setEditingTeam(team); setLogoUrl(team.logo_url || ''); setIsTeamDialogOpen(true); }}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8 border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100" onClick={(e) => { e.stopPropagation(); handleDeleteTeam(team.id); }}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {filteredTeams.length === 0 && (
+                <div className="flex flex-col items-center gap-3 py-16 text-center">
+                  <Shield className="w-10 h-10 text-slate-300" />
+                  <p className="font-bold uppercase italic tracking-tighter text-sm text-slate-500">No se encontraron equipos</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

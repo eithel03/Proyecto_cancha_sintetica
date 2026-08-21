@@ -91,17 +91,19 @@ export default function BookingClient({
   }, [daySchedule])
 
   useEffect(() => {
+    let cancelled = false
     async function loadAvailability() {
       if (!selectedCourt || !selectedDate) return
       setLoadingSlots(true)
       setSelectedSlot(null)
       setSelectedChallengeId(null)
-      
+
       const url = new URL(window.location.href)
       url.searchParams.set('courtId', selectedCourt)
       window.history.replaceState({}, '', url.toString())
 
       const result = await checkAvailability(selectedCourt, selectedDate)
+      if (cancelled) return
       if (Array.isArray(result)) {
         setOccupiedSlots(result)
       } else if (result && (result as any).error) {
@@ -111,6 +113,7 @@ export default function BookingClient({
       setLoadingSlots(false)
     }
     loadAvailability()
+    return () => { cancelled = true }
   }, [selectedCourt, selectedDate])
 
   const getSlotOccupancy = (hour: number) => {
@@ -231,7 +234,7 @@ export default function BookingClient({
 
           <div className="grid gap-5 md:grid-cols-2 rounded-2xl bg-[#F4F0E6] border border-border p-5 sm:p-6">
             <div className="space-y-2">
-              <Label htmlFor="court_id" className="text-sm font-semibold text-foreground">Elegir cancha</Label>
+              <Label className="text-sm font-semibold text-foreground">Elegir cancha</Label>
               <Select value={selectedCourt} onValueChange={(val) => setSelectedCourt(val || '')} required>
                 <SelectTrigger className="bg-white dark:bg-white dark:hover:bg-white border-border h-12 rounded-xl px-4 text-foreground shadow-none focus-visible:border-gold focus-visible:ring-gold/25">
                   <SelectValue placeholder="Selecciona una cancha">

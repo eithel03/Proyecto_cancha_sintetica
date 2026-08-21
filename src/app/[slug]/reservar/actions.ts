@@ -7,7 +7,6 @@ import { notifyUserChallengeConfirmed } from '@/lib/notifications'
 
 export async function checkAvailability(courtId: string, date: string) {
   const supabase = createAdminClient()
-
   // 1. Obtener Reservas vigentes (Pending y Confirmed, sin importar RLS)
   const { data: reservations, error: resError } = await supabase
     .from('reservations')
@@ -15,11 +14,6 @@ export async function checkAvailability(courtId: string, date: string) {
     .eq('court_id', courtId)
     .eq('reservation_date', date)
     .in('status', ['pending', 'confirmed'])
-
-  console.log(`Found ${reservations?.length || 0} reservations`);
-  if (reservations && reservations.length > 0) {
-    console.log('Reservations:', JSON.stringify(reservations));
-  }
 
   if (resError) {
     console.error('Error fetching availability (reservations):', resError)
@@ -39,26 +33,33 @@ export async function checkAvailability(courtId: string, date: string) {
   }
 
   // 3. Obtener Partidos de Torneo con sus equipos y género
-  const { data: matches, error: matchError } = await supabase
+  const { data: court } = await supabase.from('courts').select('business_id').eq('id', courtId).single()
+
+  const { data: allMatches, error: matchError } = await supabase
     .from('tournament_matches')
     .select(`
       id, 
       match_time, 
+      match_date,
       status,
       gender,
+      court_id,
+      business_id,
       home:home_team_id ( name, logo_url ),
       away:away_team_id ( name, logo_url )
     `)
-    .eq('court_id', courtId)
     .eq('match_date', date)
+    .eq('business_id', court?.business_id || '')
     .in('status', ['scheduled', 'live', 'halftime'])
 
   if (matchError) {
     console.error('Error fetching availability (matches):', matchError)
   }
 
+  const matches = (allMatches || []).filter(m => m.court_id === courtId || m.court_id === null)
+
   const blocked = [
-    ...(matches || []).map(m => {
+    ...matches.map(m => {
       const parts = m.match_time.split(':')
       const h = parts[0].padStart(2, '0')
       const min = parts[1] || '00'
@@ -142,9 +143,10 @@ export async function createReservation(formData: FormData) {
   const { data: conflictingMatches } = await supabase
     .from('tournament_matches')
     .select('id')
-    .eq('court_id', courtId)
     .eq('match_date', date)
     .in('status', ['scheduled', 'live', 'halftime'])
+    .or(`court_id.eq.${courtId},court_id.is.null`)
+    .eq('business_id', businessId)
     .filter('match_time', 'eq', start)
 
   if (conflictingMatches && conflictingMatches.length > 0) {
