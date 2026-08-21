@@ -548,7 +548,7 @@ export default function TournamentClient({
   }
 
   return (
-    <div className={cn(styles.shell)}>
+    <div className={cn(styles.shell, 'bg-white')}>
       <section className={cn('-mx-4 -mt-4 bg-emerald-950 px-4 py-6 shadow-sm md:-mx-6 md:-mt-6 md:px-6 lg:-mx-9 lg:-mt-9 lg:px-9', styles.titleBanner)}>
         <h2 className="text-2xl font-black uppercase tracking-tight text-white sm:text-4xl">Gestión de torneo</h2>
       </section>
@@ -2100,15 +2100,6 @@ function TeamDetailDialog({
       <DialogContent className="max-h-[92vh] overflow-hidden rounded-3xl border-slate-200 bg-white p-0 text-slate-950 sm:max-w-4xl">
         <div className="flex max-h-[92vh] flex-col">
           <div className="relative border-b border-slate-200 bg-gradient-to-b from-slate-50 to-white p-6 text-center sm:p-8">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-4 top-4 rounded-full text-zinc-400 hover:bg-white/10 hover:text-white"
-              onClick={() => onOpenChange(false)}
-              aria-label="Cerrar detalle del equipo"
-            >
-              <X className="h-4 w-4" />
-            </Button>
             <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white p-3 shadow-xl sm:h-24 sm:w-24">
               {team.logo_url ? (
                 <>
