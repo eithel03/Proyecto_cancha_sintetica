@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { createReservation, checkAvailability, acceptChallenge } from './actions'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import { AlertCircle, ArrowRight, Calendar, CalendarCheck, Check, CheckCircle2, CircleDollarSign, Clock, Loader2, MapPin, ShieldCheck, Swords, Timer } from 'lucide-react'
+import { AlertCircle, ArrowRight, Calendar, CalendarCheck, Check, CheckCircle2, CircleDollarSign, Clock, Loader2, MapPin, ShieldCheck, Swords, Timer, X } from 'lucide-react'
 import { AuthPromptDialog } from '@/components/AuthPromptDialog'
 import { cn, formatTime12h } from '@/lib/utils'
 
@@ -115,6 +115,7 @@ export default function BookingClient({
 
   const getSlotOccupancy = (hour: number) => {
     const startT = formatTime(hour)
+    const endT = formatTime(hour + 1)
 
     return occupiedSlots.find((res: any) => {
       const partsStart = res.start_time.split(':')
@@ -122,7 +123,7 @@ export default function BookingClient({
       const resStart = `${partsStart[0].padStart(2, '0')}:${partsStart[1]}`
       const resEnd = `${partsEnd[0].padStart(2, '0')}:${partsEnd[1]}`
       
-      return startT >= resStart && startT < resEnd
+      return startT < resEnd && endT > resStart
     })
   }
 
@@ -160,7 +161,7 @@ export default function BookingClient({
       if (result.error) {
         toast.error(result.error)
       } else {
-        toast.success('¡Reto aceptado! El administrador lo confirmará pronto.')
+        toast.success('Reto aceptado.')
         setSuccess(true)
       }
       return
@@ -190,7 +191,7 @@ export default function BookingClient({
             <CheckCircle2 className="w-9 h-9 text-green-700" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold tracking-tight text-foreground">{selectedChallengeId ? '¡Reto aceptado!' : '¡Solicitud enviada!'}</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">{selectedChallengeId ? 'Reto aceptado' : '¡Solicitud enviada!'}</h2>
             <p className="text-slate-500 text-sm sm:text-base max-w-md mx-auto">
               {selectedChallengeId 
                 ? 'Has aceptado el desafío. El administrador confirmará el partido y te notificaremos.' 
@@ -237,8 +238,8 @@ export default function BookingClient({
                     {courtObj ? (
                       <span className="flex min-w-0 w-full items-center gap-2">
                         <span className="truncate font-semibold">{courtObj.name}</span>
-                        <span className="shrink-0 ml-auto rounded-full bg-[#F4F0E6] px-2.5 py-0.5 text-[11px] font-bold text-slate-600">
-                          ₡{Number(courtObj.price_per_person).toLocaleString('es-CR')} por persona
+                        <span className="shrink-0 ml-auto rounded-full bg-[#F4F0E6] px-2.5 py-0.5 text-[11px] font-bold text-slate-600 whitespace-nowrap">
+                          ₡{Number(courtObj.price_per_person).toLocaleString('es-CR')}<span className="hidden sm:inline"> por persona</span>
                         </span>
                       </span>
                     ) : (
@@ -282,7 +283,7 @@ export default function BookingClient({
           </div>
 
           <div className="space-y-4 pt-1">
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-wrap items-start justify-between gap-2.5 sm:gap-4">
               <div>
                 <h3 className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2.5">
                   <span className="flex size-8 items-center justify-center rounded-xl bg-primary/10">
@@ -329,15 +330,18 @@ export default function BookingClient({
                         const endStr = formatTime(hour + 1)
                         const slotStr = `${startStr}-${endStr}`
                         const occupancy = getSlotOccupancy(hour)
+                        const occStart = occupancy?.start_time ? `${occupancy.start_time.split(':')[0].padStart(2, '0')}:${occupancy.start_time.split(':')[1]}` : ''
+                        const occEnd = occupancy?.end_time ? `${occupancy.end_time.split(':')[0].padStart(2, '0')}:${occupancy.end_time.split(':')[1]}` : ''
+                        const isInInterval = !!occupancy && startStr >= occStart && startStr < occEnd
                         const isSelected = selectedSlot === slotStr
-                        const isOpenChallenge = occupancy?.type === 'open_challenge'
-                        const isAcceptedChallenge = occupancy?.type === 'accepted_challenge'
-                        const isConfirmedChallenge = occupancy?.type === 'confirmed_challenge'
-                        const isTournamentMale = occupancy?.type === 'tournament_male'
-                        const isTournamentFemale = occupancy?.type === 'tournament_female'
+                        const isOpenChallenge = occupancy?.type === 'open_challenge' && isInInterval
+                        const isAcceptedChallenge = occupancy?.type === 'accepted_challenge' && isInInterval
+                        const isConfirmedChallenge = occupancy?.type === 'confirmed_challenge' && isInInterval
+                        const isTournamentMale = occupancy?.type === 'tournament_male' && isInInterval
+                        const isTournamentFemale = occupancy?.type === 'tournament_female' && isInInterval
                         const isTournament = isTournamentMale || isTournamentFemale
-                        const isNormalReservation = occupancy?.type === 'reservation'
-
+                        const isNormalReservation = occupancy?.type === 'reservation' && isInInterval
+                        const isBlocked = !!occupancy && !isInInterval
                         const isOccupied = !!occupancy
                         const currentPrice = getSlotPrice(startStr)
                         const hasSpecialPrice = currentPrice !== courts.find(c => c.id === selectedCourt)?.price_per_person
@@ -356,15 +360,21 @@ export default function BookingClient({
                                   : "border-border bg-card hover:border-gold/60 hover:bg-gold/8 hover:-translate-y-0.5 hover:shadow-sm hover:shadow-gold/10",
                               isOpenChallenge && !isSelected && "border-green-400 bg-green-50 text-green-700 border-dashed animate-pulse"
                             )}
-                            disabled={isOccupied && !isOpenChallenge}
                             onClick={() => {
+                              if (isOccupied && !isOpenChallenge) {
+                                toast.error(isBlocked
+                                  ? 'Este horario no tiene tiempo suficiente para completar la reserva (59 minutos).'
+                                  : 'Este horario no está disponible: la cancha estará ocupada en ese intervalo.')
+                                return
+                              }
                               setSelectedSlot(slotStr)
                               setSelectedChallengeId(isOpenChallenge ? (occupancy.id || null) : null)
                             }}
                           >
                             <span className={cn(
                               "text-sm font-bold flex items-center gap-1",
-                              isSelected ? "text-white" : isOpenChallenge ? "text-green-700" : isOccupied ? "text-slate-400" : "text-foreground"
+                              isSelected ? "text-white" : isOpenChallenge ? "text-green-700" : isOccupied ? "text-slate-400" : "text-foreground",
+                              isOccupied && !isOpenChallenge && "line-through"
                             )}>
                               {isSelected && <Check className="size-3.5 text-gold" aria-hidden="true" />}
                               {formatTime12h(startStr)}
@@ -403,11 +413,11 @@ export default function BookingClient({
             <div
               ref={summaryRef}
               className={cn(
-                "rounded-2xl border p-5 sm:p-6 space-y-5 mb-20 sm:mb-0 scroll-mt-4 transition-all animate-in slide-in-from-top-4 duration-300",
+                "rounded-2xl border p-5 sm:p-6 space-y-5 mb-36 sm:mb-0 scroll-mt-4 transition-all animate-in slide-in-from-top-4 duration-300",
                 selectedChallengeId ? "bg-green-50/70 border-green-200" : "bg-white border-border shadow-soft"
               )}
             >
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-4">
                 <h3 className="font-bold text-lg tracking-tight text-foreground flex items-center gap-2.5">
                   <span className={cn("flex size-8 items-center justify-center rounded-xl", selectedChallengeId ? "bg-green-100" : "bg-gold/15")}>
                     {selectedChallengeId
@@ -419,6 +429,14 @@ export default function BookingClient({
                 <span className={cn("shrink-0 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-white", selectedChallengeId ? "bg-green-700" : "bg-navy")}>
                   {selectedChallengeId ? 'Modo matchmaking' : 'Reserva normal'}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => { setSelectedSlot(null); setSelectedChallengeId(null) }}
+                  aria-label="Cancelar selección"
+                  className="shrink-0 flex size-8 items-center justify-center rounded-lg border border-border text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -522,8 +540,16 @@ export default function BookingClient({
     </Card>
 
     {selectedSlot && (
-      <div className="fixed inset-x-0 bottom-0 z-50 p-3 sm:hidden">
+      <div className="fixed inset-x-0 bottom-16 z-[60] p-3 sm:hidden">
         <div className="mx-auto flex items-center justify-between gap-3 rounded-2xl bg-navy px-4 py-3 shadow-lg shadow-navy/30">
+          <button
+            type="button"
+            onClick={() => { setSelectedSlot(null); setSelectedChallengeId(null) }}
+            aria-label="Cancelar selección"
+            className="shrink-0 flex size-9 items-center justify-center rounded-xl bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
           <div className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-white/60">{selectedChallengeId ? 'Reto detectado' : 'Total sugerido'}</p>
             <p className="text-lg font-extrabold text-gold leading-tight">₡{slotPrice.toLocaleString('es-CR')}</p>

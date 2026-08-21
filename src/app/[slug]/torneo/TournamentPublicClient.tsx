@@ -193,6 +193,50 @@ export default function TournamentPublicClient({ businessId, businessName: _busi
   
   const topAssists = Object.values(assists).sort((a: any, b: any) => b.assists - a.assists).slice(0, 10)
 
+  const combinedStats = filteredStats
+    .filter(e => e.event_type === 'goal' || e.event_type === 'assist')
+    .reduce((acc: any, event: any) => {
+      const playerId = event.player_id
+      if (!acc[playerId]) {
+        acc[playerId] = { 
+          name: `${event.player?.first_name} ${event.player?.last_name}`,
+          team: event.team?.name,
+          goals: 0,
+          assists: 0
+        }
+      }
+      if (event.event_type === 'goal') acc[playerId].goals += (event.quantity || 1)
+      else acc[playerId].assists += (event.quantity || 1)
+      return acc
+    }, {})
+
+  const topCombined = Object.values(combinedStats)
+    .map((p: any) => ({ ...p, total: p.goals + p.assists }))
+    .sort((a: any, b: any) => b.total - a.total)
+    .slice(0, 10)
+
+  const cards = filteredStats
+    .filter(e => e.event_type === 'yellow_card' || e.event_type === 'red_card')
+    .reduce((acc: any, event: any) => {
+      const playerId = event.player_id
+      if (!acc[playerId]) {
+        acc[playerId] = { 
+          name: `${event.player?.first_name} ${event.player?.last_name}`,
+          team: event.team?.name,
+          yellow: 0,
+          red: 0
+        }
+      }
+      if (event.event_type === 'yellow_card') acc[playerId].yellow += (event.quantity || 1)
+      else acc[playerId].red += (event.quantity || 1)
+      return acc
+    }, {})
+
+  const topCards = Object.values(cards)
+    .map((p: any) => ({ ...p, total: p.yellow + p.red }))
+    .sort((a: any, b: any) => b.total - a.total || b.red - a.red)
+    .slice(0, 10)
+
   const liveStandings = filteredTeams.map(team => {
     let pj = 0, g = 0, e = 0, p = 0, gf = 0, gc = 0
     filteredMatches.forEach(m => {
@@ -248,7 +292,8 @@ export default function TournamentPublicClient({ businessId, businessName: _busi
           { value: finishedCount, label: 'Jugados' },
         ]}
         variant="green"
-        className="rounded-[20px]"
+        className="rounded-none"
+        containerClassName="max-w-[1360px] px-4 sm:px-6 lg:px-8"
       >
         <div className="self-start inline-flex p-1 bg-[#08262D]/50 border border-white/15 rounded-[12px] gap-1">
           <button
@@ -274,6 +319,7 @@ export default function TournamentPublicClient({ businessId, businessName: _busi
         </div>
       </HeroSection>
 
+      <div className="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 space-y-5 sm:space-y-6">
       <Tabs defaultValue="jornada" className="w-full">
         <div className="sticky top-16 sm:top-20 z-30 py-2 sm:py-3 bg-background/80 backdrop-blur-md mb-4 sm:mb-5 px-1">
           <TabsList className="flex w-full h-12 bg-white border border-border rounded-[14px] p-[5px] gap-1 shadow-soft overflow-x-auto no-scrollbar">
@@ -369,17 +415,14 @@ export default function TournamentPublicClient({ businessId, businessName: _busi
               <Table>
                 <TableHeader className="bg-surface">
                   <TableRow className="hover:bg-transparent border-slate-100 h-12">
-                    <TableHead className="w-12 sm:w-16 text-center font-semibold text-slate-500 text-xs uppercase tracking-wide">#</TableHead>
+                    <TableHead className="w-9 sm:w-16 text-center font-semibold text-slate-500 text-xs uppercase tracking-wide">#</TableHead>
                     <TableHead className="font-semibold text-slate-500 text-xs uppercase tracking-wide">Equipo</TableHead>
-                    <TableHead className="text-center font-semibold text-slate-500 text-xs uppercase tracking-wide">PJ</TableHead>
-                    <TableHead className="text-center font-semibold text-slate-500 text-xs uppercase tracking-wide hidden sm:table-cell">G</TableHead>
-                    <TableHead className="text-center font-semibold text-slate-500 text-xs uppercase tracking-wide hidden sm:table-cell">E</TableHead>
-                    <TableHead className="text-center font-semibold text-slate-500 text-xs uppercase tracking-wide hidden sm:table-cell">P</TableHead>
-                    <TableHead className="text-center font-semibold text-slate-500 text-xs uppercase tracking-wide">DG</TableHead>
-                    <TableHead className="text-center font-semibold text-primary text-xs uppercase tracking-wide">Pts</TableHead>
-                    {hasConfiguredZones && (
-                      <TableHead className="font-semibold text-slate-500 text-xs uppercase tracking-wide">Zona</TableHead>
-                    )}
+                    <TableHead className="text-center font-semibold text-slate-500 text-[10px] sm:text-xs uppercase tracking-wide px-1.5 sm:px-2">PJ</TableHead>
+                    <TableHead className="text-center font-semibold text-slate-500 text-[10px] sm:text-xs uppercase tracking-wide px-1 sm:px-2">G</TableHead>
+                    <TableHead className="text-center font-semibold text-slate-500 text-[10px] sm:text-xs uppercase tracking-wide px-1 sm:px-2">E</TableHead>
+                    <TableHead className="text-center font-semibold text-slate-500 text-[10px] sm:text-xs uppercase tracking-wide px-1 sm:px-2">P</TableHead>
+                    <TableHead className="text-center font-semibold text-slate-500 text-[10px] sm:text-xs uppercase tracking-wide px-1.5 sm:px-2">DG</TableHead>
+                    <TableHead className="text-center font-semibold text-slate-900 text-xs uppercase tracking-wide">Pts</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -388,13 +431,17 @@ export default function TournamentPublicClient({ businessId, businessName: _busi
                     const zoneMeta = zone ? ZONE_META[zone] : null
 
                     return (
-                    <TableRow key={row.team_id} className={cn(
-                      "border-slate-100 transition-colors group h-14 sm:h-16",
-                      zoneMeta ? zoneMeta.rowClassName : "hover:bg-slate-50"
+                    <TableRow key={row.team_id} onClick={() => {
+                      const team = filteredTeams.find(t => t.id === row.team_id)
+                      if (team) { setSelectedTeam(team); setIsTeamModalOpen(true) }
+                    }} className={cn(
+                      "border-slate-100 transition-colors group h-14 sm:h-16 cursor-pointer",
+                      zoneMeta ? cn(zoneMeta.rowClassName, "hover:brightness-[0.97]") : "hover:bg-slate-50"
                     )}>
                       <TableCell className="text-center">
                         <span className={cn(
-                          "inline-flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg font-bold text-sm",
+                          "inline-flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-lg font-bold text-xs sm:text-sm",
+                          zoneMeta ? cn('text-white', zoneMeta.markerClassName) : 
                           idx === 0 ? 'bg-primary text-white' : 
                           idx === 1 ? 'bg-primary/15 text-primary' : 'text-slate-400'
                         )}>
@@ -402,30 +449,21 @@ export default function TournamentPublicClient({ businessId, businessName: _busi
                         </span>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2.5 sm:gap-3">
-                          <div className="w-7 h-7 sm:w-9 sm:h-9 bg-white rounded-lg p-1 border border-slate-100 flex-shrink-0">
+                        <div className="flex items-center gap-1.5 sm:gap-3">
+                          <div className="w-6 h-6 sm:w-9 sm:h-9 bg-white rounded-lg p-0.5 sm:p-1 border border-slate-100 flex-shrink-0">
                             {row.logo_url ? <img src={row.logo_url} className="w-full h-full object-contain" alt={row.team_name} /> : <Shield className="w-full h-full text-slate-300" />}
                           </div>
-                          <span className="font-semibold text-sm text-foreground truncate max-w-[110px] sm:max-w-none">{row.team_name}</span>
+                          <span className="font-semibold text-xs sm:text-sm text-foreground truncate max-w-[70px] sm:max-w-none">{row.team_name}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-center font-medium text-slate-600 text-sm">{row.pj}</TableCell>
-                      <TableCell className="text-center text-green-700 font-medium text-sm hidden sm:table-cell">{row.g}</TableCell>
-                      <TableCell className="text-center text-slate-400 font-medium text-sm hidden sm:table-cell">{row.e}</TableCell>
-                      <TableCell className="text-center text-red-500 font-medium text-sm hidden sm:table-cell">{row.p}</TableCell>
-                      <TableCell className="text-center text-slate-500 font-medium text-sm">{row.dg > 0 ? `+${row.dg}` : row.dg}</TableCell>
+                      <TableCell className="text-center font-medium text-slate-600 text-xs sm:text-sm px-1.5 sm:px-2">{row.pj}</TableCell>
+                      <TableCell className="text-center text-green-700 font-medium text-xs sm:text-sm px-1 sm:px-2">{row.g}</TableCell>
+                      <TableCell className="text-center text-slate-400 font-medium text-xs sm:text-sm px-1 sm:px-2">{row.e}</TableCell>
+                      <TableCell className="text-center text-red-500 font-medium text-xs sm:text-sm px-1 sm:px-2">{row.p}</TableCell>
+                      <TableCell className="text-center text-slate-500 font-medium text-xs sm:text-sm px-1.5 sm:px-2">{row.dg > 0 ? `+${row.dg}` : row.dg}</TableCell>
                       <TableCell className="text-center">
-                         <span className="text-base sm:text-lg font-bold text-primary">{row.pts}</span>
+                         <span className="text-sm sm:text-lg font-bold text-slate-900">{row.pts}</span>
                       </TableCell>
-                      {hasConfiguredZones && (
-                        <TableCell>
-                          {zoneMeta ? (
-                            <Badge variant="outline" className={zoneMeta.badgeClassName}>{zoneMeta.shortLabel}</Badge>
-                          ) : (
-                            <span className="text-sm text-slate-300">-</span>
-                          )}
-                        </TableCell>
-                      )}
                     </TableRow>
                     )
                   })}
@@ -449,7 +487,7 @@ export default function TournamentPublicClient({ businessId, businessName: _busi
             <Card className="border-border bg-card rounded-2xl overflow-hidden shadow-soft">
               <CardHeader className="border-b border-border p-5">
                 <CardTitle className="text-lg font-semibold tracking-tight flex items-center gap-2.5 text-foreground">
-                  <div className="p-2 bg-primary/10 rounded-lg"><Target className="w-4 h-4 text-primary" /></div> Goleadores
+                  <div className="p-2 bg-primary-green-dark/10 rounded-lg"><Target className="w-4 h-4 text-primary-green-dark" /></div> Goleadores
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
@@ -472,7 +510,7 @@ export default function TournamentPublicClient({ businessId, businessName: _busi
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <span className="text-xl sm:text-2xl font-bold text-primary">{scorer.goals}</span>
+                        <span className="text-xl sm:text-2xl font-bold text-primary-green-dark">{scorer.goals}</span>
                         <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mt-0.5">Goles</p>
                       </div>
                     </div>
@@ -512,6 +550,112 @@ export default function TournamentPublicClient({ businessId, businessName: _busi
                       </div>
                     </div>
                   ))
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-6 sm:gap-8 md:grid-cols-2">
+            <Card className="border-border bg-card rounded-2xl overflow-hidden shadow-soft">
+              <CardHeader className="border-b border-border p-5">
+                <CardTitle className="text-lg font-semibold tracking-tight flex items-center gap-2.5 text-foreground">
+                  <div className="p-2 bg-amber-50 rounded-lg"><Target className="w-4 h-4 text-amber-500" /></div> Goles y Asistencias
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {topCombined.length === 0 ? (
+                  <div className="p-10">
+                    <EmptyState
+                      icon={Target}
+                      title="No hay datos aún"
+                      description="Las estadísticas aparecerán cuando se registren goles o asistencias."
+                    />
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-slate-100">
+                          <TableHead className="w-8 text-center font-semibold text-slate-500 text-xs uppercase tracking-wide">#</TableHead>
+                          <TableHead className="font-semibold text-slate-500 text-xs uppercase tracking-wide">Jugador</TableHead>
+                          <TableHead className="text-center font-semibold text-slate-500 text-xs uppercase tracking-wide px-1.5">G</TableHead>
+                          <TableHead className="text-center font-semibold text-slate-500 text-xs uppercase tracking-wide px-1.5">A</TableHead>
+                          <TableHead className="text-center font-semibold text-slate-500 text-xs uppercase tracking-wide px-1.5">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {topCombined.map((p: any, idx) => (
+                          <TableRow key={idx} className="border-slate-100 hover:bg-slate-50">
+                            <TableCell className="text-center font-bold text-slate-300 text-sm">{idx + 1}</TableCell>
+                            <TableCell>
+                              <p className="font-semibold text-sm text-foreground truncate max-w-[120px] sm:max-w-none">{p.name}</p>
+                              <p className="text-xs text-slate-500 truncate max-w-[120px] sm:max-w-none">{p.team}</p>
+                            </TableCell>
+                            <TableCell className="text-center font-semibold text-slate-700 text-sm px-1.5">{p.goals}</TableCell>
+                            <TableCell className="text-center font-semibold text-slate-700 text-sm px-1.5">{p.assists}</TableCell>
+                            <TableCell className="text-center px-1.5">
+                              <span className="inline-flex items-center justify-center min-w-8 h-7 px-2 rounded-lg bg-slate-900 text-white text-sm font-bold">{p.total}</span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-border bg-card rounded-2xl overflow-hidden shadow-soft">
+              <CardHeader className="border-b border-border p-5">
+                <CardTitle className="text-lg font-semibold tracking-tight flex items-center gap-2.5 text-foreground">
+                  <div className="p-2 bg-rose-50 rounded-lg"><ShieldAlert className="w-4 h-4 text-rose-500" /></div> Tarjetas
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {topCards.length === 0 ? (
+                  <div className="p-10">
+                    <EmptyState
+                      icon={ShieldAlert}
+                      title="Sin tarjetas aún"
+                      description="Las tarjetas aparecerán cuando se registren amonestaciones."
+                    />
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-slate-100">
+                          <TableHead className="w-8 text-center font-semibold text-slate-500 text-xs uppercase tracking-wide">#</TableHead>
+                          <TableHead className="font-semibold text-slate-500 text-xs uppercase tracking-wide">Jugador</TableHead>
+                          <TableHead className="text-center font-semibold text-slate-500 text-xs uppercase tracking-wide px-1.5">Amarillas</TableHead>
+                          <TableHead className="text-center font-semibold text-slate-500 text-xs uppercase tracking-wide px-1.5">Rojas</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {topCards.map((p: any, idx) => (
+                          <TableRow key={idx} className="border-slate-100 hover:bg-slate-50">
+                            <TableCell className="text-center font-bold text-slate-300 text-sm">{idx + 1}</TableCell>
+                            <TableCell>
+                              <p className="font-semibold text-sm text-foreground truncate max-w-[120px] sm:max-w-none">{p.name}</p>
+                              <p className="text-xs text-slate-500 truncate max-w-[120px] sm:max-w-none">{p.team}</p>
+                            </TableCell>
+                            <TableCell className="text-center px-1.5">
+                              <span className="inline-flex items-center gap-1.5">
+                                <span className="w-3 h-4 rounded-[2px] bg-yellow-400 inline-block" />
+                                <span className="font-semibold text-slate-700 text-sm">{p.yellow}</span>
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center px-1.5">
+                              <span className="inline-flex items-center gap-1.5">
+                                <span className="w-3 h-4 rounded-[2px] bg-red-500 inline-block" />
+                                <span className="font-semibold text-slate-700 text-sm">{p.red}</span>
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -720,35 +864,47 @@ export default function TournamentPublicClient({ businessId, businessName: _busi
                           teamMatches.sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()).map(m => {
                             const isHome = m.home_team_id === selectedTeam.id
                             const opp = isHome ? m.away : m.home
+                            const teamScore = isHome ? m.home_score : m.away_score
+                            const oppScore = isHome ? m.away_score : m.home_score
+                            const isFinished = m.status === 'finished' || m.status === 'live' || m.status === 'halftime'
                             return (
-                              <div key={m.id} className="bg-slate-50 border border-slate-200 p-4 sm:p-5 rounded-xl flex items-center justify-between gap-4">
-                                <div className="flex flex-col gap-1.5 min-w-0">
-                                   <div className="flex items-center gap-2">
-                                     <span className="bg-white border border-slate-200 px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-500">
-                                       {new Date(m.match_date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
-                                     </span>
-                                     <span className="text-xs font-medium text-slate-400">{formatTime12h(m.match_time)}</span>
-                                   </div>
-                                   <div className="flex items-center gap-2.5">
-                                      <div className="w-7 h-7 bg-white rounded-lg p-1 border border-slate-100 flex-shrink-0">
-                                        {opp?.logo_url ? <img src={opp.logo_url} className="w-full h-full object-contain" alt={opp.name} /> : <Shield className="w-full h-full text-slate-300" />}
-                                      </div>
-                                      <span className="text-sm font-semibold text-foreground truncate">vs {opp?.name}</span>
-                                   </div>
+                              <button
+                                key={m.id}
+                                type="button"
+                                onClick={() => { setSelectedMatch(m); setIsModalOpen(true); }}
+                                className="w-full bg-slate-50 border border-slate-200 p-4 sm:p-5 rounded-xl hover:border-primary/40 hover:bg-primary/5 transition-colors cursor-pointer text-left"
+                              >
+                                <div className="flex items-center justify-between gap-3 mb-3">
+                                  <span className="bg-white border border-slate-200 px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-500">
+                                    {new Date(m.match_date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                                  </span>
+                                  <span className="text-xs font-medium text-slate-400">{formatTime12h(m.match_time)}</span>
                                 </div>
-                                <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                                   {m.status === 'finished' ? (
-                                     <span className={`text-lg sm:text-xl font-bold ${
-                                       (isHome ? m.home_score : m.away_score) > (isHome ? m.away_score : m.home_score) ? 'text-primary' : 
-                                       (isHome ? m.home_score : m.away_score) < (isHome ? m.away_score : m.home_score) ? 'text-red-500' : 'text-slate-400'
-                                     }`}>
-                                       {isHome ? `${m.home_score} - ${m.away_score}` : `${m.away_score} - ${m.home_score}`}
-                                     </span>
-                                   ) : (
-                                     <Badge className="bg-slate-100 text-slate-500 text-[10px] font-medium px-3 py-1 border border-slate-200">Programado</Badge>
-                                   )}
+                                <div className="flex items-center justify-between gap-3 sm:gap-4">
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="w-8 h-8 bg-white rounded-lg p-1 border border-slate-100 flex-shrink-0">
+                                      {selectedTeam.logo_url ? <img src={selectedTeam.logo_url} className="w-full h-full object-contain" alt={selectedTeam.name} /> : <Shield className="w-full h-full text-slate-300" />}
+                                    </div>
+                                    <span className="text-sm font-semibold text-foreground truncate max-w-[100px] sm:max-w-none">{selectedTeam.name}</span>
+                                  </div>
+                                  <div className="flex flex-col items-center flex-shrink-0">
+                                    {isFinished ? (
+                                      <span className={`text-lg sm:text-xl font-bold ${teamScore > oppScore ? 'text-primary' : teamScore < oppScore ? 'text-red-500' : 'text-slate-400'}`}>
+                                        {teamScore} - {oppScore}
+                                      </span>
+                                    ) : (
+                                      <Badge className="bg-slate-100 text-slate-500 text-[10px] font-medium px-3 py-1 border border-slate-200">Programado</Badge>
+                                    )}
+                                    <span className="text-[10px] font-medium text-slate-400 mt-0.5">vs</span>
+                                  </div>
+                                  <div className="flex items-center gap-2.5 min-w-0 justify-end">
+                                    <span className="text-sm font-semibold text-foreground truncate max-w-[100px] sm:max-w-none">{opp?.name}</span>
+                                    <div className="w-8 h-8 bg-white rounded-lg p-1 border border-slate-100 flex-shrink-0">
+                                      {opp?.logo_url ? <img src={opp.logo_url} className="w-full h-full object-contain" alt={opp.name} /> : <Shield className="w-full h-full text-slate-300" />}
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
+                              </button>
                             )
                           })
                         )}
@@ -821,6 +977,7 @@ export default function TournamentPublicClient({ businessId, businessName: _busi
           })()}
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   )
 }

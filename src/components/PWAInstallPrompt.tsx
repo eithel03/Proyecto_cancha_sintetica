@@ -162,7 +162,7 @@ export function PWAInstallPrompt({ businessName, businessLogo, slug }: PWAInstal
                 </Button>
                 <Button
                   onClick={handleInstallClick}
-                  className="h-11 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary/90"
+                  className="h-11 rounded-xl bg-gold text-navy font-bold text-sm hover:bg-[#ffd233]"
                 >
                   {platform === 'ios' ? <Apple className="w-4 h-4" /> : <Download className="w-4 h-4" />}
                   {platform === 'ios' ? 'Instrucciones' : 'Instalar'}
@@ -252,14 +252,14 @@ export function PWAInstallPrompt({ businessName, businessLogo, slug }: PWAInstal
                 {platform === 'ios' ? (
                   <Button 
                     onClick={handleInstallClick}
-                    className="rounded-xl h-12 bg-primary text-white font-semibold text-sm"
+                    className="rounded-xl h-12 bg-gold text-navy font-bold text-sm hover:bg-[#ffd233]"
                   >
                     Instalar ahora
                   </Button>
                 ) : (
                   <Button 
                     onClick={handleShare}
-                    className="rounded-xl h-12 bg-primary text-white font-semibold text-sm flex items-center justify-center gap-2"
+                    className="rounded-xl h-12 bg-gold text-navy font-bold text-sm hover:bg-[#ffd233] flex items-center justify-center gap-2"
                   >
                     <Share className="w-3.5 h-3.5" /> Compartir link
                   </Button>

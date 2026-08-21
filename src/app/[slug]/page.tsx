@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { MapPin, Phone, Flag, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { BusinessHeaderActions } from '@/components/BusinessHeaderActions'
-import { getUserFavorites } from '../cliente/actions'
+import { PublicFooter } from '@/components/PublicFooter'
 import { PublicNav } from '@/components/PublicNav'
 import { CourtCard } from '@/components/CourtCard'
 import { PublicPageContainer, SectionHeader, EmptyState } from '@/components/portal'
@@ -51,9 +51,6 @@ export default async function PublicBusinessPage({ params }: PageProps) {
     .eq('business_id', business.id)
     .eq('is_active', true)
 
-  const favorites = await getUserFavorites()
-  const isInitialFavorite = favorites.includes(business.id)
-
   const mapsUrl = business.latitude && business.longitude
     ? `https://www.google.com/maps?q=${business.latitude},${business.longitude}`
     : business.location
@@ -94,9 +91,12 @@ export default async function PublicBusinessPage({ params }: PageProps) {
                 </span>
               </div>
 
-              <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-bold tracking-tight text-white leading-[1.1]">
-                {business.name}
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-bold tracking-tight text-white leading-[1.1]">
+                  {business.name}
+                </h1>
+                <BusinessHeaderActions businessName={business.name} />
+              </div>
 
               <p className="text-sm sm:text-base text-white/50 leading-relaxed max-w-lg">
                 Reserva tu cancha y empieza el partido. Luces encendidas todas las noches para que el juego nunca pare.
@@ -137,14 +137,6 @@ export default async function PublicBusinessPage({ params }: PageProps) {
                 )}
               </div>
             </div>
-
-            <div className="hidden lg:block absolute top-6 right-6">
-              <BusinessHeaderActions
-                businessId={business.id}
-                isInitialFavorite={isInitialFavorite}
-                businessName={business.name}
-              />
-            </div>
           </div>
         </PublicPageContainer>
       </section>
@@ -153,7 +145,7 @@ export default async function PublicBusinessPage({ params }: PageProps) {
       <main className="max-w-[1280px] mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <SectionHeader
           icon={Flag}
-          title="Nuestras canchas"
+          title="Canchas"
           description="Elige tu cancha, selecciona tu horario y reserva en segundos."
           action={
             courts && courts.length > 0 ? (
@@ -167,8 +159,8 @@ export default async function PublicBusinessPage({ params }: PageProps) {
 
         <div className="mt-6 flex flex-wrap gap-5">
           {courts && courts.length > 0 ? (
-            courts.map((court) => (
-              <CourtCard key={court.id} court={court} slug={business.slug} />
+            courts.map((court, i) => (
+              <CourtCard key={court.id} court={court} slug={business.slug} priority={i === 0} />
             ))
           ) : (
             <EmptyState
@@ -180,11 +172,7 @@ export default async function PublicBusinessPage({ params }: PageProps) {
         </div>
       </main>
 
-      <footer className="border-t border-border py-8 px-4 text-center bg-white">
-        <p className="text-xs text-muted-foreground font-medium">
-          © {new Date().getFullYear()} Sintetica · Plataforma de gestión deportiva
-        </p>
-      </footer>
+      <PublicFooter business={business} />
     </div>
   )
 }

@@ -8,6 +8,7 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { toggleFavorite } from '@/app/cliente/actions'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { getOptimizedImageUrl } from '@/lib/images'
 import { toast } from 'sonner'
 import { AuthPromptDialog } from './AuthPromptDialog'
 
@@ -62,8 +63,12 @@ export function BusinessCard({ business, isFavorite, distance }: BusinessCardPro
       <Card className="overflow-hidden border-white/10 bg-card/40 backdrop-blur-md group hover:border-primary/50 transition-all h-full flex flex-col rounded-[24px] sm:rounded-[32px]">
         <div className="relative h-40 sm:h-48 overflow-hidden">
           <img
-            src={business.cover_image_url || 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=800&auto=format&fit=crop'}
+            src={getOptimizedImageUrl(business.cover_image_url, { width: 600, quality: 75 }) || 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=800&auto=format&fit=crop'}
             alt={business.name}
+            width={800}
+            height={480}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover transition-transform duration-700 sm:group-hover:scale-110"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />

@@ -16,25 +16,34 @@ import {
   Swords, 
   Trash2, 
   ShieldCheck,
-  ArrowLeft,
   Eraser,
   Smartphone,
   CalendarClock,
-  Settings
+  Settings,
+  XCircle
 } from 'lucide-react'
 import { ConfirmationDialog } from '@/components/ConfirmationDialog'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { updateProfile, hideHistoryItem, clearAllHistory } from './actions'
+import { updateProfile, hideHistoryItem, clearAllHistory, cancelReservation, cancelChallenge } from './actions'
 import { toast } from 'sonner'
 import { formatTime12h } from '@/lib/utils'
 import { EmptyState } from '@/components/portal'
 
-export default function ProfileClient({ initialProfile, initialReservations, initialChallenges, businessSlug }: { 
+const CHALLENGE_STATUS_LABELS: Record<string, string> = {
+  open: 'Abierto',
+  accepted: 'Aceptado',
+  confirmed: 'Confirmado',
+  cancelled: 'Cancelado',
+  completed: 'Completado'
+}
+
+export default function ProfileClient({ initialProfile, initialReservations, initialChallenges, businessSlug, userEmail }: { 
   initialProfile: any, 
   initialReservations: any[],
   initialChallenges: any[],
-  businessSlug: string
+  businessSlug: string,
+  userEmail?: string | null
 }) {
   const [profile, setProfile] = useState(initialProfile)
   const [reservations, setReservations] = useState(initialReservations)
@@ -84,10 +93,48 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
     }
   }
 
+  async function handleCancelReservation(reservationId: string) {
+    showConfirm(
+      'Cancelar Reserva',
+      '¿Seguro que quieres cancelar esta reserva? Se liberará el horario y podrás reservar de nuevo.',
+      async () => {
+        setPending(true)
+        const result = await cancelReservation(reservationId)
+        setPending(false)
+        if (result.success) {
+          setReservations((prev: any) => prev.map((r: any) => r.id === reservationId ? { ...r, status: 'cancelled' } : r))
+          toast.success('Reserva cancelada')
+        } else {
+          toast.error(result.error || 'No se pudo cancelar la reserva')
+        }
+      },
+      'danger'
+    )
+  }
+
+  async function handleCancelChallenge(challengeId: string) {
+    showConfirm(
+      'Cancelar Reto',
+      '¿Seguro que quieres cancelar este reto? Se liberará el horario.',
+      async () => {
+        setPending(true)
+        const result = await cancelChallenge(challengeId)
+        setPending(false)
+        if (result.success) {
+          setChallenges((prev: any) => prev.map((c: any) => c.id === challengeId ? { ...c, status: 'cancelled' } : c))
+          toast.success('Reto cancelado')
+        } else {
+          toast.error(result.error || 'No se pudo cancelar el reto')
+        }
+      },
+      'danger'
+    )
+  }
+
   async function handleHideItem(type: 'reservation' | 'challenge', id: string) {
     showConfirm(
-      'Ocultar Registro',
-      '¿Deseas ocultar este registro de tu vista? No se borrará del sistema.',
+      type === 'challenge' ? 'Eliminar Reto' : 'Ocultar Registro',
+      type === 'challenge' ? '¿Deseas eliminar este reto?' : '¿Deseas ocultar este registro de tu vista? No se borrará del sistema.',
       async () => {
         const result = await hideHistoryItem(type, id)
         if (result.success) {
@@ -96,7 +143,7 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
           } else {
             setChallenges((prev: any) => prev.filter((c: any) => c.id !== id))
           }
-          toast.success('Registro ocultado')
+          toast.success(type === 'challenge' ? 'Reto eliminado' : 'Registro ocultado')
         } else {
           toast.error(result.error || 'No se pudo ocultar el registro')
         }
@@ -136,21 +183,15 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
   return (
     <div className="max-w-6xl mx-auto px-2 sm:px-4 py-6 sm:py-10 space-y-8 sm:space-y-10 animate-in fade-in duration-500">
        {/* Header */}
-       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-2 text-center md:text-left">
-          <Link href={`/${businessSlug}`} className="group inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors">
-            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" /> Volver al inicio
-          </Link>
-          <span className="inline-flex items-center gap-2 rounded-full bg-primary/8 border border-primary/15 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.25em] text-primary">
-            <User className="w-3.5 h-3.5" /> Mi cuenta
-          </span>
+       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="text-center md:text-left">
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">Mi perfil</h1>
-          <p className="text-sm text-muted-foreground">Gestiona tu cuenta y tu actividad</p>
+          <p className="text-sm text-muted-foreground mt-1">Gestiona tu cuenta y tu actividad</p>
         </div>
         <Button 
           variant="outline" 
           onClick={handleLogout}
-          className="w-full md:w-auto border-slate-200 text-slate-600 hover:text-red-600 hover:border-red-200 hover:bg-red-50 font-medium text-sm h-11 px-6 rounded-xl transition-colors"
+          className="self-center md:self-auto w-full md:w-auto h-11 px-5 rounded-xl text-sm font-semibold border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
         >
           <LogOut className="w-4 h-4 mr-2" /> Cerrar sesión
         </Button>
@@ -165,7 +206,7 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
           <div className="flex-1 text-center sm:text-left">
             <p className="text-sm font-semibold text-amber-800">Cuenta administrativa</p>
             <p className="text-xs text-amber-700/80 mt-0.5">
-              Sesión activa: <span className="font-semibold text-amber-900">{profile.email}</span>
+              Sesión activa: <span className="font-semibold text-amber-900">{userEmail}</span>
             </p>
           </div>
           <Link href="/dashboard" className="w-full sm:w-auto">
@@ -200,7 +241,7 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
                     <User className="w-10 h-10 text-primary" />
                   </div>
                   <CardTitle className="text-xl font-bold tracking-tight text-foreground">{profile.full_name}</CardTitle>
-                  <CardDescription className="text-sm text-slate-500 truncate px-4">{profile.email}</CardDescription>
+                  <CardDescription className="text-sm text-slate-500 truncate px-4">{userEmail}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-5">
                   <form action={handleUpdateProfile} className="space-y-4">
@@ -234,7 +275,7 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="bg-surface border border-border p-4 rounded-xl">
                       <p className="text-[11px] font-medium text-slate-500 mb-1">Email</p>
-                      <p className="font-semibold text-foreground text-sm truncate">{profile.email}</p>
+                      <p className="font-semibold text-foreground text-sm truncate">{userEmail}</p>
                     </div>
                     <div className="bg-surface border border-border p-4 rounded-xl">
                       <p className="text-[11px] font-medium text-slate-500 mb-1">Teléfono</p>
@@ -305,7 +346,7 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
                               </span>
                             </div>
                             <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 mt-1">
-                              <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-slate-400" /> {res.reservation_date}</span>
+                              <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-slate-400" /> {new Date(res.reservation_date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}</span>
                               <span className="flex items-center gap-1.5">
                                 <Clock className="w-3.5 h-3.5 text-slate-400" /> 
                                 {formatTime12h(res.start_time.substring(0, 5))} – {formatTime12h(`${res.start_time.split(':')[0].padStart(2, '0')}:59`)}
@@ -321,6 +362,17 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
                             className="w-9 h-9 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg flex-shrink-0"
                           >
                             <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {!(['cancelled', 'completed'].includes(res.status) || res.reservation_date < new Date().toLocaleDateString('sv-SE')) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={pending}
+                            onClick={() => handleCancelReservation(res.id)}
+                            className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 text-xs font-semibold rounded-lg h-8 px-3 flex-shrink-0"
+                          >
+                            <XCircle className="w-3.5 h-3.5 mr-1.5" /> Cancelar
                           </Button>
                         )}
                       </div>
@@ -362,11 +414,11 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
                           <div className="flex flex-wrap items-center gap-2">
                             <h4 className="font-semibold text-foreground truncate">{challenge.courts?.name}</h4>
                             <span className="rounded-full bg-green-50 text-green-700 border border-green-200 px-2.5 py-0.5 text-[10px] font-semibold">
-                              {challenge.status.replace('_', ' ')}
+                              {CHALLENGE_STATUS_LABELS[challenge.status] || challenge.status}
                             </span>
                           </div>
                           <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
-                            <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-slate-400" /> {challenge.challenge_date}</span>
+                            <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-slate-400" /> {new Date(challenge.challenge_date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}</span>
                             <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-slate-400" /> {formatTime12h(challenge.challenge_time.substring(0, 5))}</span>
                           </div>
                           {challenge.notes && (
@@ -395,6 +447,17 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
                               className="w-9 h-9 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg"
                             >
                               <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {!(['cancelled', 'completed'].includes(challenge.status) || challenge.challenge_date < new Date().toLocaleDateString('sv-SE')) && challenge.creator_id === profile.id && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={pending}
+                              onClick={() => handleCancelChallenge(challenge.id)}
+                              className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 text-xs font-semibold rounded-lg h-8 px-3 flex-shrink-0"
+                            >
+                              <XCircle className="w-3.5 h-3.5 mr-1.5" /> Cancelar
                             </Button>
                           )}
                         </div>

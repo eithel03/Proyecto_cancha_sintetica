@@ -30,6 +30,63 @@ export async function updateProfile(formData: FormData) {
   return { success: true, data }
 }
 
+export async function cancelReservation(reservationId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autorizado' }
+
+  const { data: reservation } = await supabase
+    .from('reservations')
+    .select('customer_id, status, reservation_date')
+    .eq('id', reservationId)
+    .single()
+
+  if (!reservation) return { error: 'Reserva no encontrada.' }
+  if (reservation.customer_id !== user.id) return { error: 'No puedes cancelar esta reserva.' }
+  if (!['pending', 'confirmed'].includes(reservation.status)) return { error: 'Esta reserva ya no puede cancelarse.' }
+  if (reservation.reservation_date < new Date().toLocaleDateString('sv-SE')) return { error: 'No puedes cancelar una reserva pasada.' }
+
+  const { error } = await supabase
+    .from('reservations')
+    .update({ status: 'cancelled' })
+    .eq('id', reservationId)
+    .eq('customer_id', user.id)
+
+  if (error) return { error: 'Error al cancelar reserva: ' + error.message }
+
+  revalidatePath('/[slug]/perfil')
+  return { success: true }
+}
+
+export async function cancelChallenge(challengeId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autorizado' }
+
+  const { data: challenge } = await supabase
+    .from('challenges')
+    .select('creator_id, status, challenge_date')
+    .eq('id', challengeId)
+    .single()
+
+  if (!challenge) return { error: 'Reto no encontrado.' }
+  if (challenge.creator_id !== user.id) return { error: 'No puedes cancelar este reto.' }
+  if (!['open', 'accepted'].includes(challenge.status)) return { error: 'Este reto ya no puede cancelarse.' }
+  if (challenge.challenge_date < new Date().toLocaleDateString('sv-SE')) return { error: 'No puedes cancelar un reto pasado.' }
+
+  const { error } = await supabase
+    .from('challenges')
+    .update({ status: 'cancelled' })
+    .eq('id', challengeId)
+    .eq('creator_id', user.id)
+
+  if (error) return { error: 'Error al cancelar reto: ' + error.message }
+
+  revalidatePath('/[slug]/perfil')
+  revalidatePath('/[slug]/retos')
+  return { success: true }
+}
+
 export async function hideHistoryItem(type: 'reservation' | 'challenge', id: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

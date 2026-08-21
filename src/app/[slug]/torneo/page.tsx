@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import TournamentPublicClient from './TournamentPublicClient'
 import { PublicNav } from '@/components/PublicNav'
+import { PublicFooter } from '@/components/PublicFooter'
 
 type PageProps = {
   params: Promise<{ slug: string }>
@@ -56,7 +56,7 @@ export default async function PublicTournamentPage({ params }: PageProps) {
     <div className="min-h-screen bg-background flex flex-col selection:bg-primary/30">
       <PublicNav slug={business.slug} businessName={business.name} />
 
-      <main className="flex-1 w-full max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 space-y-5 sm:space-y-6 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <main className="flex-1 w-full overflow-x-clip animate-in fade-in slide-in-from-bottom-4 duration-700">
         <TournamentPublicClient 
           businessId={business.id}
           businessName={business.name}
@@ -68,9 +68,7 @@ export default async function PublicTournamentPage({ params }: PageProps) {
         />
       </main>
 
-      <footer className="text-center py-8 text-sm text-muted-foreground border-t border-border">
-        Potenciado por <Link href="/" className="text-primary font-medium hover:underline">SaaSintética</Link>
-      </footer>
+      <PublicFooter business={business} />
     </div>
   )
 }

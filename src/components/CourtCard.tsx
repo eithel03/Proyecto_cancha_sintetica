@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Clock, Users, ChevronRight } from 'lucide-react'
 
 interface CourtCardProps {
@@ -16,6 +17,7 @@ interface CourtCardProps {
     is_active?: boolean | null
   }
   slug: string
+  priority?: boolean
 }
 
 function CourtField({ desaturated = false }: { desaturated?: boolean }) {
@@ -31,7 +33,7 @@ function CourtField({ desaturated = false }: { desaturated?: boolean }) {
   )
 }
 
-export function CourtCard({ court, slug }: CourtCardProps) {
+export function CourtCard({ court, slug, priority = false }: CourtCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageFailed, setImageFailed] = useState(false)
   const hasImage = !!court.image_url
@@ -49,20 +51,22 @@ export function CourtCard({ court, slug }: CourtCardProps) {
         {hasImage && !imageFailed && !imageLoaded && (
           <div className="absolute inset-0 animate-shimmer" />
         )}
-        {hasImage && !imageFailed && (
-          <img
-            src={court.image_url || ''}
+        {hasImage && !imageFailed && court.image_url && (
+          <Image
+            src={court.image_url}
             alt={court.name}
-            loading="lazy"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            priority={priority}
             onLoad={() => setImageLoaded(true)}
             onError={() => setImageFailed(true)}
-            className={`absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            className={`object-cover transition-transform duration-500 group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
           />
         )}
         {(!hasImage || imageFailed) && <CourtField desaturated={!isActive} />}
 
         {/* Badge */}
-        <span className={`absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold shadow-sm ${
+        <span className={`absolute top-3 left-3 z-10 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold shadow-sm ${
           isActive
             ? 'bg-white/95 border border-green-200 text-green-700'
             : 'bg-white/95 border border-slate-200 text-slate-500'
@@ -81,7 +85,7 @@ export function CourtCard({ court, slug }: CourtCardProps) {
               <p className="text-sm text-muted-foreground font-medium mt-0.5 truncate">{court.description}</p>
             )}
           </div>
-          <span className="shrink-0 rounded-full bg-primary/8 border border-primary/15 px-2.5 py-1 text-[11px] font-semibold text-primary">
+          <span className="shrink-0 rounded-full bg-primary-green-dark/8 border border-primary-green-dark/15 px-2.5 py-1 text-[11px] font-semibold text-primary-green-dark">
             Fútbol {capacity}
           </span>
         </div>

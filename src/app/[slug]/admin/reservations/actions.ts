@@ -172,6 +172,28 @@ export async function createAdminReservation(data: {
   const access = await verifyBusinessAccess(data.business_id)
   if (access.error) return { error: access.error }
 
+  const slotStart = data.start_time.substring(0, 5)
+  const [sh, sm] = slotStart.split(':').map(Number)
+  const slotEnd59 = `${(sh + Math.floor((sm + 59) / 60)).toString().padStart(2, '0')}:${((sm + 59) % 60).toString().padStart(2, '0')}`
+
+  const { data: conflicts } = await supabase
+    .from('reservations')
+    .select('id, start_time, end_time')
+    .eq('court_id', data.court_id)
+    .eq('reservation_date', data.reservation_date)
+    .in('status', ['pending', 'confirmed'])
+
+  const hasConflict = (conflicts || []).some(r => {
+    const resStart = r.start_time.substring(0, 5)
+    const [rh, rm] = resStart.split(':').map(Number)
+    const resEnd59 = `${(rh + Math.floor((rm + 59) / 60)).toString().padStart(2, '0')}:${((rm + 59) % 60).toString().padStart(2, '0')}`
+    return slotStart < resEnd59 && slotEnd59 > resStart
+  })
+
+  if (hasConflict) {
+    return { error: 'Este horario ya está ocupado por otra reserva o partido.' }
+  }
+
   const { error } = await supabase
     .from('reservations')
     .insert({
@@ -183,13 +205,10 @@ export async function createAdminReservation(data: {
       start_time: data.start_time,
       end_time: data.end_time,
       notes: data.notes,
-      status: 'confirmed' // Las reservas manuales del admin se confirman automáticamente
+      status: 'confirmed'
     })
 
   if (error) {
-    if (error.message.includes('ya está reservada')) {
-      return { error: 'Este horario ya está ocupado por otra reserva o partido.' }
-    }
     return { error: 'Error al crear reserva manual: ' + error.message }
   }
 

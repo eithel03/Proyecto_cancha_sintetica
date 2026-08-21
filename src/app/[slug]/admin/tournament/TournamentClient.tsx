@@ -548,14 +548,20 @@ export default function TournamentClient({
   }
 
   return (
-    <div className={cn('space-y-6', styles.shell)}>
+    <div className={cn(styles.shell)}>
       <section className={cn('-mx-4 -mt-4 bg-emerald-950 px-4 py-6 shadow-sm md:-mx-6 md:-mt-6 md:px-6 lg:-mx-9 lg:-mt-9 lg:px-9', styles.titleBanner)}>
         <h2 className="text-2xl font-black uppercase tracking-tight text-white sm:text-4xl">Gestión de torneo</h2>
       </section>
-      {/* Selector de Torneo (género) */}
-      <section className={cn('relative overflow-hidden rounded-3xl border border-emerald-500/15 p-6 shadow-xl shadow-black/20', styles.hero)}>
+      <section className={cn('relative -mx-4 overflow-hidden border border-emerald-500/15 px-4 pt-10 pb-6 shadow-xl shadow-black/20 md:-mx-6 md:px-6 lg:-mx-9 lg:px-9', styles.hero)}>
         <div className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(45deg,currentColor_1px,transparent_1px)] [background-size:12px_12px] text-white" />
-        <div className="relative flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+        <Button
+          size="sm"
+          onClick={handleDeleteFullTournament}
+          className="absolute right-4 top-4 z-10 shrink-0 rounded-lg border border-red-500 bg-red-500 px-3 py-2 text-xs font-black text-white shadow-lg shadow-red-500/30 hover:bg-red-600 hover:text-white sm:text-sm"
+        >
+          <Trash2 className="mr-1.5 h-4 w-4" /> Eliminar torneo
+        </Button>
+        <div className="relative flex flex-col gap-6 xl:flex-row xl:items-stretch xl:justify-between">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10">
             <Trophy className="h-8 w-8 text-emerald-400" />
@@ -577,7 +583,7 @@ export default function TournamentClient({
                 <span>Progreso del torneo</span>
                 <span className="text-emerald-400">{progress}%</span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
+              <div className="h-2 overflow-hidden rounded-full bg-white/20">
                 <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${progress}%` }} />
               </div>
               <p className="mt-3 text-sm font-medium text-zinc-400">
@@ -586,45 +592,36 @@ export default function TournamentClient({
             </div>
           </div>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row xl:flex-col xl:items-end">
-        <div className="grid grid-cols-2 rounded-xl border border-white/10 bg-zinc-950/70 p-1 shadow-sm">
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => setSelectedGender('masculino')}
-            className={cn(
-              "rounded-xl px-5 font-bold",
-              selectedGender === 'masculino' ? "bg-zinc-800 text-white hover:bg-zinc-800" : "text-zinc-400 hover:text-zinc-200"
-            )}
-          >
-            Masculino
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => setSelectedGender('femenino')}
-            className={cn(
-              "rounded-xl px-5 font-bold",
-              selectedGender === 'femenino' ? "bg-zinc-800 text-white hover:bg-zinc-800" : "text-zinc-400 hover:text-zinc-200"
-            )}
-          >
-            Femenino
-          </Button>
-        </div>
-
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleDeleteFullTournament}
-          className="h-10 rounded-xl border-rose-500/30 bg-rose-500/10 px-4 font-bold text-rose-300 hover:bg-rose-500/20 hover:text-rose-200"
-        >
-          <Trash2 className="w-4 h-4" /> Eliminar torneo
-        </Button>
+        <div className="flex flex-col items-end justify-end gap-3 xl:mt-auto">
+          <div className="grid grid-cols-2 rounded-xl border border-white/20 bg-white/10 p-1 shadow-sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedGender('masculino')}
+              className={cn(
+                "rounded-xl px-5 font-bold",
+                selectedGender === 'masculino' ? "bg-white text-emerald-800 hover:bg-white" : "text-white/70 hover:text-white"
+              )}
+            >
+              Masculino
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedGender('femenino')}
+              className={cn(
+                "rounded-xl px-5 font-bold",
+                selectedGender === 'femenino' ? "bg-white text-emerald-800 hover:bg-white" : "text-white/70 hover:text-white"
+              )}
+            >
+              Femenino
+            </Button>
+          </div>
         </div>
         </div>
       </section>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v || 'teams')} className="w-full space-y-5">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v || 'teams')} className="mt-6 w-full space-y-5">
         <div className={cn('-mx-1 overflow-x-auto px-1 pb-1', styles.tabsNav)}>
           <TabsList className="inline-flex h-11 min-w-max rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
             <TabsTrigger value="teams" className="gap-2 rounded-lg px-4 font-bold text-slate-600 data-[state=active]:bg-emerald-700 data-[state=active]:text-white"><Users className="h-4 w-4" /> Equipos</TabsTrigger>
@@ -637,8 +634,8 @@ export default function TournamentClient({
 
       {/* --- TAB EQUIPOS --- */}
       <TabsContent value="teams">
-        <Card className={cn('overflow-hidden rounded-2xl border-white/10 bg-zinc-900/60 shadow-md shadow-black/10', styles.sectionCard)}>
-          <CardHeader className="flex flex-col gap-4 border-b border-white/10 bg-zinc-950/45 lg:flex-row lg:items-center lg:justify-between">
+        <Card className={cn('overflow-hidden rounded-2xl border-slate-200 bg-white shadow-md shadow-black/10', styles.sectionCard)}>
+          <CardHeader className="flex flex-col gap-4 border-b border-slate-200 bg-slate-50 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center md:w-auto">
               <div className="relative w-full sm:w-72">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
@@ -646,7 +643,7 @@ export default function TournamentClient({
                 placeholder="Buscar equipo o capitán..." 
                 value={teamSearch}
                 onChange={(e) => setTeamSearch(e.target.value)}
-                className="h-10 rounded-xl border-white/10 bg-zinc-900/70 pl-10"
+                className="h-10 rounded-xl border-slate-200 bg-white pl-10"
               />
               </div>
               <Dialog open={isTeamDialogOpen} onOpenChange={(val) => { setIsTeamDialogOpen(val); if(!val) { setEditingTeam(null); setLogoUrl(''); } }}>
@@ -682,7 +679,7 @@ export default function TournamentClient({
                     <div className="space-y-2">
                       <Label htmlFor="logo_url">Logo del Equipo</Label>
                       <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-md border flex items-center justify-center overflow-hidden">
+                            <div className="w-16 h-16 bg-slate-100 rounded-md border border-slate-200 flex items-center justify-center overflow-hidden">
                           {editingTeam?.logo_url || logoUrl ? (
                             <>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -750,7 +747,7 @@ export default function TournamentClient({
           <CardContent className="p-0">
             <div className="overflow-x-auto">
             <Table className="min-w-[820px]">
-              <TableHeader className="bg-zinc-900/30">
+              <TableHeader className="bg-slate-50">
                 <TableRow className="border-zinc-800/60">
                   <TableHead className="w-16 px-6 font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Logo</TableHead>
                   <TableHead className="font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Nombre</TableHead>
@@ -785,7 +782,7 @@ export default function TournamentClient({
                     className="cursor-pointer border-zinc-800/40 transition-colors hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 group"
                   >
                     <TableCell className="px-6">
-                      <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded-full border flex items-center justify-center overflow-hidden">
+                       <div className="w-10 h-10 bg-slate-100 rounded-full border border-slate-200 flex items-center justify-center overflow-hidden">
                         {team.logo_url ? (
                           <>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -831,7 +828,7 @@ export default function TournamentClient({
                 })}
                 {filteredTeams.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center py-20 text-muted-foreground bg-zinc-900/10">
+                    <TableCell colSpan={11} className="text-center py-20 text-muted-foreground bg-slate-50/50">
                       <div className="flex flex-col items-center gap-3">
                         <Shield className="w-10 h-10 opacity-10" />
                         <p className="font-bold uppercase italic tracking-tighter text-lg">No se encontraron equipos</p>
@@ -848,8 +845,8 @@ export default function TournamentClient({
 
       {/* --- TAB JUGADORES --- */}
       <TabsContent value="players">
-        <Card className={cn('overflow-hidden rounded-2xl border-white/10 bg-zinc-900/60 shadow-md shadow-black/10', styles.sectionCard)}>
-          <CardHeader className="flex flex-col gap-4 border-b border-white/10 bg-zinc-950/45 lg:flex-row lg:items-center lg:justify-between">
+        <Card className={cn('overflow-hidden rounded-2xl border-slate-200 bg-white shadow-md shadow-black/10', styles.sectionCard)}>
+          <CardHeader className="flex flex-col gap-4 border-b border-slate-200 bg-slate-50 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <CardTitle>Jugadores</CardTitle>
               <CardDescription>Inscribe jugadores y asígnalos a sus respectivos equipos.</CardDescription>
@@ -857,12 +854,12 @@ export default function TournamentClient({
             <div className="flex w-full flex-col gap-3 lg:w-auto lg:flex-row lg:items-center">
               <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-[minmax(220px,1fr)_120px_minmax(180px,220px)] lg:w-auto">
                 <div className="relative min-w-0">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input 
                 placeholder="Buscar jugador..." 
                 value={playerSearch}
                 onChange={(e) => setPlayerSearch(e.target.value)}
-                className="h-10 w-full rounded-xl border-white/10 bg-zinc-900/70 pl-10"
+                className="h-10 w-full rounded-xl border-slate-200 bg-white pl-10"
               />
                 </div>
               <Input 
@@ -870,15 +867,15 @@ export default function TournamentClient({
                 type="number"
                 value={jerseySearch}
                 onChange={(e) => setJerseySearch(e.target.value)}
-                className="h-10 w-full rounded-xl border-white/10 bg-zinc-900/70"
+                className="h-10 w-full rounded-xl border-slate-200 bg-white"
               />
               <Select value={teamFilter} onValueChange={(val) => setTeamFilter(val || 'all')}>
-                <SelectTrigger className="h-10 w-full rounded-xl border-white/10 bg-zinc-900/70">
+                <SelectTrigger className="h-10 w-full rounded-xl border-slate-200 bg-white">
                   <SelectValue placeholder="Todos los equipos">
                     {(val: string | null) => val === 'all' ? 'Todos los equipos' : currentTeams.find(t => t.id === val)?.name || 'Todos los equipos'}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="border-zinc-800 bg-zinc-950">
+                <SelectContent className="border-slate-200 bg-white">
                   <SelectItem value="all">Todos los equipos</SelectItem>
                   {currentTeams.map(t => (
                     <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
@@ -953,7 +950,7 @@ export default function TournamentClient({
           <CardContent className="p-0">
             <div className="overflow-x-auto">
             <Table className="min-w-[720px]">
-              <TableHeader className="bg-zinc-900/30">
+              <TableHeader className="bg-slate-50">
                 <TableRow className="border-zinc-800/60">
                   <TableHead className="px-6 font-bold uppercase text-[10px] tracking-widest text-zinc-500">Nombre</TableHead>
                   <TableHead className="font-bold uppercase text-[10px] tracking-widest text-zinc-500">Equipo</TableHead>
@@ -971,7 +968,7 @@ export default function TournamentClient({
                     <TableCell className="py-4 text-zinc-200">{player.position || '-'}</TableCell>
                     <TableCell className="px-6 py-4">
                       <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-white/10 bg-zinc-950/60 hover:bg-zinc-800" onClick={() => { setEditingPlayer(player); setIsPlayerDialogOpen(true); }}>
+                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-slate-200 bg-white hover:bg-slate-50" onClick={() => { setEditingPlayer(player); setIsPlayerDialogOpen(true); }}>
                         <Pencil className="w-4 h-4" />
                       </Button>
                       <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-rose-500/20 bg-rose-500/5 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300" onClick={() => handleDeletePlayer(player.id)}>
@@ -997,8 +994,8 @@ export default function TournamentClient({
 
       {/* --- TAB JORNADAS --- */}
       <TabsContent value="matches">
-        <Card className={cn('overflow-hidden rounded-2xl border-white/10 bg-zinc-900/60 shadow-md shadow-black/10', styles.sectionCard)}>
-          <CardHeader className="border-b border-white/10 bg-zinc-950/45">
+        <Card className={cn('overflow-hidden rounded-2xl border-slate-200 bg-white shadow-md shadow-black/10', styles.sectionCard)}>
+          <CardHeader className="border-b border-slate-200 bg-slate-50">
             <div className="mb-1">
               <CardTitle className="text-xl font-black tracking-tight text-slate-950">Agenda de partidos</CardTitle>
               <CardDescription className="mt-1 text-sm text-slate-500">Consulta rápidamente cuándo juega cada equipo y registra el resultado.</CardDescription>
@@ -1006,7 +1003,7 @@ export default function TournamentClient({
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:w-auto">
               <Select value={matchStatusFilter} onValueChange={(v) => setMatchStatusFilter(v || 'all')}>
-                <SelectTrigger className="h-10 w-full rounded-xl border-white/10 bg-zinc-900/70 text-xs font-bold uppercase tracking-widest lg:w-[210px]">
+                <SelectTrigger className="h-10 w-full rounded-xl border-slate-200 bg-white text-xs font-bold uppercase tracking-widest lg:w-[210px]">
                   <SelectValue placeholder="Estado">
                     {(val: string | null) => {
                       const statusMap: Record<string, string> = { 
@@ -1021,18 +1018,18 @@ export default function TournamentClient({
                     }}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-950 border-zinc-800">
+                <SelectContent className="border-slate-200 bg-white">
                   <SelectItem value="all" className="text-xs font-bold uppercase">Todos los estados</SelectItem>
                   <SelectItem value="scheduled" className="text-xs font-bold uppercase">Programado</SelectItem>
                   <SelectItem value="live" className="text-xs font-bold uppercase text-red-500">En Vivo</SelectItem>
                   <SelectItem value="halftime" className="text-xs font-bold uppercase text-amber-500">Entretiempo</SelectItem>
                   <SelectItem value="finished" className="text-xs font-bold uppercase text-emerald-500">Finalizado</SelectItem>
-                  <SelectItem value="cancelled" className="text-xs font-bold uppercase text-zinc-500">Cancelado</SelectItem>
+                  <SelectItem value="cancelled" className="text-xs font-bold uppercase text-slate-500">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
 
               <Select value={matchDateSort} onValueChange={(v) => setMatchDateSort(v || 'desc')}>
-                <SelectTrigger className="h-10 w-full rounded-xl border-white/10 bg-zinc-900/70 text-xs font-bold uppercase tracking-widest lg:w-[250px]">
+                <SelectTrigger className="h-10 w-full rounded-xl border-slate-200 bg-white text-xs font-bold uppercase tracking-widest lg:w-[250px]">
                   <div className="flex items-center gap-2">
                     <Timer className="w-3.5 h-3.5" />
                     <SelectValue placeholder="Orden Fecha">
@@ -1040,7 +1037,7 @@ export default function TournamentClient({
                     </SelectValue>
                   </div>
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-950 border-zinc-800">
+                <SelectContent className="border-slate-200 bg-white">
                   <SelectItem value="desc" className="text-xs font-bold uppercase">Más reciente primero</SelectItem>
                   <SelectItem value="asc" className="text-xs font-bold uppercase">Más antiguo primero</SelectItem>
                 </SelectContent>
@@ -1093,12 +1090,12 @@ export default function TournamentClient({
                       <div className="space-y-2">
                         <Label htmlFor="match_time">Hora</Label>
                         <Select name="match_time" defaultValue={editingMatch?.match_time} required onValueChange={(value) => setMatchTime(value || '')}>
-                          <SelectTrigger className="w-full bg-zinc-900 border-white/10 h-10">
+                          <SelectTrigger className="w-full bg-white border-slate-200 h-10">
                             <SelectValue placeholder="--:--">
                               {(val: string | null) => val ? formatTime12h(val) : '--:--'}
                             </SelectValue>
                           </SelectTrigger>
-                          <SelectContent className="bg-zinc-950 border-white/10 max-h-[200px]">
+                          <SelectContent className="bg-white border-slate-200 max-h-[200px]">
                             {TIME_OPTIONS.map(time => (
                               <SelectItem key={time} value={time}>
                                 {formatTime12h(time)}
@@ -1178,75 +1175,76 @@ export default function TournamentClient({
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {/* Desktop: tabla */}
+            <div className="hidden overflow-x-auto md:block">
             <Table className="min-w-[820px]">
-              <TableHeader className="bg-zinc-900/30">
-                <TableRow className="border-zinc-800/60">
-                  <TableHead className="w-44 px-6 font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Cuándo</TableHead>
-                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Enfrentamiento</TableHead>
-                  <TableHead className="w-36 text-center font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Marcador</TableHead>
-                  <TableHead className="w-40 font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Situación</TableHead>
-                  <TableHead className="text-right px-6 font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Acciones</TableHead>
+              <TableHeader className="bg-slate-50">
+                <TableRow className="border-slate-200">
+                  <TableHead className="w-44 px-6 font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Cuándo</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Enfrentamiento</TableHead>
+                  <TableHead className="w-36 text-center font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Marcador</TableHead>
+                  <TableHead className="w-40 font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Situación</TableHead>
+                  <TableHead className="text-right px-6 font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredMatches.map((match) => (
-                  <TableRow key={match.id} className={cn('border-zinc-800/40 hover:bg-white/[0.02] transition-colors group', styles.matchRow)}>
-                    <TableCell className={cn('px-6 py-4', styles.matchDateCell)}>
+                  <TableRow key={match.id} className="border-slate-100 hover:bg-slate-50/50 transition-colors group">
+                    <TableCell className="px-6 py-4">
                       <div className="flex items-start gap-3">
                         <div className="mt-0.5 rounded-lg bg-emerald-50 p-2 text-emerald-700">
                           <Calendar className="h-4 w-4" />
                         </div>
                         <div>
-                          <div className="font-black text-white">{formatReadableDate(match.match_date)}</div>
-                          <div className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-zinc-500">
+                          <div className="font-black text-slate-900">{formatReadableDate(match.match_date)}</div>
+                          <div className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-slate-500">
                             <Clock className="h-3 w-3" /> {formatTime12h(match.match_time)}
                           </div>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className={cn('py-4', styles.matchupCell)}>
-                      <div className="flex min-w-0 items-center gap-3 font-bold text-white">
+                    <TableCell className="py-4">
+                      <div className="flex min-w-0 items-center gap-3 font-bold text-slate-900">
                         <div className="min-w-0">
                           <p className="truncate">{match.home?.name || 'Equipo local'}</p>
-                          <p className="mt-1 truncate text-sm font-medium text-zinc-500">{match.away?.name || 'Equipo visitante'}</p>
+                          <p className="mt-1 truncate text-sm font-medium text-slate-500">{match.away?.name || 'Equipo visitante'}</p>
                         </div>
                         <span className="shrink-0 rounded-md bg-slate-100 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-slate-500">VS</span>
                       </div>
-                      {match.court?.name && <p className="mt-1 text-xs font-medium text-zinc-500">{match.court.name}</p>}
+                      {match.court?.name && <p className="mt-1 text-xs font-medium text-slate-500">{match.court.name}</p>}
                     </TableCell>
-                    <TableCell className={cn('py-4', styles.matchScoreCell)}>
+                    <TableCell className="py-4">
                       {match.status === 'finished' || match.status === 'live' || match.status === 'halftime' ? (
                         <div className="flex flex-col items-center">
-                          <Badge variant="outline" className="border-blue-500/20 bg-blue-500/10 px-3 text-base font-black text-white">
+                          <Badge variant="outline" className="border-blue-200 bg-blue-50 px-3 text-base font-black text-blue-700">
                             {match.home_score} - {match.away_score}
                           </Badge>
                           {match.status === 'live' && (
-                            <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wide text-red-400">
+                            <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wide text-red-500">
                               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
                               {match.current_minute}&apos; min
                             </span>
                           )}
                           {match.status === 'halftime' && (
-                            <span className="mt-1 text-[10px] font-black uppercase tracking-wide text-amber-400">
+                            <span className="mt-1 text-[10px] font-black uppercase tracking-wide text-amber-500">
                               HT (Entretiempo)
                             </span>
                           )}
                         </div>
-                      ) : <span className="block text-center text-xs font-semibold text-zinc-500">Sin resultado</span>}
+                      ) : <span className="block text-center text-xs font-semibold text-slate-400">Sin resultado</span>}
                     </TableCell>
-                    <TableCell className={cn('py-4', styles.matchStatusCell)}>
-                      <Badge variant="outline" className={cn(getMatchStatusBadgeClassName(match.status), styles.matchStatusBadge)}>
+                    <TableCell className="py-4">
+                      <Badge variant="outline" className={cn(getMatchStatusBadgeClassName(match.status), 'min-w-[6.5rem] justify-center rounded-full px-2.5 py-1 text-[11px]')}>
                         {getMatchStatusLabel(match.status)}
                       </Badge>
                     </TableCell>
-                    <TableCell className={cn('px-6 py-4', styles.matchActionsCell)}>
+                    <TableCell className="px-6 py-4">
                       <div className="flex justify-end gap-2">
                       {match.status === 'live' && (
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="h-9 rounded-xl border-red-500/20 bg-red-500/10 text-red-300 hover:bg-red-500/15 hover:text-red-200"
+                          className="h-9 rounded-xl border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700"
                           onClick={() => { 
                             setActiveMatchForEvent(match); 
                             setSelectedEventType('goal');
@@ -1257,10 +1255,10 @@ export default function TournamentClient({
                           <Zap className="w-3 h-3 mr-1 fill-red-500" /> Evento
                         </Button>
                       )}
-                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-white/10 bg-zinc-950/60 hover:bg-zinc-800" onClick={() => { setEditingMatch(match); setIsMatchDialogOpen(true); }}>
+                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-slate-200 bg-white hover:bg-slate-50" onClick={() => { setEditingMatch(match); setIsMatchDialogOpen(true); }}>
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-rose-500/20 bg-rose-500/5 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300" onClick={() => handleDeleteMatch(match.id)}>
+                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100 hover:text-rose-600" onClick={() => handleDeleteMatch(match.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                       </div>
@@ -1269,7 +1267,7 @@ export default function TournamentClient({
                 ))}
                 {filteredMatches.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-20 text-muted-foreground bg-zinc-900/10">
+                    <TableCell colSpan={5} className="text-center py-20 text-muted-foreground bg-slate-50/50">
                       <div className="flex flex-col items-center gap-3">
                         <Calendar className="w-10 h-10 opacity-10" />
                         <p className="font-bold uppercase italic tracking-tighter text-lg">No hay partidos con estos filtros</p>
@@ -1280,14 +1278,118 @@ export default function TournamentClient({
               </TableBody>
             </Table>
             </div>
+
+            {/* Mobile: tarjetas */}
+            <div className="md:hidden space-y-3 p-4">
+              {filteredMatches.map((match) => (
+                <div key={match.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="rounded-lg bg-emerald-50 p-1.5 text-emerald-700">
+                        <Calendar className="h-3.5 w-3.5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-900">{formatReadableDate(match.match_date)}</p>
+                        <p className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500">
+                          <Clock className="h-2.5 w-2.5" /> {formatTime12h(match.match_time)}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className={cn(getMatchStatusBadgeClassName(match.status), 'shrink-0 rounded-full px-2 py-0.5 text-[10px]')}>
+                      {getMatchStatusLabel(match.status)}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-3">
+                    {/* Equipo local */}
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      {match.home?.logo_url ? (
+                        <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
+                          <img src={match.home.logo_url} alt={match.home.name || ''} className="h-full w-full object-contain" />
+                        </div>
+                      ) : (
+                        <div className="h-8 w-8 shrink-0 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center">
+                          <Shield className="h-4 w-4 text-slate-400" />
+                        </div>
+                      )}
+                      <p className="truncate text-sm font-black text-slate-900">{match.home?.name || 'Local'}</p>
+                    </div>
+
+                    {/* VS + marcador */}
+                    <div className="shrink-0 flex flex-col items-center gap-0.5">
+                      {(match.status === 'finished' || match.status === 'live' || match.status === 'halftime') ? (
+                        <>
+                          <Badge variant="outline" className="border-blue-200 bg-blue-50 px-2 py-0.5 text-sm font-black text-blue-700">
+                            {match.home_score} - {match.away_score}
+                          </Badge>
+                          {match.status === 'live' && (
+                            <span className="text-[8px] font-black uppercase text-red-500">{match.current_minute}&apos;</span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-500">VS</span>
+                      )}
+                    </div>
+
+                    {/* Equipo visitante */}
+                    <div className="flex items-center gap-2 min-w-0 flex-1 justify-end">
+                      <p className="truncate text-sm font-black text-slate-900 text-right">{match.away?.name || 'Visitante'}</p>
+                      {match.away?.logo_url ? (
+                        <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
+                          <img src={match.away.logo_url} alt={match.away.name || ''} className="h-full w-full object-contain" />
+                        </div>
+                      ) : (
+                        <div className="h-8 w-8 shrink-0 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center">
+                          <Shield className="h-4 w-4 text-slate-400" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {match.court?.name && (
+                    <p className="mb-3 text-[11px] font-medium text-slate-500">{match.court.name}</p>
+                  )}
+
+                  <div className="flex items-center gap-2 border-t border-slate-100 pt-3">
+                    {match.status === 'live' && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-8 flex-1 rounded-lg border-red-200 bg-red-50 text-[11px] font-bold text-red-600 hover:bg-red-100"
+                        onClick={() => { 
+                          setActiveMatchForEvent(match); 
+                          setSelectedEventType('goal');
+                          setSelectedTeamIdForEvent('');
+                          setIsEventDialogOpen(true); 
+                        }}
+                      >
+                        <Zap className="w-3 h-3 mr-1 fill-red-500" /> Evento
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" className="h-8 flex-1 rounded-lg border-slate-200 bg-white text-[11px] font-bold text-slate-700 hover:bg-slate-50" onClick={() => { setEditingMatch(match); setIsMatchDialogOpen(true); }}>
+                      <Pencil className="w-3 h-3 mr-1" /> Editar
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-8 flex-1 rounded-lg border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100" onClick={() => handleDeleteMatch(match.id)}>
+                      <Trash2 className="w-3 h-3 mr-1" /> Eliminar
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {filteredMatches.length === 0 && (
+                <div className="flex flex-col items-center gap-3 py-16 text-center">
+                  <Calendar className="w-10 h-10 text-slate-300" />
+                  <p className="font-bold uppercase italic tracking-tighter text-sm text-slate-500">No hay partidos con estos filtros</p>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </TabsContent>
 
       {/* --- TAB POSICIONES --- */}
       <TabsContent value="standings">
-        <Card className={cn('overflow-hidden rounded-2xl border-white/10 bg-zinc-900/60 shadow-md shadow-black/10', styles.sectionCard)}>
-          <CardHeader className="gap-5 border-b border-white/10 bg-zinc-950/45">
+        <Card className={cn('overflow-hidden rounded-2xl border-slate-200 bg-white shadow-md shadow-black/10', styles.sectionCard)}>
+          <CardHeader className="gap-5 border-b border-slate-200 bg-slate-50">
             <CardTitle>Posiciones</CardTitle>
             <CardDescription>Clasificación calculada con los partidos registrados.</CardDescription>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -1297,7 +1399,7 @@ export default function TournamentClient({
                   <p className="text-sm font-black uppercase tracking-wide text-white">Zonas visuales</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="w-fit border-white/10 bg-white/5 text-zinc-300">
+                   <Badge variant="outline" className="w-fit border-slate-200 bg-slate-50 text-slate-600">
                     {configuredZoneCount} de {standings.length} posiciones
                   </Badge>
                   {zonesDirty && (
@@ -1345,7 +1447,7 @@ export default function TournamentClient({
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader className="bg-zinc-900/30">
+                <TableHeader className="bg-slate-50">
                   <TableRow className="border-zinc-800/60">
                     <TableHead className="w-16 px-6 text-center font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Pos</TableHead>
                     <TableHead className="min-w-56 font-bold uppercase text-[10px] tracking-widest text-zinc-500 italic">Equipo</TableHead>
@@ -1375,7 +1477,7 @@ export default function TournamentClient({
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-zinc-800">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
                               {row.team.logo_url ? (
                                 <>
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1645,7 +1747,7 @@ export default function TournamentClient({
 
       {/* Team Details Modal (Admin View) */}
       <Dialog open={isViewTeamModalOpen} onOpenChange={setIsViewTeamModalOpen}>
-        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden bg-zinc-950 border-white/10 text-white rounded-[40px] shadow-2xl">
+        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden bg-white border-slate-200 text-slate-950 rounded-[40px] shadow-2xl">
           {selectedViewTeam && (() => {
             // Calculate Team Stats
             let pj = 0, g = 0, e = 0, p = 0, gf = 0, gc = 0
@@ -1679,15 +1781,15 @@ export default function TournamentClient({
                     {selectedViewTeam.logo_url ? <img src={selectedViewTeam.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-12 h-12 sm:w-16 sm:h-16 text-zinc-200" />}
                   </div>
                   <h2 className="text-3xl sm:text-4xl font-black uppercase italic tracking-tighter text-white mb-2 text-center">{selectedViewTeam.name}</h2>
-                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-zinc-400 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-500 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">
                     <User className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" /> Capitán: {selectedViewTeam.captain_name || 'Sin capitán'} {selectedViewTeam.captain_phone ? `(${selectedViewTeam.captain_phone})` : ''}
                   </div>
                 </div>
 
-                <div className="flex-1 min-h-0 overflow-hidden bg-zinc-950 flex flex-col">
+                <div className="flex-1 min-h-0 overflow-hidden bg-slate-50 flex flex-col">
                   <Tabs defaultValue="general" className="flex-1 min-h-0 flex flex-col">
                     <div className="px-6 sm:px-12 pt-6 flex-shrink-0">
-                      <TabsList className="grid w-full grid-cols-4 h-12 bg-zinc-900/50 border border-white/5 rounded-xl p-1 gap-1">
+                      <TabsList className="grid w-full grid-cols-4 h-12 bg-slate-100 border border-slate-200 rounded-xl p-1 gap-1">
                         <TabsTrigger value="general" className="rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-black">GENERAL</TabsTrigger>
                         <TabsTrigger value="partidos" className="rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-black">PARTIDOS</TabsTrigger>
                         <TabsTrigger value="disciplina" className="rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-black">DISCIPLINA</TabsTrigger>
@@ -1707,7 +1809,7 @@ export default function TournamentClient({
                             { label: 'Goles Favor', val: gf, color: 'text-primary', icon: Target },
                             { label: 'Goles Contra', val: gc, color: 'text-zinc-500', icon: ShieldAlert },
                           ].map((st, i) => (
-                            <div key={i} className="bg-zinc-900/40 border border-white/5 p-6 rounded-[28px] flex flex-col items-center justify-center text-center group hover:bg-zinc-900/80 transition-all">
+                            <div key={i} className="bg-slate-50 border border-slate-200 p-6 rounded-[28px] flex flex-col items-center justify-center text-center group hover:bg-slate-100 transition-all">
                               <st.icon className={`w-4 h-4 mb-3 opacity-20 ${st.color || 'text-white'}`} />
                               <span className={`text-3xl sm:text-5xl font-black italic mb-1 ${st.color || 'text-white'} drop-shadow-md`}>{st.val}</span>
                               <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">{st.label}</span>
@@ -1723,7 +1825,7 @@ export default function TournamentClient({
 
                       <TabsContent value="partidos" className="mt-0 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {teamMatches.length === 0 ? (
-                          <div className="text-center py-20 bg-zinc-900/20 rounded-[32px] border border-dashed border-white/5">
+                          <div className="text-center py-20 bg-slate-50 rounded-[32px] border border-dashed border-slate-300">
                             <Calendar className="w-12 h-12 text-zinc-800 mx-auto mb-4" />
                             <p className="text-zinc-500 font-black uppercase italic tracking-tighter text-lg">No hay historial aún</p>
                           </div>
@@ -1732,20 +1834,20 @@ export default function TournamentClient({
                             const isHome = m.home_team_id === selectedViewTeam.id
                             const opp = isHome ? m.away : m.home
                             return (
-                              <div key={m.id} className="bg-zinc-900/40 border border-white/5 p-5 sm:p-6 rounded-[24px] flex items-center justify-between gap-6 group hover:bg-zinc-900/80 transition-all">
+                              <div key={m.id} className="bg-slate-50 border border-slate-200 p-5 sm:p-6 rounded-[24px] flex items-center justify-between gap-6 group hover:bg-slate-100 transition-all">
                                 <div className="flex flex-col gap-2">
                                    <div className="flex items-center gap-2">
                                      <span className="bg-white/5 px-2 py-0.5 rounded text-[8px] font-black text-zinc-500 uppercase">
                                        {new Date(m.match_date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                                      </span>
-                                     <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">{formatTime12h(m.match_time)}</span>
+                                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{formatTime12h(m.match_time)}</span>
                                    </div>
                                    <div className="flex items-center gap-2">
-                                     <div className="w-7 h-7 bg-white rounded-lg p-1 shadow-md border border-white/10 flex-shrink-0">
+                                      <div className="w-7 h-7 bg-white rounded-lg p-1 shadow-md border border-slate-200 flex-shrink-0">
                                        {selectedViewTeam.logo_url ? <img src={selectedViewTeam.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-full h-full text-zinc-300" />}
                                      </div>
                                      <span className="text-[10px] font-black text-zinc-500 italic uppercase">VS</span>
-                                     <div className="w-7 h-7 bg-white rounded-lg p-1 shadow-md border border-white/10 flex-shrink-0">
+                                      <div className="w-7 h-7 bg-white rounded-lg p-1 shadow-md border border-slate-200 flex-shrink-0">
                                        {opp?.logo_url ? <img src={opp.logo_url} className="w-full h-full object-contain" /> : <Shield className="w-full h-full text-zinc-300" />}
                                      </div>
                                      <span className="text-sm sm:text-lg font-black uppercase text-zinc-100 italic tracking-tight ml-1">{opp?.name}</span>
@@ -1762,7 +1864,7 @@ export default function TournamentClient({
                                        </span>
                                      </div>
                                    ) : (
-                                     <Badge className="bg-zinc-800 text-zinc-500 text-[8px] font-black uppercase tracking-widest px-3 py-1">Programado</Badge>
+                                     <Badge className="bg-slate-100 text-slate-600 text-[8px] font-black uppercase tracking-widest px-3 py-1">Programado</Badge>
                                    )}
                                 </div>
                               </div>
@@ -1785,7 +1887,7 @@ export default function TournamentClient({
                           </div>
                         </div>
                         
-                        <div className="bg-zinc-900/30 p-6 rounded-[28px] border border-white/5 text-center">
+                         <div className="bg-slate-50 p-6 rounded-[28px] border border-slate-200 text-center">
                           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Puntos de Disciplina</p>
                           <p className="text-2xl font-black italic text-white mt-2">{(yellowCards * 1) + (redCards * 3)} <span className="text-xs text-zinc-700 ml-1">ACUMULADOS</span></p>
                         </div>
@@ -1793,7 +1895,7 @@ export default function TournamentClient({
 
                       <TabsContent value="plantilla" className="mt-0 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {teamPlayers.length === 0 ? (
-                          <div className="text-center py-20 bg-zinc-900/20 rounded-[32px] border border-dashed border-white/5">
+                          <div className="text-center py-20 bg-slate-50 rounded-[32px] border border-dashed border-slate-300">
                             <User className="w-12 h-12 text-zinc-800 mx-auto mb-4" />
                             <p className="text-zinc-500 font-black uppercase italic tracking-tighter text-lg">No hay jugadores registrados en este equipo</p>
                           </div>
@@ -1809,7 +1911,7 @@ export default function TournamentClient({
                                const pRed = initialEvents.filter(s => s.player_id === player.id && s.event_type === 'red_card').length
                               
                               return (
-                                <div key={player.id} className="flex items-center justify-between p-5 rounded-[20px] bg-zinc-900/40 border border-white/5 hover:bg-zinc-900/80 transition-all group">
+                                <div key={player.id} className="flex items-center justify-between p-5 rounded-[20px] bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-all group">
                                    <div className="flex items-center gap-4">
                                       <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center font-black italic text-zinc-400 group-hover:text-primary transition-colors">
                                         #{player.jersey_number || idx + 1}
@@ -1945,7 +2047,7 @@ function TeamDetailDialog({
   const redCards = disciplineEvents.filter((event) => event.event_type === 'red_card').reduce((sum, event) => sum + (event.quantity || 1), 0)
   const stats = calculateTournamentStandings([team], matches)[0] || { pj: 0, g: 0, e: 0, p: 0, gf: 0, gc: 0, dg: 0, pts: 0 }
   const statCards = [
-    { id: 'played', label: 'Partidos jugados', value: stats.pj, icon: Activity, className: 'border-white/10 bg-white/5 text-white' },
+    { id: 'played', label: 'Partidos jugados', value: stats.pj, icon: Activity, className: 'border-slate-200 bg-slate-50 text-slate-700' },
     { id: 'wins', label: 'Victorias', value: stats.g, icon: Trophy, className: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300' },
     { id: 'draws', label: 'Empates', value: stats.e, icon: Clock, className: 'border-amber-500/20 bg-amber-500/10 text-amber-300' },
     { id: 'losses', label: 'Derrotas', value: stats.p, icon: X, className: 'border-rose-500/20 bg-rose-500/10 text-rose-300' },
@@ -1955,9 +2057,9 @@ function TeamDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] overflow-hidden rounded-3xl border-white/10 bg-zinc-950 p-0 text-white sm:max-w-4xl">
+      <DialogContent className="max-h-[92vh] overflow-hidden rounded-3xl border-slate-200 bg-white p-0 text-slate-950 sm:max-w-4xl">
         <div className="flex max-h-[92vh] flex-col">
-          <div className="relative border-b border-white/10 bg-gradient-to-b from-zinc-900 to-zinc-950 p-6 text-center sm:p-8">
+          <div className="relative border-b border-slate-200 bg-gradient-to-b from-slate-50 to-white p-6 text-center sm:p-8">
             <Button
               variant="ghost"
               size="icon"
@@ -1981,17 +2083,17 @@ function TeamDetailDialog({
             <DialogTitle className="mt-2 text-2xl font-black uppercase tracking-tight sm:text-4xl">{team.name}</DialogTitle>
             <DialogDescription className="mt-3 flex flex-wrap items-center justify-center gap-2 text-sm text-zinc-400">
               <span>Capitán: {team.captain_name || 'Sin capitán'}</span>
-              {team.captain_phone && <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{team.captain_phone}</span>}
+              {team.captain_phone && <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700">{team.captain_phone}</span>}
             </DialogDescription>
           </div>
 
           <Tabs defaultValue="general" className="flex min-h-0 flex-1 flex-col">
-            <div className="shrink-0 overflow-x-auto border-b border-white/10 px-5 py-4">
-              <TabsList className="inline-flex h-11 min-w-max rounded-2xl border border-white/10 bg-zinc-900/70 p-1">
-                <TabsTrigger value="general" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-zinc-800 data-[state=active]:text-white">General</TabsTrigger>
-                <TabsTrigger value="matches" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-zinc-800 data-[state=active]:text-white">Partidos</TabsTrigger>
-                <TabsTrigger value="discipline" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-zinc-800 data-[state=active]:text-white">Disciplina</TabsTrigger>
-                <TabsTrigger value="roster" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-zinc-800 data-[state=active]:text-white">Plantilla</TabsTrigger>
+            <div className="shrink-0 overflow-x-auto border-b border-slate-200 px-5 py-4">
+              <TabsList className="inline-flex h-11 min-w-max rounded-2xl border border-slate-200 bg-slate-100 p-1">
+                <TabsTrigger value="general" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-emerald-700 data-[state=active]:shadow-sm">General</TabsTrigger>
+                <TabsTrigger value="matches" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-emerald-700 data-[state=active]:shadow-sm">Partidos</TabsTrigger>
+                <TabsTrigger value="discipline" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-emerald-700 data-[state=active]:shadow-sm">Disciplina</TabsTrigger>
+                <TabsTrigger value="roster" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-emerald-700 data-[state=active]:shadow-sm">Plantilla</TabsTrigger>
               </TabsList>
             </div>
 
@@ -2016,7 +2118,7 @@ function TeamDetailDialog({
                   const rivalScore = isHome ? match.away_score : match.home_score
 
                   return (
-                    <div key={match.id} className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4">
+                    <div key={match.id} className="rounded-2xl border border-slate-200 bg-white p-4">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <p className="text-sm font-bold text-white">vs {rival?.name || 'Equipo rival'}</p>
@@ -2026,7 +2128,7 @@ function TeamDetailDialog({
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="border-white/10 bg-white/5 text-zinc-300">{getMatchStatusLabel(match.status)}</Badge>
+                           <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-600">{getMatchStatusLabel(match.status)}</Badge>
                           {isPlayedTournamentMatch(match) && (
                             <Badge className="bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/20">{teamScore ?? 0} - {rivalScore ?? 0}</Badge>
                           )}
@@ -2047,7 +2149,7 @@ function TeamDetailDialog({
                 {disciplineEvents.length > 0 ? (
                   <div className="space-y-3">
                     {disciplineEvents.map((event) => (
-                      <div key={event.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-zinc-900/60 p-4">
+                      <div key={event.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4">
                         <div>
                           <p className="font-bold text-white">
                             {event.player ? `${event.player.first_name || ''} ${event.player.last_name || ''}`.trim() : 'Jugador'}
@@ -2067,9 +2169,9 @@ function TeamDetailDialog({
 
               <TabsContent value="roster" className="mt-0 space-y-3">
                 {teamPlayers.length > 0 ? teamPlayers.map((player) => (
-                  <div key={player.id} className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-zinc-900/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div key={player.id} className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-zinc-800 text-sm font-black text-zinc-400">
+                         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-sm font-black text-slate-600">
                         {player.jersey_number ? `#${player.jersey_number}` : player.first_name.charAt(0)}
                       </div>
                       <div>
@@ -2110,7 +2212,7 @@ function StatTile({ icon: Icon, label, value, className }: { icon: LucideIcon; l
 
 function EmptyTournamentState({ icon: Icon, title, description, light = false }: { icon: LucideIcon; title: string; description: string; light?: boolean }) {
   return (
-    <div className={cn('rounded-2xl border p-8 text-center', light ? 'border-slate-200 bg-slate-50/60' : 'border border-dashed border-white/10 bg-zinc-900/30')}>
+    <div className={cn('rounded-2xl border p-8 text-center', light ? 'border-slate-200 bg-slate-50/60' : 'border border-dashed border-slate-300 bg-slate-50')}>
       <Icon className={cn('mx-auto mb-3 h-8 w-8', light ? 'text-slate-400' : 'text-zinc-700')} />
       <p className={cn('font-bold', light ? 'text-slate-700' : 'text-white')}>{title}</p>
       <p className={cn('mt-1 text-sm', light ? 'text-slate-500' : 'text-zinc-500')}>{description}</p>
@@ -2220,7 +2322,7 @@ function getMatchStatusBadgeClassName(status: string) {
     cancelled: 'border-rose-500/25 bg-rose-500/10 text-rose-300',
   }
 
-  return cn('font-black', classNames[status] || 'border-white/10 bg-white/5 text-zinc-300')
+  return cn('font-black', classNames[status] || 'border-slate-200 bg-slate-50 text-slate-600')
 }
 
 function formatReadableDate(date: string) {

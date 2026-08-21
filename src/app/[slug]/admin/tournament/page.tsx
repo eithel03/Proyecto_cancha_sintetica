@@ -24,7 +24,7 @@ export default async function TournamentPage({ params }: PageProps) {
       .order('first_name'),
     supabase
       .from('tournament_matches')
-      .select('*, home:home_team_id(name, gender), away:away_team_id(name, gender), court:court_id(name)')
+      .select('*, home:home_team_id(name, gender, logo_url), away:away_team_id(name, gender, logo_url), court:court_id(name)')
       .eq('business_id', business.id)
       .order('match_date', { ascending: false }),
     supabase

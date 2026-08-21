@@ -3,16 +3,18 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import { notifyUserChallengeConfirmed } from '@/lib/notifications'
 
 export async function checkAvailability(courtId: string, date: string) {
   const supabase = createAdminClient()
 
-  // 1. Obtener Reservas (Todas, sin importar RLS)
+  // 1. Obtener Reservas vigentes (Pending y Confirmed, sin importar RLS)
   const { data: reservations, error: resError } = await supabase
     .from('reservations')
     .select('start_time, end_time, status, notes')
     .eq('court_id', courtId)
     .eq('reservation_date', date)
+    .in('status', ['pending', 'confirmed'])
 
   console.log(`Found ${reservations?.length || 0} reservations`);
   if (reservations && reservations.length > 0) {
@@ -187,13 +189,15 @@ export async function createReservation(formData: FormData) {
 
 
 export async function acceptChallenge(challengeId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const userClient = await createClient()
+  const { data: { user } } = await userClient.auth.getUser()
   if (!user) return { error: 'Debes iniciar sesión para aceptar un reto.' }
+
+  const supabase = createAdminClient()
 
   const { data: challenge } = await supabase
     .from('challenges')
-    .select('creator_id, status')
+    .select('*, creator:profiles!challenges_creator_id_fkey(full_name)')
     .eq('id', challengeId)
     .single()
 
@@ -201,17 +205,56 @@ export async function acceptChallenge(challengeId: string) {
   if (challenge.creator_id === user.id) return { error: 'No puedes aceptar tu propio reto.' }
   if (challenge.status !== 'open') return { error: 'Este reto ya no está disponible.' }
 
-  const { error } = await supabase
+  const { error: updateError } = await supabase
     .from('challenges')
     .update({
       opponent_id: user.id,
-      status: 'accepted',
-      accepted_at: new Date().toISOString()
+      status: 'confirmed',
+      accepted_at: new Date().toISOString(),
+      confirmed_at: new Date().toISOString()
     })
     .eq('id', challengeId)
-    .eq('status', 'open')
 
-  if (error) return { error: 'Error al aceptar reto: ' + error.message }
+  if (updateError) return { error: 'Error al aceptar reto: ' + updateError.message }
+
+  const startT = challenge.challenge_time
+  const [h, m] = startT.split(':')
+  const endT = `${(parseInt(h) + 1).toString().padStart(2, '0')}:${m}:00`
+
+  const { error: resError } = await supabase
+    .from('reservations')
+    .insert({
+      business_id: challenge.business_id,
+      court_id: challenge.court_id,
+      customer_id: challenge.creator_id,
+      customer_name: challenge.customer_name || 'Reto Confirmado',
+      customer_phone: challenge.customer_phone || '',
+      reservation_date: challenge.challenge_date,
+      start_time: startT,
+      end_time: endT,
+      status: 'confirmed',
+      notes: `Reto confirmado. Mensaje original: ${challenge.notes}`
+    })
+
+  if (resError) {
+    if (resError.message.includes('ya está reservada')) {
+      return { error: 'No se puede confirmar: La cancha ya tiene una reserva oficial en ese horario.' }
+    }
+    return { error: 'Error al crear la reserva: ' + resError.message }
+  }
+
+  const { data: opponent } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', user.id)
+    .single()
+
+  await notifyUserChallengeConfirmed(
+    challenge.creator?.full_name || 'Jugador',
+    opponent?.full_name || 'Oponente',
+    challenge.challenge_date,
+    challenge.challenge_time.substring(0, 5)
+  )
 
   revalidatePath('/[slug]/reservar')
   revalidatePath('/[slug]/retos')
