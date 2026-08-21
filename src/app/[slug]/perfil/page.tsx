@@ -1,8 +1,8 @@
 import { notFound, redirect } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import ProfileClient from './ProfileClient'
 import { PublicNav } from '@/components/PublicNav'
+import { PublicFooter } from '@/components/PublicFooter'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -49,7 +49,7 @@ export default async function ProfilePage({ params }: PageProps) {
     .select('*, courts(name)')
     .or(`creator_id.eq.${user.id},opponent_id.eq.${user.id}`)
     .eq('business_id', business.id)
-    .eq('hidden_by_customer', false)
+    .or('hidden_by_customer.eq.false,hidden_by_customer.is.null')
     .order('challenge_date', { ascending: false })
 
   return (
@@ -62,12 +62,11 @@ export default async function ProfilePage({ params }: PageProps) {
           initialReservations={reservations || []} 
           initialChallenges={challenges || []}
           businessSlug={business.slug}
+          userEmail={user.email}
         />
       </main>
 
-      <footer className="text-center py-8 text-sm text-muted-foreground border-t border-border mt-auto">
-        Potenciado por <Link href="/" className="text-primary font-medium hover:underline">SaaSintética</Link>
-      </footer>
+      <PublicFooter business={business} />
     </div>
   )
 }

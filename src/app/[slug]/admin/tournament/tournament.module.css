@@ -581,7 +581,7 @@
   }
 
   .hero {
-    border-radius: 1rem !important;
+    border-radius: 0 !important;
     padding: 1rem !important;
   }
 

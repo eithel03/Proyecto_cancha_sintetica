@@ -22,7 +22,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { cancelChallenge, confirmChallenge } from '@/app/[slug]/retos/actions'
+import { cancelChallenge, confirmChallenge, deleteChallenge, deleteOldChallenges } from '@/app/[slug]/retos/actions'
 import { ConfirmationDialog } from '@/components/ConfirmationDialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -278,6 +278,69 @@ export default function AdminChallengesClient({
     )
   }
 
+  function handleDelete(challenge: Challenge) {
+    const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Costa_Rica' })
+    const isPast = challenge.challenge_date < today
+    const label = challenge.status === 'cancelled' ? 'Eliminar reto cancelado' : 'Eliminar reto pasado'
+
+    showConfirm(
+      label,
+      isPast
+        ? `Este reto fue el ${challenge.challenge_date} y ya pasó. Se eliminará permanentemente.`
+        : 'Este reto está cancelado. Se eliminará permanentemente.',
+      async () => {
+        setPendingId(challenge.id)
+        const result = await deleteChallenge(challenge.id)
+        setPendingId(null)
+
+        if (result.error) {
+          toast.error(result.error)
+          return
+        }
+
+        toast.success('Reto eliminado.')
+        setChallenges((prev) => prev.filter((item) => item.id !== challenge.id))
+        setSelectedChallenge((current) => current?.id === challenge.id ? null : current)
+      },
+      'danger',
+    )
+  }
+
+  function handleDeleteOld() {
+    const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Costa_Rica' })
+    const cancelled = challenges.filter(c => c.status === 'cancelled').length
+    const pastConfirmed = challenges.filter(c => c.status === 'confirmed' && c.challenge_date < today).length
+    const total = cancelled + pastConfirmed
+
+    if (total === 0) {
+      toast.info('No hay retos cancelados ni pasados para eliminar.')
+      return
+    }
+
+    showConfirm(
+      `Eliminar ${total} reto${total !== 1 ? 's' : ''}`,
+      `Se eliminarán ${cancelled} cancelado${cancelled !== 1 ? 's' : ''} y ${pastConfirmed} confirmado${pastConfirmed !== 1 ? 's' : ''} con fecha pasada. Esta acción no se puede deshacer.`,
+      async () => {
+        setPendingId('bulk')
+        const result = await deleteOldChallenges(businessId)
+        setPendingId(null)
+
+        if (result.error) {
+          toast.error(result.error)
+          return
+        }
+
+        toast.success(`${result.count} reto${result.count !== 1 ? 's' : ''} eliminado${result.count !== 1 ? 's' : ''}.`)
+        setChallenges((prev) => prev.filter(c => {
+          if (c.status === 'cancelled') return false
+          if (c.status === 'confirmed' && c.challenge_date < today) return false
+          return true
+        }))
+      },
+      'danger',
+    )
+  }
+
   const clearFilters = () => {
     setSearchTerm('')
     setActiveFilter('all')
@@ -328,7 +391,18 @@ export default function AdminChallengesClient({
     <>
       <div className="min-w-0 space-y-5">
         <div className="-mx-4 -mt-4 bg-emerald-950 px-4 py-6 shadow-sm md:-mx-6 md:-mt-6 md:px-6 lg:-mx-9 lg:-mt-9 lg:px-9">
-          <h1 className="text-2xl font-black uppercase tracking-tight text-white sm:text-4xl">Retos</h1>
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-2xl font-black uppercase tracking-tight text-white sm:text-4xl">Retos</h1>
+            <Button
+              type="button"
+              onClick={handleDeleteOld}
+              disabled={pendingId === 'bulk'}
+              className="shrink-0 rounded-lg bg-rose-600 px-4 text-xs font-black text-white hover:bg-rose-700 sm:text-sm"
+            >
+              {pendingId === 'bulk' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              Limpiar historial
+            </Button>
+          </div>
         </div>
 
         <SummaryCounters counts={counts} />
@@ -431,6 +505,7 @@ export default function AdminChallengesClient({
                     pending={pendingId === challenge.id}
                     onConfirm={handleConfirm}
                     onCancel={handleCancel}
+                    onDelete={handleDelete}
                     onDetail={setSelectedChallenge}
                   />
                 ))}
@@ -455,6 +530,7 @@ export default function AdminChallengesClient({
         }}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
+        onDelete={handleDelete}
         pending={selectedChallenge ? pendingId === selectedChallenge.id : false}
       />
 
@@ -570,6 +646,7 @@ function ChallengeCard({
   pending,
   onConfirm,
   onCancel,
+  onDelete,
   onDetail,
 }: {
   challenge: Challenge
@@ -577,6 +654,7 @@ function ChallengeCard({
   pending: boolean
   onConfirm: (challenge: Challenge) => void
   onCancel: (challenge: Challenge, label?: string) => void
+  onDelete: (challenge: Challenge) => void
   onDetail: (challenge: Challenge) => void
 }) {
   const creatorPhone = challenge.creator?.phone || challenge.customer_phone
@@ -613,7 +691,7 @@ function ChallengeCard({
 
           <div className="flex flex-col justify-center gap-2 p-4">
             <StatusBadge status={challenge.status} className="hidden xl:flex" />
-            <ChallengePrimaryActions challenge={challenge} slug={slug} pending={pending} onConfirm={onConfirm} onCancel={onCancel} onDetail={onDetail} />
+            <ChallengePrimaryActions challenge={challenge} slug={slug} pending={pending} onConfirm={onConfirm} onCancel={onCancel} onDelete={onDelete} onDetail={onDetail} />
           </div>
         </div>
       </CardContent>
@@ -678,6 +756,7 @@ function ChallengePrimaryActions({
   pending,
   onConfirm,
   onCancel,
+  onDelete,
   onDetail,
 }: {
   challenge: Challenge
@@ -685,8 +764,13 @@ function ChallengePrimaryActions({
   pending: boolean
   onConfirm: (challenge: Challenge) => void
   onCancel: (challenge: Challenge, label?: string) => void
+  onDelete: (challenge: Challenge) => void
   onDetail: (challenge: Challenge) => void
 }) {
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Costa_Rica' })
+  const isPastConfirmed = challenge.status === 'confirmed' && challenge.challenge_date < today
+  const canDelete = challenge.status === 'cancelled' || isPastConfirmed
+
   return (
     <div className="mt-2 flex flex-col gap-2">
       {challenge.status === 'accepted' && (
@@ -701,18 +785,18 @@ function ChallengePrimaryActions({
           Confirmar directo
         </Button>
       )}
-      {challenge.status === 'confirmed' && (
+      {challenge.status === 'confirmed' && !isPastConfirmed && (
         <Link href={`/${slug}/admin/reservations`} className="inline-flex h-10 items-center justify-center rounded-lg bg-emerald-700 px-4 text-sm font-black text-white hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">
-          <Calendar className="mr-2 h-4 w-4" />
+          <Calendar className="mr-2 h-4 h-4" />
           Ver reserva
         </Link>
       )}
-      <div className="grid grid-cols-2 gap-2">
+      <div className={canDelete ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-2 gap-2'}>
         <Button type="button" variant="outline" onClick={() => onDetail(challenge)} className="h-10 rounded-lg border-slate-200 bg-white font-black text-slate-700 hover:bg-slate-100" aria-label={`Ver detalle de ${getCreatorName(challenge)}`}>
           <Eye className="mr-2 h-4 w-4" />
           Detalle
         </Button>
-        {(challenge.status === 'accepted' || challenge.status === 'confirmed') && (
+        {(challenge.status === 'accepted' || (challenge.status === 'confirmed' && !isPastConfirmed)) && (
           <Button type="button" variant="outline" onClick={() => onCancel(challenge)} disabled={pending} className="h-10 rounded-lg border-rose-100 bg-white font-black text-rose-700 hover:bg-rose-50" aria-label={`Cancelar reto de ${getCreatorName(challenge)}`}>
             <XCircle className="mr-2 h-4 w-4" />
             Cancelar
@@ -720,6 +804,12 @@ function ChallengePrimaryActions({
         )}
         {challenge.status === 'open' && (
           <Button type="button" variant="outline" onClick={() => onCancel(challenge, 'Eliminar reto')} disabled={pending} className="h-10 rounded-lg border-rose-100 bg-white font-black text-rose-700 hover:bg-rose-50" aria-label={`Eliminar reto de ${getCreatorName(challenge)}`}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Eliminar
+          </Button>
+        )}
+        {canDelete && (
+          <Button type="button" variant="outline" onClick={() => onDelete(challenge)} disabled={pending} className="h-10 rounded-lg border-rose-200 bg-rose-50 font-black text-rose-700 hover:bg-rose-100" aria-label={`Eliminar reto de ${getCreatorName(challenge)}`}>
             <Trash2 className="mr-2 h-4 w-4" />
             Eliminar
           </Button>
@@ -804,6 +894,7 @@ function ChallengeDetailDialog({
   onOpenChange,
   onConfirm,
   onCancel,
+  onDelete,
   pending,
 }: {
   challenge: Challenge | null
@@ -811,6 +902,7 @@ function ChallengeDetailDialog({
   onOpenChange: (open: boolean) => void
   onConfirm: (challenge: Challenge) => void
   onCancel: (challenge: Challenge, label?: string) => void
+  onDelete: (challenge: Challenge) => void
   pending: boolean
 }) {
   return (
@@ -834,7 +926,7 @@ function ChallengeDetailDialog({
                 <DetailItem icon={Phone} label="Teléfono" value={formatPhone(challenge.creator?.phone || challenge.customer_phone)} />
               </div>
               {challenge.notes && <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-medium text-slate-700">{challenge.notes}</div>}
-              <ChallengePrimaryActions challenge={challenge} slug={slug} pending={pending} onConfirm={onConfirm} onCancel={onCancel} onDetail={() => undefined} />
+              <ChallengePrimaryActions challenge={challenge} slug={slug} pending={pending} onConfirm={onConfirm} onCancel={onCancel} onDelete={onDelete} onDetail={() => undefined} />
             </div>
           </>
         )}

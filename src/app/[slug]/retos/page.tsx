@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import ChallengesClient from './ChallengesClient'
 import { PublicNav } from '@/components/PublicNav'
-import Link from 'next/link'
+import { PublicFooter } from '@/components/PublicFooter'
 
 type PageProps = {
   params: Promise<{ slug: string }>
@@ -24,9 +24,9 @@ export default async function ChallengesPage({ params }: PageProps) {
 
   const query = supabase
     .from('challenges')
-    .select('*, courts(name)')
+    .select('*, courts(name), opponent:profiles!challenges_opponent_id_fkey(full_name)')
     .eq('business_id', business.id)
-    .eq('status', 'open')
+    .in('status', ['open', 'confirmed'])
 
   const { data: challenges } = await query.order('challenge_date', { ascending: true })
 
@@ -51,7 +51,7 @@ export default async function ChallengesPage({ params }: PageProps) {
     <div className="min-h-screen bg-background flex flex-col selection:bg-primary/30">
       <PublicNav slug={business.slug} businessName={business.name} />
 
-      <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full space-y-8 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <main className="flex-1 w-full overflow-x-clip animate-in fade-in slide-in-from-bottom-4 duration-700">
         <ChallengesClient 
           initialChallenges={challenges || []} 
           businessId={business.id}
@@ -62,9 +62,7 @@ export default async function ChallengesPage({ params }: PageProps) {
         />
       </main>
 
-      <footer className="text-center py-8 text-sm text-muted-foreground border-t border-border">
-        Potenciado por <Link href="/" className="text-primary font-medium hover:underline">SaaSintética</Link>
-      </footer>
+      <PublicFooter business={business} />
     </div>
   )
 }

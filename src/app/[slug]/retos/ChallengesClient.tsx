@@ -54,6 +54,10 @@ export default function ChallengesClient({
   const [loadingAvailability, setLoadingAvailability] = useState(false)
   const router = useRouter()
 
+  useEffect(() => {
+    setChallenges(initialChallenges)
+  }, [initialChallenges])
+
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean,
     title: string,
@@ -129,7 +133,9 @@ export default function ChallengesClient({
       const isBusy = occupiedSlots.some(slot => {
         const start = slot.start_time.substring(0, 5)
         const end = slot.end_time.substring(0, 5)
-        return time >= start && time < end
+        const [hh, mm] = time.split(':')
+        const timeEnd = `${(parseInt(hh) + 1).toString().padStart(2, '0')}:${mm}`
+        return time < end && timeEnd > start
       })
 
       if (!isBusy) {
@@ -218,7 +224,7 @@ export default function ChallengesClient({
 
     showConfirm(
       'Aceptar Reto',
-      '¿Deseas aceptar este reto? El administrador deberá confirmar el partido después para que sea oficial.',
+      '¿Deseas aceptar este reto?',
       async () => {
         setPending(true)
         const result = await acceptChallenge(challengeId)
@@ -227,7 +233,10 @@ export default function ChallengesClient({
         if (result.error) {
           toast.error(result.error)
         } else {
-          toast.success('¡Has aceptado el reto! Espera la confirmación del administrador.')
+          toast.success('Reto aceptado y confirmado.')
+          setChallenges((prev: any) => prev.map((c: any) => 
+            c.id === challengeId ? { ...c, status: 'confirmed', opponent_id: userId } : c
+          ))
           router.refresh()
         }
       }
@@ -267,6 +276,8 @@ export default function ChallengesClient({
         title="Muro de retos"
         subtitle="Busca rivales, pacta la hora y demuestra quién manda."
         variant="navy"
+        className="rounded-none"
+        containerClassName="max-w-5xl p-4 md:p-8"
       >
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger
@@ -419,6 +430,7 @@ export default function ChallengesClient({
         </Dialog>
       </HeroSection>
 
+      <div className="max-w-5xl mx-auto w-full p-4 md:p-8 space-y-8">
       {/* Login CTA si no está autenticado */}
       {!userId && (
         <div className="bg-gold/8 border border-gold/25 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -485,6 +497,7 @@ export default function ChallengesClient({
         description={confirmConfig.description}
         variant={confirmConfig.variant}
       />
+      </div>
     </div>
   )
 }
