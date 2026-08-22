@@ -13,6 +13,19 @@ import { AlertCircle, ArrowRight, Calendar, CalendarCheck, Check, CheckCircle2, 
 import { AuthPromptDialog } from '@/components/AuthPromptDialog'
 import { cn, formatTime12h } from '@/lib/utils'
 
+function getChallengeGenderMeta(gender?: string) {
+  switch (gender) {
+    case 'masculino':
+      return { label: 'Masculino', className: 'border-blue-200 bg-blue-100 text-blue-700' }
+    case 'femenino':
+      return { label: 'Femenino', className: 'border-pink-200 bg-pink-100 text-pink-700' }
+    case 'mixto':
+      return { label: 'Mixto', className: 'border-violet-200 bg-violet-100 text-violet-700' }
+    default:
+      return null
+  }
+}
+
 export default function BookingClient({ 
   business, 
   courts, 
@@ -42,6 +55,7 @@ export default function BookingClient({
     end_time: string, 
     id?: string, 
     type?: string,
+    gender?: string | null,
     home?: { name: string, logo_url?: string | null },
     away?: { name: string, logo_url?: string | null }
   }[]>([])
@@ -220,6 +234,10 @@ export default function BookingClient({
   ]
 
   const slotPrice = selectedSlot ? getSlotPrice(selectedSlot.split('-')[0]) : Number(courtObj?.price_per_person || 0)
+  const selectedChallenge = selectedChallengeId
+    ? occupiedSlots.find((slot) => slot.id === selectedChallengeId)
+    : undefined
+  const selectedChallengeGenderMeta = getChallengeGenderMeta(selectedChallenge?.gender || undefined)
 
   return (
     <>
@@ -346,6 +364,9 @@ export default function BookingClient({
                         const isNormalReservation = occupancy?.type === 'reservation' && isInInterval
                         const isBlocked = !!occupancy && !isInInterval
                         const isOccupied = !!occupancy
+                        const challengeGenderMeta = (isOpenChallenge || isAcceptedChallenge || isConfirmedChallenge)
+                          ? getChallengeGenderMeta(occupancy?.gender || undefined)
+                          : null
                         const currentPrice = getSlotPrice(startStr)
                         const hasSpecialPrice = currentPrice !== courts.find(c => c.id === selectedCourt)?.price_per_person
 
@@ -391,6 +412,11 @@ export default function BookingClient({
                               {isOpenChallenge && <span className="text-[8px] font-semibold uppercase bg-green-600 text-white px-1.5 rounded">Reto disp.</span>}
                               {isAcceptedChallenge && <span className="text-[8px] font-semibold uppercase bg-amber-200 text-amber-900 px-1.5 rounded">Por confirmar</span>}
                               {isConfirmedChallenge && <span className="text-[8px] font-semibold uppercase bg-amber-500 text-white px-1.5 rounded">Reto</span>}
+                              {challengeGenderMeta && (
+                                <span className={cn('rounded border px-1.5 text-[8px] font-bold uppercase', challengeGenderMeta.className)}>
+                                  {challengeGenderMeta.label}
+                                </span>
+                              )}
                               {isTournament && (
                                 <span className={cn(
                                   "text-[8px] font-semibold uppercase px-1.5 rounded text-white",
@@ -443,6 +469,17 @@ export default function BookingClient({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {selectedChallengeId && selectedChallengeGenderMeta && (
+                  <div className={cn('flex items-center gap-3 rounded-xl border p-3.5 sm:col-span-2', selectedChallengeGenderMeta.className)}>
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-current/15 bg-white/70">
+                      <Swords className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-medium opacity-75">Tipo de reto</p>
+                      <p className="font-bold">Reto {selectedChallengeGenderMeta.label.toLowerCase()}</p>
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center gap-3 bg-surface border border-border p-3.5 rounded-xl">
                   <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-card border border-border"><MapPin className="w-4 h-4 text-primary" aria-hidden="true" /></span>
                   <div className="min-w-0">
