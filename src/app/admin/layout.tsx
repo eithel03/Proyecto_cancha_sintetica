@@ -31,15 +31,24 @@ export default function AdminLayout({
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('full_name, first_name, last_name')
+        .select('*')
         .eq('id', user.id)
         .maybeSingle()
 
-      const profileName = profile?.full_name || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ')
-      const name = profileName || user.user_metadata?.full_name || 'Super Admin'
-      if (isActive) setAdminName(name)
+      if (profileError) {
+        console.error('Error fetching profile:', profileError)
+      }
+
+      const adminName =
+        (profile as any)?.full_name ||
+        [(profile as any)?.first_name, (profile as any)?.last_name].filter(Boolean).join(' ') ||
+        (user.user_metadata as any)?.full_name ||
+        user.email?.split('@')[0] ||
+        'Super Admin'
+
+      if (isActive) setAdminName(adminName)
     }
 
     loadAdminName()
@@ -48,9 +57,47 @@ export default function AdminLayout({
     }
   }, [supabase])
 
+  // Desactivar zoom en admin (iOS/Android) - viewport-fit=cover + maximum-scale=1
+  useEffect(() => {
+    const prev = document.querySelector('meta[name="viewport"]') as HTMLMetaElement | null
+    const prevContent = prev?.content ?? null
+    const nextContent = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover'
+    let createdMeta: HTMLMetaElement | null = null
+    if (prev) {
+      prev.content = nextContent
+    } else {
+      createdMeta = document.createElement('meta')
+      createdMeta.name = 'viewport'
+      createdMeta.content = nextContent
+      document.head.appendChild(createdMeta)
+    }
+    return () => {
+      if (prev && prevContent) prev.content = prevContent
+      if (createdMeta) createdMeta.remove()
+    }
+  }, [])
+
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/admin/login')
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('Error signing out:', error)
+      }
+    } catch (err) {
+      console.error('Error signing out:', err)
+    } finally {
+      // Forzar limpieza de sesión en cliente y servidor
+      router.push('/admin/login')
+      router.refresh()
+      // Fallback hard redirect para casos 403 donde cookies SSR quedan stale
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          if (window.location.pathname !== '/admin/login') {
+            window.location.href = '/admin/login'
+          }
+        }, 300)
+      }
+    }
   }
 
   // Si estamos en el login de admin, no mostramos el sidebar
@@ -59,16 +106,16 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-slate-50 text-slate-950">
+    <div className="flex h-dvh w-full overflow-hidden bg-slate-50 text-slate-950">
       {/* Mobile Header - Only visible on small screens */}
       <div className="fixed left-0 right-0 top-0 z-[60] flex h-16 items-center justify-between border-b border-slate-200 bg-white p-4 md:hidden">
-        <div className="flex items-center gap-2 overflow-hidden">
+        <div className="flex min-w-0 items-center gap-2 overflow-hidden">
           <ShieldAlert className="h-6 w-6 shrink-0 text-emerald-700" />
           <h1 className="truncate text-lg font-black uppercase tracking-tight text-emerald-950">Super admin</h1>
         </div>
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-          className="shrink-0 rounded-lg p-2 text-slate-700 transition-colors hover:bg-slate-100"
+          className="flex-shrink-0 shrink-0 rounded-lg p-2 text-slate-700 transition-colors hover:bg-slate-100"
         >
           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -85,7 +132,7 @@ export default function AdminLayout({
       <aside className={`
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} 
         md:translate-x-0 flex flex-col shrink-0
-        w-72 md:w-64
+        w-64 sm:w-72 md:w-64 max-w-[85vw] sm:max-w-none
         bg-emerald-950 text-white border-r border-emerald-900
         fixed md:relative z-[80] h-full top-0 left-0 
         transition-all duration-300 ease-in-out
@@ -150,7 +197,7 @@ export default function AdminLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="min-w-0 w-full flex-1 overflow-y-auto bg-slate-50 pt-16 md:pt-0">
+      <main className="min-w-0 w-full flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 pt-16 md:pt-0 pb-8">
         <div className="mx-auto min-w-0 max-w-7xl p-4 md:p-7 lg:p-10">
           {children}
         </div>

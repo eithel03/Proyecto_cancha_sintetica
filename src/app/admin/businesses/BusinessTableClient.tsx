@@ -42,30 +42,30 @@ export function BusinessTableClient({ businesses }: { businesses: BusinessRow[] 
 
       <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm">
         <CardContent className="p-0">
-          <div className="overflow-x-auto w-full">
+          <div className="overflow-x-auto w-full shadow-[inset_-12px_0_12px_-12px_rgba(0,0,0,0.12)]">
             <table className="w-full text-sm text-left whitespace-nowrap">
               <thead className="border-b border-slate-200 bg-slate-50">
                 <tr>
-                  <th className="px-6 py-4 text-center text-[10px] font-bold uppercase tracking-widest text-slate-500">Logo</th>
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Nombre / Portal público</th>
-                  <th className="px-6 py-4 text-center text-[10px] font-bold uppercase tracking-widest text-slate-500">Canchas</th>
-                  <th className="px-6 py-4 text-center text-[10px] font-bold uppercase tracking-widest text-slate-500">Reservas hoy</th>
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Dueño / Contacto</th>
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Estado</th>
-                  <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-widest text-slate-500">Acciones</th>
+                  <th className="px-3 py-2 sm:px-4 sm:py-3 text-center text-[10px] font-bold uppercase tracking-widest text-slate-500">Logo</th>
+                  <th className="px-3 py-2 sm:px-4 sm:py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Nombre / Portal público</th>
+                  <th className="px-3 py-2 sm:px-4 sm:py-3 text-center text-[10px] font-bold uppercase tracking-widest text-slate-500">Canchas</th>
+                  <th className="px-3 py-2 sm:px-4 sm:py-3 text-center text-[10px] font-bold uppercase tracking-widest text-slate-500">Reservas hoy</th>
+                  <th className="px-3 py-2 sm:px-4 sm:py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Dueño / Contacto</th>
+                  <th className="px-3 py-2 sm:px-4 sm:py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Estado</th>
+                  <th className="px-3 py-2 sm:px-4 sm:py-3 text-right text-[10px] font-bold uppercase tracking-widest text-slate-500">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredBusinesses.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground italic">
+                    <td colSpan={7} className="px-3 sm:px-4 py-12 text-center text-muted-foreground italic">
                       No se encontraron negocios con esos criterios.
                     </td>
                   </tr>
                 ) : (
                   filteredBusinesses.map((b) => (
                       <tr key={b.id} className="group transition-colors hover:bg-slate-50">
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-2 sm:px-4 sm:py-3">
                         <div className="flex justify-center">
                           {b.logo_url ? (
                             <img src={b.logo_url} alt={b.name} className="h-10 w-10 rounded-xl object-cover ring-2 ring-white/5 group-hover:scale-110 transition-transform" />
@@ -76,21 +76,21 @@ export function BusinessTableClient({ businesses }: { businesses: BusinessRow[] 
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-2 sm:px-4 sm:py-3">
                         <div className="font-bold text-slate-900 transition-colors group-hover:text-emerald-700">{b.name}</div>
                         <div className="font-mono text-xs text-slate-400">/{b.slug}</div>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-3 py-2 sm:px-4 sm:py-3 text-center">
                         <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 font-bold text-slate-700">
                           {b.courtCount}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-3 py-2 sm:px-4 sm:py-3 text-center">
                         <Badge variant="outline" className={`h-7 rounded-lg border-slate-200 px-3 ${b.todayReservationsCount > 0 ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-500'}`}>
                           {b.todayReservationsCount}
                         </Badge>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-2 sm:px-4 sm:py-3">
                         <div className="flex items-center gap-3">
                           <div className="space-y-0.5">
                             <div className="text-xs font-bold text-slate-800">{b.ownerProfile?.full_name || 'Sin dueño'}</div>
@@ -111,7 +111,7 @@ export function BusinessTableClient({ businesses }: { businesses: BusinessRow[] 
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-2 sm:px-4 sm:py-3">
                         <Badge 
                           variant={b.is_active ? "default" : "destructive"}
                           className={`rounded-full px-4 py-0.5 text-[10px] font-black uppercase tracking-widest ${b.is_active ? 'bg-emerald-700 text-white shadow-sm' : 'border border-rose-200 bg-rose-50 text-rose-700'}`}
@@ -119,7 +119,7 @@ export function BusinessTableClient({ businesses }: { businesses: BusinessRow[] 
                           {b.is_active ? "ACTIVO" : "BLOQUEADO"}
                         </Badge>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-3 py-2 sm:px-4 sm:py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Link 
                             href={`/${b.slug}`} 

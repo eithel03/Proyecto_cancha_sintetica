@@ -1214,211 +1214,138 @@ export default function TournamentClient({
           </Dialog>
             </div>
           </CardHeader>
-          <CardContent className="p-0">
-            {/* Desktop: tabla */}
-            <div className="hidden overflow-x-auto md:block">
-            <Table className="min-w-[820px]">
-              <TableHeader className="bg-slate-50">
-                <TableRow className="border-slate-200">
-                  <TableHead className="w-44 px-6 font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Cuándo</TableHead>
-                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Enfrentamiento</TableHead>
-                  <TableHead className="w-36 text-center font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Marcador</TableHead>
-                  <TableHead className="w-40 font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Situación</TableHead>
-                  <TableHead className="text-right px-6 font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredMatches.map((match) => (
-                  <TableRow key={match.id} className="border-slate-100 hover:bg-slate-50/50 transition-colors group">
-                    <TableCell className="px-6 py-4">
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5 rounded-lg bg-emerald-50 p-2 text-emerald-700">
-                          <Calendar className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <div className="font-black text-slate-900">{formatReadableDate(match.match_date)}</div>
-                          <div className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-slate-500">
-                            <Clock className="h-3 w-3" /> {formatTime12h(match.match_time)}
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-4">
-                      <div className="flex min-w-0 items-center gap-3 font-bold text-slate-900">
-                        <div className="min-w-0">
-                          <p className="truncate">{match.home?.name || 'Equipo local'}</p>
-                          <p className="mt-1 truncate text-sm font-medium text-slate-500">{match.away?.name || 'Equipo visitante'}</p>
-                        </div>
-                        <span className="shrink-0 rounded-md bg-slate-100 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-slate-500">VS</span>
-                      </div>
-                      {match.court?.name && <p className="mt-1 text-xs font-medium text-slate-500">{match.court.name}</p>}
-                    </TableCell>
-                    <TableCell className="py-4">
-                      {match.status === 'finished' || match.status === 'live' || match.status === 'halftime' ? (
-                        <div className="flex flex-col items-center">
-                          <Badge variant="outline" className="border-blue-200 bg-blue-50 px-3 text-base font-black text-blue-700">
-                            {match.home_score} - {match.away_score}
-                          </Badge>
-                          {match.status === 'live' && (
-                            <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wide text-red-500">
-                              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
-                              {match.current_minute}&apos; min
-                            </span>
-                          )}
-                          {match.status === 'halftime' && (
-                            <span className="mt-1 text-[10px] font-black uppercase tracking-wide text-amber-500">
-                              HT (Entretiempo)
-                            </span>
-                          )}
-                        </div>
-                      ) : <span className="block text-center text-xs font-semibold text-slate-400">Sin resultado</span>}
-                    </TableCell>
-                    <TableCell className="py-4">
-                      <Badge variant="outline" className={cn(getMatchStatusBadgeClassName(match.status), 'min-w-[6.5rem] justify-center rounded-full px-2.5 py-1 text-[11px]')}>
-                        {getMatchStatusLabel(match.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="px-6 py-4">
-                      <div className="flex justify-end gap-2">
-                      {match.status === 'live' && (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-9 rounded-xl border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700"
-                          onClick={() => { 
-                            setActiveMatchForEvent(match); 
-                            setSelectedEventType('goal');
-                            setSelectedTeamIdForEvent('');
-                            setIsEventDialogOpen(true); 
-                          }}
-                        >
-                          <Zap className="w-3 h-3 mr-1 fill-red-500" /> Evento
-                        </Button>
-                      )}
-                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-slate-200 bg-white hover:bg-slate-50" onClick={() => { setEditingMatch(match); setIsMatchDialogOpen(true); }}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100 hover:text-rose-600" onClick={() => handleDeleteMatch(match.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {filteredMatches.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-20 text-muted-foreground bg-slate-50/50">
-                      <div className="flex flex-col items-center gap-3">
-                        <Calendar className="w-10 h-10 opacity-10" />
-                        <p className="font-bold uppercase italic tracking-tighter text-lg">No hay partidos con estos filtros</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-            </div>
+          <CardContent className="p-4 sm:p-5">
+            <div className={styles.matchList}>
+              {filteredMatches.map((match) => {
+                const hasScore = match.status === 'finished' || match.status === 'live' || match.status === 'halftime'
 
-            {/* Mobile: tarjetas */}
-            <div className="md:hidden space-y-3 p-4">
-              {filteredMatches.map((match) => (
-                <div key={match.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="rounded-lg bg-emerald-50 p-1.5 text-emerald-700">
-                        <Calendar className="h-3.5 w-3.5" />
-                      </div>
+                return (
+                  <article
+                    key={match.id}
+                    className={cn(
+                      styles.matchCard,
+                      match.status === 'live' && styles.matchCardLive,
+                      match.status === 'cancelled' && styles.matchCardCancelled,
+                    )}
+                  >
+                    <span className={styles.matchCardAccent} aria-hidden="true" />
+
+                    <div className={styles.matchWhen}>
+                      <span className={styles.matchDateIcon}>
+                        <Calendar className="h-4 w-4" />
+                      </span>
                       <div>
-                        <p className="text-xs font-bold text-slate-900">{formatReadableDate(match.match_date)}</p>
-                        <p className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500">
-                          <Clock className="h-2.5 w-2.5" /> {formatTime12h(match.match_time)}
+                        <p className={styles.matchDate}>{formatReadableDate(match.match_date)}</p>
+                        <p className={styles.matchTime}>
+                          <Clock className="h-3.5 w-3.5" /> {formatTime12h(match.match_time)}
                         </p>
                       </div>
                     </div>
-                    <Badge variant="outline" className={cn(getMatchStatusBadgeClassName(match.status), 'shrink-0 rounded-full px-2 py-0.5 text-[10px]')}>
-                      {getMatchStatusLabel(match.status)}
-                    </Badge>
-                  </div>
 
-                  <div className="flex items-center gap-2 mb-3">
-                    {/* Equipo local */}
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      {match.home?.logo_url ? (
-                        <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
-                          <img src={match.home.logo_url} alt={match.home.name || ''} className="h-full w-full object-contain" />
-                        </div>
-                      ) : (
-                        <div className="h-8 w-8 shrink-0 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center">
-                          <Shield className="h-4 w-4 text-slate-400" />
-                        </div>
-                      )}
-                      <p className="truncate text-sm font-black text-slate-900">{match.home?.name || 'Local'}</p>
-                    </div>
-
-                    {/* VS + marcador */}
-                    <div className="shrink-0 flex flex-col items-center gap-0.5">
-                      {(match.status === 'finished' || match.status === 'live' || match.status === 'halftime') ? (
-                        <>
-                          <Badge variant="outline" className="border-blue-200 bg-blue-50 px-2 py-0.5 text-sm font-black text-blue-700">
-                            {match.home_score} - {match.away_score}
-                          </Badge>
-                          {match.status === 'live' && (
-                            <span className="text-[8px] font-black uppercase text-red-500">{match.current_minute}&apos;</span>
+                    <div className={styles.matchup}>
+                      <div className={styles.matchTeam}>
+                        <span className={styles.matchTeamMark}>
+                          {match.home?.logo_url ? (
+                            <>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={match.home.logo_url} alt={`Logo de ${match.home.name || 'equipo local'}`} className="h-full w-full object-contain p-1" />
+                            </>
+                          ) : (
+                            <Shield className="h-5 w-5 text-slate-400" />
                           )}
-                        </>
-                      ) : (
-                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-500">VS</span>
-                      )}
+                        </span>
+                        <span className={styles.matchTeamCopy}>
+                          <small>Local</small>
+                          <strong>{match.home?.name || 'Equipo local'}</strong>
+                        </span>
+                      </div>
+
+                      <div className={styles.matchScore}>
+                        <strong>{hasScore ? `${match.home_score ?? 0} - ${match.away_score ?? 0}` : 'VS'}</strong>
+                        <small>
+                          {match.status === 'live'
+                            ? `${match.current_minute ?? 0}' EN VIVO`
+                            : match.status === 'halftime'
+                              ? 'ENTRETIEMPO'
+                              : hasScore
+                                ? 'RESULTADO'
+                                : 'POR JUGAR'}
+                        </small>
+                      </div>
+
+                      <div className={cn(styles.matchTeam, styles.matchTeamAway)}>
+                        <span className={styles.matchTeamCopy}>
+                          <small>Visitante</small>
+                          <strong>{match.away?.name || 'Equipo visitante'}</strong>
+                        </span>
+                        <span className={styles.matchTeamMark}>
+                          {match.away?.logo_url ? (
+                            <>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={match.away.logo_url} alt={`Logo de ${match.away.name || 'equipo visitante'}`} className="h-full w-full object-contain p-1" />
+                            </>
+                          ) : (
+                            <Shield className="h-5 w-5 text-slate-400" />
+                          )}
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Equipo visitante */}
-                    <div className="flex items-center gap-2 min-w-0 flex-1 justify-end">
-                      <p className="truncate text-sm font-black text-slate-900 text-right">{match.away?.name || 'Visitante'}</p>
-                      {match.away?.logo_url ? (
-                        <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
-                          <img src={match.away.logo_url} alt={match.away.name || ''} className="h-full w-full object-contain" />
-                        </div>
-                      ) : (
-                        <div className="h-8 w-8 shrink-0 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center">
-                          <Shield className="h-4 w-4 text-slate-400" />
-                        </div>
-                      )}
+                    <div className={styles.matchDetails}>
+                      <p className={styles.matchCourt}>
+                        <Shield className="h-3.5 w-3.5 shrink-0" />
+                        <span>{match.court?.name || 'Cancha por definir'}</span>
+                      </p>
+                      <Badge variant="outline" className={cn(getMatchStatusBadgeClassName(match.status), 'w-fit justify-center rounded-full px-2.5 py-1 text-[11px]')}>
+                        {getMatchStatusLabel(match.status)}
+                      </Badge>
                     </div>
-                  </div>
 
-                  {match.court?.name && (
-                    <p className="mb-3 text-[11px] font-medium text-slate-500">{match.court.name}</p>
-                  )}
-
-                  <div className="flex items-center gap-2 border-t border-slate-100 pt-3">
-                    {match.status === 'live' && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-8 flex-1 rounded-lg border-red-200 bg-red-50 text-[11px] font-bold text-red-600 hover:bg-red-100"
-                        onClick={() => { 
-                          setActiveMatchForEvent(match); 
-                          setSelectedEventType('goal');
-                          setSelectedTeamIdForEvent('');
-                          setIsEventDialogOpen(true); 
-                        }}
+                    <div className={styles.matchActions}>
+                      {match.status === 'live' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={styles.matchEventButton}
+                          onClick={() => {
+                            setActiveMatchForEvent(match)
+                            setSelectedEventType('goal')
+                            setSelectedTeamIdForEvent('')
+                            setIsEventDialogOpen(true)
+                          }}
+                        >
+                          <Zap className="h-3.5 w-3.5 fill-current" /> Evento
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className={styles.matchIconButton}
+                        onClick={() => { setEditingMatch(match); setIsMatchDialogOpen(true) }}
+                        aria-label={`Editar partido ${match.home?.name || 'local'} contra ${match.away?.name || 'visitante'}`}
+                        title="Editar partido"
                       >
-                        <Zap className="w-3 h-3 mr-1 fill-red-500" /> Evento
+                        <Pencil className="h-4 w-4" />
                       </Button>
-                    )}
-                    <Button variant="outline" size="sm" className="h-8 flex-1 rounded-lg border-slate-200 bg-white text-[11px] font-bold text-slate-700 hover:bg-slate-50" onClick={() => { setEditingMatch(match); setIsMatchDialogOpen(true); }}>
-                      <Pencil className="w-3 h-3 mr-1" /> Editar
-                    </Button>
-                    <Button variant="outline" size="sm" className="h-8 flex-1 rounded-lg border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100" onClick={() => handleDeleteMatch(match.id)}>
-                      <Trash2 className="w-3 h-3 mr-1" /> Eliminar
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className={cn(styles.matchIconButton, styles.matchDeleteButton)}
+                        onClick={() => handleDeleteMatch(match.id)}
+                        aria-label={`Eliminar partido ${match.home?.name || 'local'} contra ${match.away?.name || 'visitante'}`}
+                        title="Eliminar partido"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </article>
+                )
+              })}
+
               {filteredMatches.length === 0 && (
-                <div className="flex flex-col items-center gap-3 py-16 text-center">
-                  <Calendar className="w-10 h-10 text-slate-300" />
-                  <p className="font-bold uppercase italic tracking-tighter text-sm text-slate-500">No hay partidos con estos filtros</p>
+                <div className={styles.matchEmpty}>
+                  <Calendar className="h-10 w-10" />
+                  <p>No hay partidos con estos filtros</p>
                 </div>
               )}
             </div>
@@ -2143,26 +2070,64 @@ function TeamDetailDialog({
 
               <TabsContent value="matches" className="mt-0 space-y-3">
                 {teamMatches.length > 0 ? teamMatches.map((match) => {
-                  const isHome = match.home_team_id === team.id
-                  const rival = isHome ? match.away : match.home
-                  const teamScore = isHome ? match.home_score : match.away_score
-                  const rivalScore = isHome ? match.away_score : match.home_score
+                  const homeTeam = match.home_team_id === team.id ? team : match.home
+                  const awayTeam = match.away_team_id === team.id ? team : match.away
 
                   return (
                     <div key={match.id} className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <p className="text-sm font-bold text-white">vs {rival?.name || 'Equipo rival'}</p>
-                          <p className="mt-1 text-sm text-zinc-400">
+                      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm font-medium text-slate-600">
                             {formatReadableDate(match.match_date)} · {formatTime12h(match.match_time)}
                             {match.court?.name ? ` · ${match.court.name}` : ''}
-                          </p>
+                        </p>
+                        <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-600">
+                          {getMatchStatusLabel(match.status)}
+                        </Badge>
+                      </div>
+
+                      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 rounded-xl bg-slate-50 p-3 sm:gap-5 sm:p-4">
+                        <div className="flex min-w-0 flex-col items-center gap-2 sm:flex-row">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm">
+                            {homeTeam?.logo_url ? (
+                              <>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={homeTeam.logo_url} alt={`Logo de ${homeTeam.name || 'equipo local'}`} className="h-full w-full object-contain" />
+                              </>
+                            ) : (
+                              <Shield className="h-7 w-7 text-slate-300" />
+                            )}
+                          </div>
+                          <div className="min-w-0 text-center sm:text-left">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Local</p>
+                            <p className="break-words text-sm font-black text-black">{homeTeam?.name || 'Equipo local'}</p>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                           <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-600">{getMatchStatusLabel(match.status)}</Badge>
-                          {isPlayedTournamentMatch(match) && (
-                            <Badge className="bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/20">{teamScore ?? 0} - {rivalScore ?? 0}</Badge>
+
+                        <div className="flex min-w-12 flex-col items-center justify-center">
+                          {isPlayedTournamentMatch(match) ? (
+                            <span className="text-lg font-black text-black sm:text-xl">
+                              {match.home_score ?? 0} - {match.away_score ?? 0}
+                            </span>
+                          ) : (
+                            <span className="text-xs font-black uppercase tracking-widest text-slate-500">VS</span>
                           )}
+                        </div>
+
+                        <div className="flex min-w-0 flex-col items-center gap-2 sm:flex-row-reverse">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm">
+                            {awayTeam?.logo_url ? (
+                              <>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={awayTeam.logo_url} alt={`Logo de ${awayTeam.name || 'equipo visitante'}`} className="h-full w-full object-contain" />
+                              </>
+                            ) : (
+                              <Shield className="h-7 w-7 text-slate-300" />
+                            )}
+                          </div>
+                          <div className="min-w-0 text-center sm:text-right">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Visitante</p>
+                            <p className="break-words text-sm font-black text-black">{awayTeam?.name || 'Equipo visitante'}</p>
+                          </div>
                         </div>
                       </div>
                     </div>

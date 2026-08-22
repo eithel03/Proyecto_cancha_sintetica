@@ -108,7 +108,7 @@ export default function NewBusinessClient() {
           {/* Datos del Negocio */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium border-b pb-2">1. Datos del Negocio</h3>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="b_name">Nombre de la Sintética</Label>
                 <Input id="b_name" name="b_name" required placeholder="Sintética Pital" />
@@ -143,15 +143,15 @@ export default function NewBusinessClient() {
                 <Label htmlFor="b_max_courts">Límite de Canchas</Label>
                 <Input id="b_max_courts" name="b_max_courts" type="number" min="1" defaultValue="1" required />
               </div>
-              <div className="space-y-2 md:col-span-2">
+              <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="b_location">Ubicación</Label>
                 <Input id="b_location" name="b_location" placeholder="Frente al parque..." />
               </div>
-              <div className="space-y-2 md:col-span-2">
+              <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="b_description">Descripción</Label>
                 <Textarea id="b_description" name="b_description" />
               </div>
-              <div className="space-y-4 md:col-span-2 border-t pt-4">
+              <div className="space-y-4 sm:col-span-2 border-t pt-4">
                 <Label className="text-primary font-bold">Localización GPS</Label>
 
                 <div className="flex gap-2">
@@ -194,7 +194,7 @@ export default function NewBusinessClient() {
           {/* Datos del Usuario Owner */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium border-b pb-2">2. Credenciales del Administrador (Dueño)</h3>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="u_name">Nombre Completo</Label>
                 <Input id="u_name" name="u_name" required placeholder="Juan Pérez" />
@@ -214,7 +214,7 @@ export default function NewBusinessClient() {
             </div>
           </div>
 
-          <div className="flex gap-4 justify-end">
+          <div className="flex flex-wrap gap-4 justify-end">
             <Button variant="outline" onClick={() => router.push('/admin/businesses')} type="button">
               Cancelar
             </Button>

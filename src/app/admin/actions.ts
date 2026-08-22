@@ -3,6 +3,15 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
+export async function adminLogout() {
+  const supabase = await createClient()
+  const { error } = await supabase.auth.signOut()
+  if (error) {
+    console.error('Error signing out (server):', error)
+  }
+  redirect('/admin/login')
+}
+
 export async function adminLogin(formData: FormData) {
   const supabase = await createClient()
 
