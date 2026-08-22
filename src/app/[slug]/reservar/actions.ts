@@ -23,7 +23,7 @@ export async function checkAvailability(courtId: string, date: string) {
   // 2. Obtener Retos (Abiertos, Aceptados y Confirmados)
   const { data: challenges, error: chalError } = await supabase
     .from('challenges')
-    .select('id, challenge_time, status, notes')
+    .select('id, challenge_time, status, notes, gender')
     .eq('court_id', courtId)
     .eq('challenge_date', date)
     .in('status', ['open', 'accepted', 'confirmed'])
@@ -101,7 +101,8 @@ export async function checkAvailability(courtId: string, date: string) {
         start_time: startNormalized,
         end_time: endNormalized,
         type: c.status === 'confirmed' ? 'confirmed_challenge' : (c.status === 'open' ? 'open_challenge' : 'accepted_challenge'),
-        status: c.status
+        status: c.status,
+        gender: c.gender,
       }
     })
   ]
