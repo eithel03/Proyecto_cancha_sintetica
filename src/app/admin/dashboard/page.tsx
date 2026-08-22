@@ -28,7 +28,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-7">
-      <div className="rounded-2xl bg-emerald-950 p-6 text-white shadow-lg shadow-emerald-950/10 sm:p-8">
+      <div className="rounded-2xl bg-emerald-950 p-4 text-white shadow-lg shadow-emerald-950/10 sm:p-6">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Super administrador</p>
         <div className="mt-2 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
@@ -39,14 +39,14 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-slate-200 bg-white shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500">Total negocios</CardTitle>
             <span className="rounded-lg bg-emerald-50 p-2 text-emerald-700"><Store className="h-4 w-4" /></span>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black text-slate-950">{businessesCount || 0}</div>
+            <div className="text-2xl sm:text-3xl font-black text-slate-950">{businessesCount || 0}</div>
             <p className="mt-1 text-xs font-medium text-emerald-700">{activeBusinesses || 0} activos</p>
           </CardContent>
         </Card>
@@ -57,7 +57,7 @@ export default async function AdminDashboardPage() {
             <span className="rounded-lg bg-sky-50 p-2 text-sky-700"><Flag className="h-4 w-4" /></span>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black text-slate-950">{courtsCount || 0}</div>
+            <div className="text-2xl sm:text-3xl font-black text-slate-950">{courtsCount || 0}</div>
             <p className="mt-1 text-xs font-medium text-slate-500">Capacidad operativa global</p>
           </CardContent>
         </Card>
@@ -68,7 +68,7 @@ export default async function AdminDashboardPage() {
             <span className="rounded-lg bg-amber-50 p-2 text-amber-700"><Activity className="h-4 w-4" /></span>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black text-slate-950">{reservationsCount || 0}</div>
+            <div className="text-2xl sm:text-3xl font-black text-slate-950">{reservationsCount || 0}</div>
             <p className="mt-1 text-xs font-medium text-slate-500">Reservas registradas</p>
           </CardContent>
         </Card>
@@ -79,7 +79,7 @@ export default async function AdminDashboardPage() {
             <span className="rounded-lg bg-rose-50 p-2 text-rose-700"><CalendarDays className="h-4 w-4" /></span>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black text-slate-950">{pendingReservations || 0}</div>
+            <div className="text-2xl sm:text-3xl font-black text-slate-950">{pendingReservations || 0}</div>
             <p className="mt-1 text-xs font-medium text-rose-700">Requieren atención</p>
           </CardContent>
         </Card>

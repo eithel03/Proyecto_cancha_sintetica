@@ -24,7 +24,7 @@ export default function AdminLoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <Card className="w-full max-w-md border-slate-200 bg-white shadow-sm">
+      <Card className="w-full max-w-sm sm:max-w-md mx-2 sm:mx-auto border-slate-200 bg-white shadow-sm">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
             <ShieldAlert className="w-12 h-12 text-red-500" />

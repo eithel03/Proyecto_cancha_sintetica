@@ -333,16 +333,32 @@
 .matchTeam {
   min-width: 0;
   gap: 0.65rem;
-  color: #0f172a;
+  color: #000000;
   font-size: 0.9rem;
   font-weight: 800;
 }
 
-.matchTeam span {
+.matchTeamCopy {
+  min-width: 0;
+}
+
+.matchTeamCopy small {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: #64748b;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.matchTeamCopy strong {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  color: #000000;
   line-height: 1.25;
 }
 
@@ -522,10 +538,10 @@
     gap: 0.9rem 1rem;
   }
 
-  .matchWhen { grid-column: 1; }
-  .matchDetails { grid-column: 1; grid-row: 2; }
   .matchup { grid-column: 1 / -1; grid-row: 1; }
-  .matchActions { grid-column: 2; grid-row: 2; }
+  .matchWhen { grid-column: 1; grid-row: 2; }
+  .matchDetails { grid-column: 1; grid-row: 3; }
+  .matchActions { grid-column: 2; grid-row: 2 / 4; }
 }
 
 @media (max-width: 560px) {

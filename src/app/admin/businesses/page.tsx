@@ -69,7 +69,7 @@ export default async function AdminBusinessesPage() {
   }
 
   return (
-    <div className="space-y-8 pb-10">
+    <div className="space-y-8 pb-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
         <div>
           <h2 className="text-3xl font-black uppercase tracking-tight text-slate-950">Panel central de negocios</h2>

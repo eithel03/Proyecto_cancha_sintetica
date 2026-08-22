@@ -161,7 +161,7 @@ export function BusinessActions({ business }: { business: any }) {
               {/* Sección 1: Datos del Negocio */}
               <div className="space-y-4">
                 <h4 className="text-xs font-black uppercase tracking-widest text-primary border-b border-primary/20 pb-1">1. Información del Local</h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nombre</Label>
                     <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
@@ -213,7 +213,7 @@ export function BusinessActions({ business }: { business: any }) {
 
                   <MapPreview lat={formData.latitude} lng={formData.longitude} />
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input name="latitude" value={formData.latitude} onChange={handleChange} placeholder="Latitud" />
                     <Input name="longitude" value={formData.longitude} onChange={handleChange} placeholder="Longitud" />
                   </div>
@@ -224,7 +224,7 @@ export function BusinessActions({ business }: { business: any }) {
               {/* Sección 2: Datos del Dueño */}
               <div className="space-y-4">
                 <h4 className="text-xs font-black uppercase tracking-widest text-primary border-b border-primary/20 pb-1">2. Información del Dueño</h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="owner_name">Nombre Completo</Label>
                     <Input id="owner_name" name="owner_name" value={formData.owner_name} onChange={handleChange} />
@@ -254,7 +254,7 @@ export function BusinessActions({ business }: { business: any }) {
                 </div>
               </div>
             </div>
-            <DialogFooter className="sticky bottom-0 bg-background pt-4 border-t">
+            <DialogFooter className="sticky bottom-0 bg-background pt-4 border-t flex flex-wrap sm:flex-nowrap gap-2 sm:justify-end">
               <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -286,7 +286,7 @@ export function BusinessActions({ business }: { business: any }) {
               Esta acción <strong>eliminará en cascada</strong> todo lo asociado: la cuenta del usuario dueño, sus canchas, reservas, estadísticas y torneos. Esta acción NO se puede deshacer.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="mt-4">
+          <DialogFooter className="mt-4 flex flex-wrap sm:flex-nowrap gap-2 sm:justify-end">
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isSubmitting}>
               Cancelar
             </Button>
