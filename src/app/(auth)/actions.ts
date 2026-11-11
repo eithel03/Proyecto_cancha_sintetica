@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { safeRedirect } from '@/lib/auth/redirect'
 
 export async function login(formData: FormData) {
   const supabase = await createClient()
@@ -24,18 +25,13 @@ export async function login(formData: FormData) {
     return { error: 'Ocurrió un error inesperado al verificar la cuenta.' }
   }
 
-  // Agregar logs temporales en servidor
-  console.log('USER ID:', user.id)
-
+  // SECURITY: removed temporary console.log statements that leaked user IDs and profile data
   // Verificar el rol del usuario consultando public.profiles
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single()
-
-  console.log('PROFILE:', profile)
-  console.log('PROFILE ERROR:', profileError)
 
   if (profileError) {
     await supabase.auth.signOut()
@@ -66,7 +62,8 @@ export async function login(formData: FormData) {
     }
 
     revalidatePath(`/${business.slug}/admin`, 'layout')
-    redirect(`/${business.slug}/admin`)
+    // SECURITY: validate the slug-built target is an internal path before redirecting
+    redirect(safeRedirect(`/${business.slug}/admin`))
   }
 
   // Si es algún otro rol no contemplado
@@ -87,16 +84,33 @@ export async function customerLogin(formData: FormData) {
     password: formData.get('password') as string,
   }
 
-  const { error } = await supabase.auth.signInWithPassword(data)
+  const { data: authData, error } = await supabase.auth.signInWithPassword(data)
 
   if (error) {
     return { error: 'Correo o contraseña incorrectos' }
   }
 
+  const user = authData.user
+  if (!user) {
+    return { error: 'No autorizado' }
+  }
+
+  // SECURITY: only accounts with the 'customer' role may use the customer login flow
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profileError || profile?.role !== 'customer') {
+    return { error: 'No autorizado' }
+  }
+
   const businessSlug = formData.get('businessSlug') as string
   if (businessSlug) {
     revalidatePath(`/${businessSlug}`, 'layout')
-    redirect(`/${businessSlug}`)
+    // SECURITY: businessSlug is user-controlled input — validate the redirect target
+    redirect(safeRedirect(`/${businessSlug}`))
   }
 
   revalidatePath('/', 'layout')
@@ -120,13 +134,14 @@ export async function customerSignup(formData: FormData) {
   const { error } = await supabase.auth.signUp(data)
 
   if (error) {
-    return { error: 'Error al crear la cuenta: ' + error.message }
+    return { error: 'Error al registrar cliente' }
   }
 
   const businessSlug = formData.get('businessSlug') as string
   if (businessSlug) {
     revalidatePath(`/${businessSlug}`, 'layout')
-    redirect(`/${businessSlug}`)
+    // SECURITY: businessSlug is user-controlled input — validate the redirect target
+    redirect(safeRedirect(`/${businessSlug}`))
   }
 
   revalidatePath('/', 'layout')

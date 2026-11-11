@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -9,7 +10,6 @@ import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Trophy, CalendarDays, Users, BarChart3, User, Shield, X, Activity, Target, ShieldAlert, Clock, MapPin } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn, formatTime12h } from '@/lib/utils'
-import { autoStartMatches } from '../../dashboard/tournament/actions'
 import { HeroSection, MatchRow, EmptyState } from '@/components/portal'
 
 function getLocalDateKey(date = new Date()) {
@@ -69,7 +69,7 @@ function getClassificationZone(index: number, totalRows: number, zones: ZoneCoun
   return null
 }
 
-export default function TournamentPublicClient({ businessId, businessName: _businessName, matches: initialMatches, standings: initialStandings, teams: initialTeams, stats, classificationZones }: {
+export default function TournamentPublicClient({ businessId: _businessId, businessName: _businessName, matches: initialMatches, standings: initialStandings, teams: initialTeams, stats, classificationZones }: {
   businessId: string,
   businessName: string,
   matches: any[],
@@ -105,8 +105,11 @@ export default function TournamentPublicClient({ businessId, businessName: _busi
 
   useEffect(() => {
     if (matches.length === 0) return;
-    const businessId = matches[0]?.business_id;
-    if (!businessId) return;
+    const activeBusinessId = matches[0]?.business_id;
+    if (!activeBusinessId) return;
+
+    let cancelled = false
+    let removeRealtimeChannel: (() => void) | undefined
 
     const setupRealtime = async () => {
       const { createClient } = await import('@/lib/supabase/client')
@@ -116,30 +119,42 @@ export default function TournamentPublicClient({ businessId, businessName: _busi
       const channel = supabase.channel(channelId)
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'tournament_matches', filter: `business_id=eq.${businessId}` },
-          (payload: { eventType: string; new: any }) => {
-            if (payload.eventType === 'UPDATE') {
-              setMatches((prev: any) => prev.map((m: any) => m.id === payload.new.id ? { ...m, ...payload.new } : m))
-            }
+          { event: '*', schema: 'public', table: 'tournament_matches', filter: `business_id=eq.${activeBusinessId}` },
+          (payload: RealtimePostgresChangesPayload<{ id: string } & Record<string, unknown>>) => {
+            if (payload.eventType !== 'UPDATE') return
+            const updated = payload.new
+            if (typeof updated.id !== 'string') return
+            setMatches((prevMatches) =>
+              prevMatches.map((match) => (match.id === updated.id ? { ...match, ...updated } : match))
+            )
           }
         )
         .subscribe()
 
-      return () => {
-        supabase.removeChannel(channel)
+      removeRealtimeChannel = () => {
+        void supabase.removeChannel(channel)
+      }
+
+      // SECURITY: if the component unmounted while awaiting the dynamic import,
+      // remove the freshly created channel immediately so it cannot leak.
+      if (cancelled) {
+        removeRealtimeChannel()
+        removeRealtimeChannel = undefined
       }
     }
     
-    setupRealtime()
+    void setupRealtime()
+
+    return () => {
+      cancelled = true
+      // SECURITY: prevent realtime channel leak on unmount / matches.length change
+      removeRealtimeChannel?.()
+    }
   }, [matches.length])
 
-  useEffect(() => {
-    autoStartMatches(businessId)
-    const interval = setInterval(() => {
-      autoStartMatches(businessId)
-    }, 60000)
-    return () => clearInterval(interval)
-  }, [businessId])
+  // SECURITY: removed anonymous call to protected server action
+  // (autoStartMatches now requires an authenticated admin session, so the public
+  // tournament page must not trigger it for visitors).
 
   const filteredMatches = matches.filter(m => (m.gender || 'masculino') === selectedGender)
   const filteredStandings = initialStandings.filter(s => (s.gender || 'masculino') === selectedGender)

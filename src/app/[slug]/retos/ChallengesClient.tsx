@@ -143,7 +143,7 @@ export default function ChallengesClient({
       }
     }
     return options
-  }, [businessHours, occupiedSlots])
+  }, [businessHours, occupiedSlots, currentException]) // BUGFIX: add missing dependency to recalculate on exception change
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()

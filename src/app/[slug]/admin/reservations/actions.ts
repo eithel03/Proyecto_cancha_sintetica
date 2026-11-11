@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { notifyUserReservationConfirmed } from '@/lib/notifications'
-import { verifyBusinessAccess } from '@/lib/auth'
+import { verifyBusinessAccess, verifyBusinessAdminAccess } from '@/lib/auth'
 
 export type WeeklyReservation = {
   id: string
@@ -61,7 +61,7 @@ export async function getWeeklyReservations(businessId: string, startDate: strin
     .order('start_time', { ascending: true })
 
   if (reservationsError) {
-    return { error: 'Error al cargar reservas: ' + reservationsError.message, reservations: [] as WeeklyReservation[] }
+    return { error: 'Error al cargar reservas', reservations: [] as WeeklyReservation[] }
   }
 
   const { data: matches } = await supabase
@@ -110,6 +110,12 @@ export async function updateReservationStatus(reservationId: string, status: str
     if (access.error) return { error: access.error }
   }
 
+  // SECURITY: only allow known reservation statuses (prevents arbitrary state injection)
+  const VALID_STATUSES = ['pending', 'confirmed', 'cancelled', 'completed']
+  if (!VALID_STATUSES.includes(status)) {
+    return { error: 'Estado de reserva inválido' }
+  }
+
   // Obtener detalles de la reserva para la notificación
   const { data: res } = await supabase
     .from('reservations')
@@ -123,7 +129,7 @@ export async function updateReservationStatus(reservationId: string, status: str
     .eq('id', reservationId)
 
   if (error) {
-    return { error: 'Error al actualizar reserva: ' + error.message }
+    return { error: 'Error al actualizar estado' }
   }
 
   // Notificar al usuario si se confirma
@@ -209,7 +215,7 @@ export async function createAdminReservation(data: {
     })
 
   if (error) {
-    return { error: 'Error al crear reserva manual: ' + error.message }
+    return { error: 'Error al crear reserva' }
   }
 
   if (data.slug) {
@@ -225,6 +231,11 @@ export async function exportReservationsCSV(businessId: string, startDate?: stri
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autorizado', csv: '' }
 
+  // SECURITY: only the business owner or admin-level staff may export customer
+  // data (PII); any other authenticated user gets a generic error with no detail.
+  const { error: accessError } = await verifyBusinessAdminAccess(supabase, user.id, businessId)
+  if (accessError) return { error: 'No autorizado', csv: '' }
+
   let query = supabase
     .from('reservations')
     .select('id, customer_name, customer_phone, customer_email, reservation_date, start_time, end_time, status, notes, created_at, courts(name)')
@@ -236,17 +247,31 @@ export async function exportReservationsCSV(businessId: string, startDate?: stri
 
   const { data: reservations, error } = await query
 
-  if (error) return { error: 'Error al obtener reservas: ' + error.message, csv: '' }
+  // SECURITY: generic message — never expose internal database error details to the client
+  if (error) return { error: 'No se pudo generar el archivo. Inténtalo de nuevo.', csv: '' }
 
   const headers = ['Fecha', 'Hora Inicio', 'Hora Fin', 'Cliente', 'Telefono', 'Email', 'Cancha', 'Estado', 'Notas', 'Creada']
-  const rows = (reservations || []).map(r => [
+  // SECURITY: typed row shape — no implicit any leaking into the CSV export
+  type ExportedReservation = {
+    reservation_date: string | null
+    start_time: string | null
+    end_time: string | null
+    customer_name: string | null
+    customer_phone: string | null
+    customer_email: string | null
+    courts: { name: string | null } | { name: string | null }[] | null
+    status: string | null
+    notes: string | null
+    created_at: string | null
+  }
+  const rows = (reservations || []).map((r: ExportedReservation) => [
     r.reservation_date,
     r.start_time?.substring(0, 5) || '',
     r.end_time?.substring(0, 5) || '',
     r.customer_name,
     r.customer_phone,
     r.customer_email || '',
-    Array.isArray(r.courts) ? (r.courts[0] as any)?.name || '' : (r.courts as any)?.name || '',
+    getRelatedName(r.courts) || '',
     r.status || '',
     r.notes || '',
     r.created_at || '',

@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { verifyBusinessAdminAccess } from '@/lib/auth'
 
 /**
  * Auto-start pending matches for a given business.
@@ -8,6 +9,21 @@ import { createClient } from '@/lib/supabase/server'
  */
 export async function autoStartMatches(businessId: string) {
   const supabase = await createClient()
+
+  // SECURITY: require an authenticated session before any database read/write
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    throw new Error('No autorizado')
+  }
+
+  // SECURITY: only the business owner, admin-level staff (manager) or a global
+  // super_admin can start matches; any other session gets a generic error
+  // and no data is exposed about why access was denied.
+  const { error: accessError } = await verifyBusinessAdminAccess(supabase, user.id, businessId)
+  if (accessError) {
+    throw new Error('No autorizado')
+  }
+
   // Find matches that are scheduled and should start automatically (e.g., status = 'pending' and match_time <= now)
   const now = new Date()
   

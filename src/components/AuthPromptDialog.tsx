@@ -37,7 +37,7 @@ export function AuthPromptDialog({
             <ShieldAlert className="h-8 w-8 text-primary" />
           </div>
           <DialogTitle className="text-2xl font-bold text-center tracking-tight text-foreground">
-            Inicia sesión para continuar
+            {title}
           </DialogTitle>
           <DialogDescription className="text-center text-slate-500 pt-2 text-sm leading-relaxed px-4">
             {description} Únete a nuestra comunidad para disfrutar de todas las funcionalidades.

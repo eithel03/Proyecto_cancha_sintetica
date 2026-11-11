@@ -15,6 +15,32 @@ export async function createBusiness(formData: FormData) {
     redirect('/login')
   }
 
+  // SECURITY: verify the profile role is allowed to onboard a new business.
+  // NOTE: the profile role in this codebase is 'customer' (not 'client').
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  const allowedRoles: readonly string[] = ['customer', 'owner']
+  if (!profile || !allowedRoles.includes(profile.role)) {
+    // SECURITY: generic message — do not reveal which roles exist in the system
+    throw new Error('No autorizado')
+  }
+
+  // SECURITY: one business per user — profiles has no business_id column, so the
+  // ownership relation is checked through businesses.owner_id (mirrors the login flow).
+  const { data: existingBusiness } = await supabase
+    .from('businesses')
+    .select('id')
+    .eq('owner_id', user.id)
+    .maybeSingle()
+
+  if (existingBusiness) {
+    throw new Error('Ya tienes un negocio registrado')
+  }
+
   const name = formData.get('name') as string
   const slug = formData.get('slug') as string
   const phone = formData.get('phone') as string
@@ -39,7 +65,7 @@ export async function createBusiness(formData: FormData) {
     if (error.code === '23505') { // Unique violation for slug
       return { error: 'Ese enlace personalizado (slug) ya está en uso. Por favor elige otro.' }
     }
-    return { error: 'Error al crear el negocio: ' + error.message }
+    return { error: 'Error al crear negocio' }
   }
 
   // After creating the business, redirect to the dashboard

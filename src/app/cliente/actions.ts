@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { validatePhone } from '@/lib/phone'
+import { safeRedirect } from '@/lib/auth/redirect'
 
 export async function loginCustomer(formData: FormData) {
   const supabase = await createClient()
@@ -18,7 +19,7 @@ export async function loginCustomer(formData: FormData) {
   })
 
   if (error) {
-    return { error: error.message === 'Invalid login credentials' ? 'Correo o contraseña incorrectos' : error.message }
+    return { error: 'Credenciales inválidas' }
   }
 
   if (!data.user) {
@@ -44,7 +45,8 @@ export async function loginCustomer(formData: FormData) {
 
   if (redirectTo) {
     revalidatePath('/', 'layout')
-    redirect(redirectTo)
+    // SECURITY: validate the target is an internal path before redirecting (open-redirect prevention)
+    redirect(safeRedirect(redirectTo))
   }
 
   revalidatePath('/', 'layout')
@@ -82,7 +84,7 @@ export async function registerCustomer(formData: FormData) {
   })
 
   if (error) {
-    return { error: 'Error al crear la cuenta: ' + error.message }
+    return { error: 'Error al registrar usuario' }
   }
 
   if (authData.user) {
@@ -101,7 +103,8 @@ export async function registerCustomer(formData: FormData) {
   if (authData.session) {
     if (redirectTo) {
       revalidatePath('/', 'layout')
-      redirect(redirectTo)
+      // SECURITY: validate the target is an internal path before redirecting (open-redirect prevention)
+      redirect(safeRedirect(redirectTo))
     }
     revalidatePath('/', 'layout')
     redirect('/')
@@ -117,7 +120,7 @@ export async function registerCustomer(formData: FormData) {
 export async function getBusinesses() {
   const supabase = await createClient()
   const { data, error, count } = await supabase
-    .from('businesses')
+    .from('businesses_public')
     .select('*', { count: 'exact' })
     .eq('is_active', true)
     .order('name')
@@ -172,7 +175,7 @@ export async function toggleFavorite(businessId: string) {
       .delete()
       .eq('id', existing.id)
     
-    if (error) return { error: error.message }
+    if (error) return { error: 'Error al actualizar favoritos' }
     revalidatePath('/')
     return { success: true, action: 'removed' }
   } else {
@@ -181,7 +184,7 @@ export async function toggleFavorite(businessId: string) {
       .from('user_favorites')
       .insert({ user_id: user.id, business_id: businessId })
 
-    if (error) return { error: error.message }
+    if (error) return { error: 'Error al actualizar favoritos' }
     revalidatePath('/')
     return { success: true, action: 'added' }
   }

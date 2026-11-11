@@ -20,8 +20,10 @@ import {
   Smartphone,
   CalendarClock,
   Settings,
-  XCircle
+  XCircle,
+  CheckCheck
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { ConfirmationDialog } from '@/components/ConfirmationDialog'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -36,6 +38,44 @@ const CHALLENGE_STATUS_LABELS: Record<string, string> = {
   confirmed: 'Confirmado',
   cancelled: 'Cancelado',
   completed: 'Completado'
+}
+
+type ReservationStatusMeta = {
+  label: string
+  containerClassName: string
+  badgeClassName: string
+  Icon: LucideIcon
+}
+
+const RESERVATION_STATUS_META: Record<string, ReservationStatusMeta> = {
+  confirmed: {
+    label: 'Confirmada',
+    containerClassName: 'bg-green-50 text-green-700',
+    badgeClassName: 'bg-green-50 text-green-700 border border-green-200',
+    Icon: CheckCircle2,
+  },
+  cancelled: {
+    label: 'Cancelada',
+    containerClassName: 'bg-red-50 text-red-600',
+    badgeClassName: 'bg-red-50 text-red-600 border border-red-200',
+    Icon: XCircle,
+  },
+  completed: {
+    label: 'Completada',
+    containerClassName: 'bg-blue-50 text-blue-600',
+    badgeClassName: 'bg-blue-50 text-blue-600 border border-blue-200',
+    Icon: CheckCheck,
+  },
+  pending: {
+    label: 'Pendiente',
+    containerClassName: 'bg-amber-50 text-amber-600',
+    badgeClassName: 'bg-amber-50 text-amber-700 border border-amber-200',
+    Icon: Clock4,
+  },
+}
+
+function getReservationStatusMeta(status: string): ReservationStatusMeta {
+  return RESERVATION_STATUS_META[status] ?? RESERVATION_STATUS_META.pending
 }
 
 export default function ProfileClient({ initialProfile, initialReservations, initialChallenges, businessSlug, userEmail }: { 
@@ -330,19 +370,22 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
               />
             ) : (
               <div className="grid gap-3">
-                {reservations.map((res) => (
+                {reservations.map((res) => {
+                  const statusMeta = getReservationStatusMeta(res.status)
+                  const StatusIcon = statusMeta.Icon
+                  return (
                   <Card key={res.id} className="border-border bg-card hover:border-slate-300 transition-colors rounded-2xl overflow-hidden">
                     <CardContent className="p-4 sm:p-5">
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                          <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${res.status === 'confirmed' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-600'}`}>
-                            {res.status === 'confirmed' ? <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" /> : <Clock4 className="w-5 h-5 sm:w-6 sm:h-6" />}
+                          <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${statusMeta.containerClassName}`}>
+                            <StatusIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                           </div>
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <h4 className="font-semibold text-foreground truncate">{res.courts?.name}</h4>
-                              <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${res.status === 'confirmed' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
-                                {res.status === 'confirmed' ? 'Confirmada' : 'Pendiente'}
+                              <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${statusMeta.badgeClassName}`}>
+                                {statusMeta.label}
                               </span>
                             </div>
                             <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 mt-1">
@@ -378,7 +421,8 @@ export default function ProfileClient({ initialProfile, initialReservations, ini
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                  )
+                })}
               </div>
             )}
           </section>
