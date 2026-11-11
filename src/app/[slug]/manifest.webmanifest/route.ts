@@ -9,7 +9,7 @@ export async function GET(
   const supabase = await createClient()
   
   const { data: business } = await supabase
-    .from('businesses')
+    .from('businesses_public')
     .select('name, logo_url, branding')
     .eq('slug', slug)
     .single()

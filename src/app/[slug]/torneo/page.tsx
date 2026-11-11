@@ -13,8 +13,8 @@ export default async function PublicTournamentPage({ params }: PageProps) {
   const supabase = await createClient()
 
   const { data: business } = await supabase
-    .from('businesses')
-    .select('*')
+    .from('businesses_public')
+    .select('id, name, slug, logo_url, branding, is_active')
     .eq('slug', slug)
     .single()
 
@@ -39,7 +39,7 @@ export default async function PublicTournamentPage({ params }: PageProps) {
 
   const standings = (rawStandings || []).map(s => ({
     ...s,
-    gender: (teams?.find(t => t.id === s.team_id) as any)?.gender || 'masculino'
+    gender: teams?.find(t => t.id === s.team_id)?.gender || 'masculino'
   }))
 
   const { data: stats } = await supabase

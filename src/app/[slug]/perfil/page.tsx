@@ -16,8 +16,8 @@ export default async function ProfilePage({ params }: PageProps) {
   const supabase = await createClient()
 
   const { data: business } = await supabase
-    .from('businesses')
-    .select('*')
+    .from('businesses_public')
+    .select('id, name, slug, logo_url, branding, is_active')
     .eq('slug', slug)
     .single()
 

@@ -8,7 +8,7 @@ export async function generateViewport({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const supabase = await createClient()
   const { data: business } = await supabase
-    .from('businesses')
+    .from('businesses_public')
     .select('branding')
     .eq('slug', slug)
     .single()
@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const supabase = await createClient()
 
   const { data: business } = await supabase
-    .from('businesses')
+    .from('businesses_public')
     .select('name, logo_url, branding')
     .eq('slug', slug)
     .single()
@@ -66,7 +66,7 @@ export default async function SlugLayout({
   const supabase = await createClient()
 
   const { data: business } = await supabase
-    .from('businesses')
+    .from('businesses_public')
     .select('name, logo_url, branding, is_active')
     .eq('slug', slug)
     .single()
@@ -77,19 +77,15 @@ export default async function SlugLayout({
 
   const branding = business.branding || {}
   
-  // Tema claro forzado: solo se hereda el color primario del branding.
-  // El fondo, texto y superficies siempre usan los tokens claros del tema
-  // para garantizar legibilidad y evitar fondos oscuros.
+  // Solo se hereda el color de marca. Fondo, texto, superficies y bordes
+  // provienen de los tokens del tema activo (claro, oscuro o sistema) para
+  // que el portal respete la preferencia del usuario sin cambiar la geometría.
+  const brandPrimary = branding.primary || '#2f9565'
   const customStyles = {
-    '--primary': branding.primary || '#2f9565',
-    '--ring': branding.primary || '#2f9565',
-    '--background': '#f8f5ed',
-    '--foreground': '#071b21',
-    '--card': '#ffffff',
-    '--card-foreground': '#071b21',
-    '--popover': '#ffffff',
-    '--popover-foreground': '#071b21',
-    '--border': '#e6e1d5',
+    '--primary': brandPrimary,
+    '--ring': brandPrimary,
+    '--primary-green': brandPrimary,
+    '--brand-green': brandPrimary,
   } as React.CSSProperties
 
   return (

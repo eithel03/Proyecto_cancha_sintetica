@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { CalendarDays, Trophy, Swords, User, Flag } from 'lucide-react'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 export function PublicNav({ slug, businessName }: { slug: string; businessName: string }) {
   const pathname = usePathname()
@@ -58,12 +59,16 @@ export function PublicNav({ slug, businessName }: { slug: string; businessName: 
                 </Link>
               )
             })}
+            <ThemeToggle
+              align="end"
+              className="ml-2 border-white/15 bg-white/10 text-white hover:border-white/30 hover:bg-white/15 hover:text-white"
+            />
           </nav>
         </div>
       </header>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 inset-x-0 z-50 bg-white border-t border-border md:hidden safe-area-pb">
+      <nav className="fixed bottom-0 inset-x-0 z-50 bg-card border-t border-border md:hidden safe-area-pb">
         <div className="flex items-center justify-around h-16 px-2">
           {tabs.map((tab) => {
             const isActive = isActiveTab(tab)
@@ -86,6 +91,13 @@ export function PublicNav({ slug, businessName }: { slug: string; businessName: 
               </Link>
             )
           })}
+          <div className="flex min-w-0 flex-1 flex-col items-center justify-center py-1.5 text-muted-foreground">
+            <ThemeToggle
+              align="end"
+              className="h-8 w-8 rounded-full border-0 bg-transparent text-muted-foreground hover:bg-primary-green-light/60 hover:text-foreground"
+            />
+            <span className="text-[10px] font-semibold">Tema</span>
+          </div>
         </div>
       </nav>
     </>

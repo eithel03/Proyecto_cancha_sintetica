@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 const SIDEBAR_COLLAPSE_KEY = 'admin-sidebar-collapsed'
 
@@ -137,7 +138,11 @@ export default function DashboardLayout({
               <Home className="h-6 w-6" />
             </span>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center gap-1">
+            <ThemeToggle
+              align="end"
+              className="h-9 w-9 border-white/10 bg-white/5 text-emerald-50/80 hover:border-white/25 hover:bg-white/10 hover:text-white"
+            />
             <button
               onClick={toggleCollapsed}
               className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg text-emerald-50/70 transition-colors hover:bg-white/10 hover:text-white md:flex"

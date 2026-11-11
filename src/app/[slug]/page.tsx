@@ -20,9 +20,10 @@ export default async function PublicBusinessPage({ params }: PageProps) {
   const { slug } = await params
   const supabase = await createClient()
 
+  // Lectura pública: la vista excluye owner_id, email y admin_notes.
   const { data: business } = await supabase
-    .from('businesses')
-    .select('*')
+    .from('businesses_public')
+    .select('id, name, slug, location, phone, whatsapp, description, logo_url, cover_image_url, latitude, longitude, branding, is_active')
     .eq('slug', slug)
     .single()
 

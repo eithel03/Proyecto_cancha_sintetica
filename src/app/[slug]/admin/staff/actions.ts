@@ -45,8 +45,10 @@ export async function addStaffMember(businessId: string, email: string, role: st
 
   const targetUserId = targetUser.id
 
-  // Verify the target user has a profile
-  const { data: targetProfile } = await supabase
+  // Verify the target user has a profile. Se usa el cliente administrativo
+  // porque el usuario aún no pertenece al negocio y la RLS de perfiles no
+  // permite descubrir perfiles ajenos.
+  const { data: targetProfile } = await adminClient
     .from('profiles')
     .select('id')
     .eq('id', targetUserId)

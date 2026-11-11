@@ -6,6 +6,7 @@ import { LayoutDashboard, Store, LogOut, ShieldAlert, Menu, X } from 'lucide-rea
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { useEffect, useState } from 'react'
 
 const navigation = [
@@ -41,10 +42,17 @@ export default function AdminLayout({
         console.error('Error fetching profile:', profileError)
       }
 
+      const typedProfile = profile as {
+        full_name?: string | null
+        first_name?: string | null
+        last_name?: string | null
+      } | null
+      const metadata = user.user_metadata as { full_name?: string | null } | undefined
+
       const adminName =
-        (profile as any)?.full_name ||
-        [(profile as any)?.first_name, (profile as any)?.last_name].filter(Boolean).join(' ') ||
-        (user.user_metadata as any)?.full_name ||
+        typedProfile?.full_name ||
+        [typedProfile?.first_name, typedProfile?.last_name].filter(Boolean).join(' ') ||
+        metadata?.full_name ||
         user.email?.split('@')[0] ||
         'Super Admin'
 
@@ -113,12 +121,18 @@ export default function AdminLayout({
           <ShieldAlert className="h-6 w-6 shrink-0 text-emerald-700" />
           <h1 className="truncate text-lg font-black uppercase tracking-tight text-emerald-950">Super admin</h1>
         </div>
-        <button 
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-          className="flex-shrink-0 shrink-0 rounded-lg p-2 text-slate-700 transition-colors hover:bg-slate-100"
-        >
-          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <ThemeToggle
+            align="end"
+            className="h-9 w-9 border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:text-emerald-700"
+          />
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+            className="flex-shrink-0 rounded-lg p-2 text-slate-700 transition-colors hover:bg-slate-100"
+          >
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Overlay */}
@@ -147,12 +161,18 @@ export default function AdminLayout({
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-200/70">Panel central</p>
             </div>
           </div>
-          <button 
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="rounded-lg p-2 text-emerald-100/70 hover:bg-white/10 hover:text-white md:hidden"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center gap-1">
+            <ThemeToggle
+              align="end"
+              className="h-9 w-9 border-white/10 bg-white/5 text-emerald-50/80 hover:border-white/25 hover:bg-white/10 hover:text-white"
+            />
+            <button 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="rounded-lg p-2 text-emerald-100/70 hover:bg-white/10 hover:text-white md:hidden"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
         
         <nav className="flex-1 space-y-2 overflow-y-auto overflow-x-hidden p-4">

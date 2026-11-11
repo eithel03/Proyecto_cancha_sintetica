@@ -16,8 +16,8 @@ export default async function BookingPage({ params, searchParams }: PageProps) {
   const supabase = await createClient()
 
   const { data: business } = await supabase
-    .from('businesses')
-    .select('*')
+    .from('businesses_public')
+    .select('id, name, slug, location, phone, whatsapp, logo_url, branding, is_active')
     .eq('slug', slug)
     .single()
 

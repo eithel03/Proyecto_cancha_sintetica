@@ -107,7 +107,7 @@ export default async function Layout({
   const userName = profileName || metadataName || 'Sin nombre registrado'
 
   return (
-    <div className="dark admin-theme">
+    <div>
       <DashboardClientLayout
         businessName={business.name}
         userName={userName}
