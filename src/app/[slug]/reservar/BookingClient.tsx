@@ -6,13 +6,53 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { createReservation, checkAvailability } from './actions'
+import { createReservation, checkAvailability, type AvailabilitySlot } from './actions'
 import { acceptChallenge } from '@/app/[slug]/retos/actions'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { AlertCircle, ArrowRight, Calendar, CalendarCheck, Check, CheckCircle2, CircleDollarSign, Clock, Loader2, MapPin, ShieldCheck, Swords, Timer, X } from 'lucide-react'
 import { AuthPromptDialog } from '@/components/AuthPromptDialog'
 import { cn, formatTime12h } from '@/lib/utils'
+
+type BookingBusiness = {
+  id: string
+  name: string
+  slug: string
+}
+
+type BookingCourt = {
+  id: string
+  name: string
+  price_per_person: number | null
+}
+
+type BusinessHour = {
+  day_of_week: number
+  open_time: string
+  close_time: string
+  is_closed: boolean | null
+}
+
+type BusinessException = {
+  exception_date: string
+  reason: string | null
+  is_closed: boolean | null
+}
+
+type PricingRule = {
+  court_id: string | null
+  day_of_week: number
+  start_time: string
+  end_time: string
+  price: number
+}
+
+type CustomerProfile = {
+  id: string
+  full_name: string | null
+  phone: string | null
+  role: string | null
+} | null
 
 function getChallengeGenderMeta(gender?: string) {
   switch (gender) {
@@ -33,16 +73,18 @@ export default function BookingClient({
   preselectedCourtId,
   customerProfile,
   businessHours,
+  businessHoursLoadError,
   exceptions = [],
   pricingRules = []
 }: { 
-  business: any, 
-  courts: any[],
+  business: BookingBusiness,
+  courts: BookingCourt[],
   preselectedCourtId?: string,
-  customerProfile: any,
-  businessHours: any[],
-  exceptions?: any[],
-  pricingRules?: any[]
+  customerProfile: CustomerProfile,
+  businessHours: BusinessHour[],
+  businessHoursLoadError?: string,
+  exceptions?: BusinessException[],
+  pricingRules?: PricingRule[]
 }) {
   const [pending, setPending] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -51,15 +93,7 @@ export default function BookingClient({
   const [selectedCourt, setSelectedCourt] = useState<string>(preselectedCourtId || (courts.length > 0 ? courts[0].id : ''))
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toLocaleDateString('sv-SE'))
   
-  const [occupiedSlots, setOccupiedSlots] = useState<{
-    start_time: string, 
-    end_time: string, 
-    id?: string, 
-    type?: string,
-    gender?: string | null,
-    home?: { name: string, logo_url?: string | null },
-    away?: { name: string, logo_url?: string | null }
-  }[]>([])
+  const [occupiedSlots, setOccupiedSlots] = useState<AvailabilitySlot[]>([])
   const [loadingSlots, setLoadingSlots] = useState(false)
   
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
@@ -86,21 +120,26 @@ export default function BookingClient({
     return (exceptions || []).find(ex => ex.exception_date === selectedDate)
   }, [exceptions, selectedDate])
 
-  const formatTime = (h: number) => {
-    const hours = Math.floor(h)
-    const mins = h % 1 === 0 ? '00' : '30'
-    return `${hours.toString().padStart(2, '0')}:${mins}`
+  const timeToMinutes = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number)
+    return (hours || 0) * 60 + (minutes || 0)
+  }
+
+  const formatTime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60)
+    const remainingMinutes = minutes % 60
+    return `${hours.toString().padStart(2, '0')}:${remainingMinutes.toString().padStart(2, '0')}`
   }
 
   const HOURS = useMemo(() => {
-    if (!daySchedule || daySchedule.is_closed) return []
+    if (!daySchedule || daySchedule.is_closed || !daySchedule.open_time || !daySchedule.close_time) return []
     
-    const start = parseInt(daySchedule.open_time.split(':')[0])
-    const end = parseInt(daySchedule.close_time.split(':')[0])
+    const start = timeToMinutes(daySchedule.open_time)
+    const end = timeToMinutes(daySchedule.close_time)
     
-    const slots = []
-    for (let h = start; h <= end - 1; h += 0.5) {
-      slots.push(h)
+    const slots: number[] = []
+    for (let minutes = start; minutes + 60 <= end; minutes += 30) {
+      slots.push(minutes)
     }
     return slots
   }, [daySchedule])
@@ -121,8 +160,8 @@ export default function BookingClient({
       if (cancelled) return
       if (Array.isArray(result)) {
         setOccupiedSlots(result)
-      } else if (result && (result as any).error) {
-        toast.error('Error al cargar disponibilidad: ' + (result as any).error)
+      } else if (!Array.isArray(result)) {
+        toast.error('Error al cargar disponibilidad: ' + result.error)
         setOccupiedSlots([])
       }
       setLoadingSlots(false)
@@ -133,9 +172,9 @@ export default function BookingClient({
 
   const getSlotOccupancy = (hour: number) => {
     const startT = formatTime(hour)
-    const endT = formatTime(hour + 1)
+    const endT = formatTime(hour + 60)
 
-    return occupiedSlots.find((res: any) => {
+    return occupiedSlots.find((res) => {
       const partsStart = res.start_time.split(':')
       const partsEnd = res.end_time.split(':')
       const resStart = `${partsStart[0].padStart(2, '0')}:${partsStart[1]}`
@@ -158,7 +197,7 @@ export default function BookingClient({
       return slotTime >= start && slotTime < end
     })
     
-    return rule ? rule.price : court.price_per_person
+    return Number(rule?.price ?? court.price_per_person ?? 0)
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -203,10 +242,10 @@ export default function BookingClient({
 
   if (success) {
     return (
-      <Card className="max-w-xl mx-auto text-center py-14 border-border bg-white shadow-soft rounded-2xl animate-in zoom-in-95 duration-500">
+      <Card className="max-w-xl mx-auto text-center py-14 border-border bg-card shadow-soft rounded-2xl animate-in zoom-in-95 duration-500">
         <CardContent className="space-y-6">
-          <div className="mx-auto w-16 h-16 rounded-full bg-green-50 border border-green-200 flex items-center justify-center">
-            <CheckCircle2 className="w-9 h-9 text-green-700" />
+          <div className="mx-auto w-16 h-16 rounded-full bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 flex items-center justify-center">
+            <CheckCircle2 className="w-9 h-9 text-green-700 dark:text-green-400" />
           </div>
           <div className="space-y-2">
             <h2 className="text-2xl font-bold tracking-tight text-foreground">{selectedChallengeId ? 'Reto aceptado' : '¡Solicitud enviada!'}</h2>
@@ -229,9 +268,9 @@ export default function BookingClient({
   const courtObj = courts.find(c => c.id === selectedCourt)
 
   const dayParts = [
-    { key: 'morning', label: 'Mañana', from: 0, to: 12 },
-    { key: 'afternoon', label: 'Tarde', from: 12, to: 18 },
-    { key: 'night', label: 'Noche', from: 18, to: 24 },
+    { key: 'morning', label: 'Mañana', from: 0, to: 12 * 60 },
+    { key: 'afternoon', label: 'Tarde', from: 12 * 60, to: 18 * 60 },
+    { key: 'night', label: 'Noche', from: 18 * 60, to: 24 * 60 },
   ]
 
   const slotPrice = selectedSlot ? getSlotPrice(selectedSlot.split('-')[0]) : Number(courtObj?.price_per_person || 0)
@@ -251,16 +290,16 @@ export default function BookingClient({
       <CardContent className="px-4 sm:px-8 py-6 sm:py-7">
         <form id="booking-form" onSubmit={onSubmit} className="space-y-6">
 
-          <div className="grid gap-5 md:grid-cols-2 rounded-2xl bg-[#F4F0E6] border border-border p-5 sm:p-6">
+          <div className="grid gap-5 md:grid-cols-2 rounded-2xl bg-surface border border-border p-5 sm:p-6">
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-foreground">Elegir cancha</Label>
               <Select value={selectedCourt} onValueChange={(val) => setSelectedCourt(val || '')} required>
-                <SelectTrigger className="bg-white dark:bg-white dark:hover:bg-white border-border h-12 rounded-xl px-4 text-foreground shadow-none focus-visible:border-gold focus-visible:ring-gold/25">
+                <SelectTrigger className="bg-card border-border h-12 rounded-xl px-4 text-foreground shadow-none focus-visible:border-gold focus-visible:ring-gold/25">
                   <SelectValue placeholder="Selecciona una cancha">
                     {courtObj ? (
                       <span className="flex min-w-0 w-full items-center gap-2">
                         <span className="truncate font-semibold">{courtObj.name}</span>
-                        <span className="shrink-0 ml-auto rounded-full bg-[#F4F0E6] px-2.5 py-0.5 text-[11px] font-bold text-slate-600 whitespace-nowrap">
+                        <span className="shrink-0 ml-auto rounded-full bg-surface-secondary px-2.5 py-0.5 text-[11px] font-bold text-muted-foreground whitespace-nowrap">
                           ₡{Number(courtObj.price_per_person).toLocaleString('es-CR')}<span className="hidden sm:inline"> por persona</span>
                         </span>
                       </span>
@@ -298,7 +337,7 @@ export default function BookingClient({
                   min={new Date().toLocaleDateString('sv-SE')} 
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="bg-white dark:bg-white border-border h-12 pl-10 rounded-xl font-medium text-foreground shadow-none focus-visible:border-gold focus-visible:ring-gold/25"
+                  className="bg-card border-border h-12 pl-10 rounded-xl font-medium text-foreground shadow-none focus-visible:border-gold focus-visible:ring-gold/25"
                 />
               </div>
             </div>
@@ -327,6 +366,12 @@ export default function BookingClient({
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 <p className="text-sm text-slate-500 font-medium">Buscando disponibilidad...</p>
               </div>
+            ) : businessHoursLoadError ? (
+              <div className="flex flex-col items-center justify-center p-12 bg-amber-50 border border-amber-200 rounded-2xl space-y-3 text-center">
+                <AlertCircle className="w-10 h-10 text-amber-500" />
+                <p className="text-amber-700 font-semibold text-lg">No se pudo cargar el horario</p>
+                <p className="text-muted-foreground text-sm max-w-md">Actualiza la página o inténtalo de nuevo en unos momentos.</p>
+              </div>
             ) : !daySchedule || daySchedule.is_closed || currentException ? (
               <div className="flex flex-col items-center justify-center p-12 bg-red-50 border border-red-200 rounded-2xl space-y-3 animate-in fade-in duration-500 text-center">
                 <AlertCircle className="w-10 h-10 text-red-400" />
@@ -336,7 +381,9 @@ export default function BookingClient({
                 <p className="text-slate-600 text-sm max-w-md">
                   {currentException 
                     ? (currentException.reason || 'Este local ha bloqueado las reservas para este día.')
-                    : `Este local no atiende reservas los días ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long' })}.`}
+                    : businessHours.length === 0
+                      ? 'El horario de reservas todavía no ha sido configurado.'
+                      : `Este local no atiende reservas los días ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long' })}.`}
                 </p>
               </div>
             ) : (
@@ -349,7 +396,7 @@ export default function BookingClient({
                     <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-6 gap-2.5">
                       {partSlots.map(hour => {
                         const startStr = formatTime(hour)
-                        const endStr = formatTime(hour + 1)
+                        const endStr = formatTime(hour + 60)
                         const slotStr = `${startStr}-${endStr}`
                         const occupancy = getSlotOccupancy(hour)
                         const occStart = occupancy?.start_time ? `${occupancy.start_time.split(':')[0].padStart(2, '0')}:${occupancy.start_time.split(':')[1]}` : ''

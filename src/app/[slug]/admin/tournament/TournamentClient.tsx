@@ -1228,6 +1228,7 @@ export default function TournamentClient({
                     key={match.id}
                     className={cn(
                       styles.matchCard,
+                      'dark:bg-card',
                       match.status === 'live' && styles.matchCardLive,
                       match.status === 'cancelled' && styles.matchCardCancelled,
                     )}

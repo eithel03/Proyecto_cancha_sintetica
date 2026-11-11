@@ -1,8 +1,6 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import BookingClient from './BookingClient'
-import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
 import { PublicNav } from '@/components/PublicNav'
 
 type PageProps = {
@@ -45,7 +43,7 @@ export default async function BookingPage({ params, searchParams }: PageProps) {
     .select('*')
     .in('court_id', courts.map(c => c.id))
 
-  const { data: businessHours } = await supabase
+  const { data: businessHours, error: businessHoursError } = await supabase
     .from('business_hours')
     .select('*')
     .eq('business_id', business.id)
@@ -57,7 +55,6 @@ export default async function BookingPage({ params, searchParams }: PageProps) {
     .eq('is_closed', true)
 
   const { data: { user } } = await supabase.auth.getUser()
-  let isCustomer = false
   let profileData = null
 
   if (user) {
@@ -67,7 +64,6 @@ export default async function BookingPage({ params, searchParams }: PageProps) {
       .eq('id', user.id)
       .single()
     if (profile && profile.role === 'customer') {
-      isCustomer = true
       profileData = profile
     }
   }
@@ -86,6 +82,7 @@ export default async function BookingPage({ params, searchParams }: PageProps) {
           preselectedCourtId={typeof courtId === 'string' ? courtId : undefined}
           customerProfile={profileData}
           businessHours={businessHours || []}
+          businessHoursLoadError={businessHoursError?.message}
           exceptions={exceptions || []}
           pricingRules={pricingRules || []}
         />

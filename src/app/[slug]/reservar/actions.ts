@@ -3,8 +3,37 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
+export type AvailabilityTeam = {
+  name: string
+  logo_url?: string | null
+}
 
-export async function checkAvailability(courtId: string, date: string) {
+export type AvailabilitySlot = {
+  start_time: string
+  end_time: string
+  id?: string | null
+  type?: string
+  status?: string
+  gender?: string | null
+  home?: AvailabilityTeam | null
+  away?: AvailabilityTeam | null
+}
+
+export type AvailabilityResult = AvailabilitySlot[] | { error: string }
+
+function normalizeAvailabilityTeam(team: unknown): AvailabilityTeam | null {
+  if (Array.isArray(team)) return normalizeAvailabilityTeam(team[0])
+  if (!team || typeof team !== 'object' || !('name' in team) || typeof team.name !== 'string') return null
+
+  return {
+    name: team.name,
+    logo_url: 'logo_url' in team && (typeof team.logo_url === 'string' || team.logo_url === null)
+      ? team.logo_url
+      : null,
+  }
+}
+
+export async function checkAvailability(courtId: string, date: string): Promise<AvailabilityResult> {
   if (!/^[0-9a-fA-F-]{36}$/.test(courtId) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return { error: 'La cancha o la fecha no son válidas.' }
   }
@@ -61,8 +90,8 @@ export async function checkAvailability(courtId: string, date: string) {
         end_time: endNormalized,
         type: match.gender === 'femenino' ? 'tournament_female' : 'tournament_male',
         status: match.status,
-        home: match.home,
-        away: match.away,
+        home: normalizeAvailabilityTeam(match.home),
+        away: normalizeAvailabilityTeam(match.away),
       }
     }),
     ...(slots || []).map((slot: {
@@ -72,7 +101,7 @@ export async function checkAvailability(courtId: string, date: string) {
       kind: string
       gender: string | null
       reference_id: string | null
-    }) => ({
+    }): AvailabilitySlot => ({
       id: slot.reference_id,
       start_time: slot.start_time,
       end_time: slot.end_time,

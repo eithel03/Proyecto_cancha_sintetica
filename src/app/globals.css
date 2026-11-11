@@ -84,6 +84,7 @@
    ============================================================ */
 :root {
   color-scheme: light;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 
   --background: #F8F5EE;
   --surface: #F1EDE3;

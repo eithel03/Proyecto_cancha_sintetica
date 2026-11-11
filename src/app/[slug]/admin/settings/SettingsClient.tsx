@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import { toast } from 'sonner'
 import {
@@ -102,8 +102,7 @@ export default function SettingsClient({ business, initialHours, initialExceptio
   const [newExReason, setNewExReason] = useState('')
 
   const generalDirty = name !== business.name || phone !== (business.phone || '') || whatsapp !== (business.whatsapp || '') || location !== (business.location || '') || coords.lat !== (business.latitude?.toString() || '') || coords.lng !== (business.longitude?.toString() || '') || logoUrl !== (business.logo_url || '')
-  const [portalUrl, setPortalUrl] = useState(`https://saasintetica.app/${slug}`)
-  useEffect(() => { setPortalUrl(`${window.location.origin}/${slug}`) }, [slug])
+  const portalUrl = `${typeof window === 'undefined' ? 'https://saasintetica.app' : window.location.origin}/${slug}`
 
   const captureLocation = () => {
     if (!navigator.geolocation) return toast.error('La geolocalización no está disponible en este dispositivo.')

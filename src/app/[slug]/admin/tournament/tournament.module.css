@@ -3,7 +3,6 @@
   max-width: 1480px;
   margin-inline: auto;
 }
-
 .pageHeader {
   background: linear-gradient(115deg, #064e3b 0%, #047857 58%, #0f766e 100%);
   border-bottom: 1px solid rgba(6, 78, 59, 0.45);
@@ -604,4 +603,186 @@
   .contentIntro h2 {
     font-size: 1.5rem;
   }
+}
+
+/* ============================================================
+   MODO OSCURO
+   Las reglas anteriores fuerzan el diseño claro con !important.
+   Estos overrides, con mayor especificidad, restauran los tokens
+   del tema oscuro en las tarjetas y tablas del torneo (equipos,
+   jugadores, partidos y posiciones).
+   ============================================================ */
+
+:global(.dark) .shell {
+  color: var(--foreground);
+}
+
+:global(.dark) .sectionCard {
+  background: var(--card) !important;
+  border-color: var(--border) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+:global(.dark) .sectionCard :global(thead),
+:global(.dark) .sectionCard :global(th) {
+  background-color: var(--muted) !important;
+  border-color: var(--border) !important;
+}
+
+:global(.dark) .sectionCard :global(th) {
+  color: var(--muted-foreground) !important;
+}
+
+:global(.dark) .sectionCard :global(td) {
+  color: var(--foreground) !important;
+}
+
+:global(.dark) .sectionCard :global(td .font-black),
+:global(.dark) .sectionCard :global(td .font-bold) {
+  color: var(--foreground) !important;
+}
+
+:global(.dark) .sectionCard :global(tbody tr) {
+  border-color: var(--border) !important;
+}
+
+:global(.dark) .sectionCard :global(tbody tr:hover) {
+  background-color: var(--muted) !important;
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+/* Texto que el modo claro fuerza a colores oscuros. */
+:global(.dark) .sectionCard :global([class*="text-white"]),
+:global(.dark) .sectionCard :global([class*="text-slate-700"]),
+:global(.dark) .sectionCard :global([class*="text-slate-800"]),
+:global(.dark) .sectionCard :global([class*="text-slate-900"]),
+:global(.dark) .sectionCard :global([class*="text-zinc-200"]),
+:global(.dark) .sectionCard :global([class*="text-zinc-300"]) {
+  color: var(--foreground) !important;
+}
+
+:global(.dark) .sectionCard :global([class*="text-muted-foreground"]),
+:global(.dark) .sectionCard :global([class*="text-slate-400"]),
+:global(.dark) .sectionCard :global([class*="text-slate-500"]),
+:global(.dark) .sectionCard :global([class*="text-slate-600"]),
+:global(.dark) .sectionCard :global([class*="text-gray-400"]),
+:global(.dark) .sectionCard :global([class*="text-gray-500"]),
+:global(.dark) .sectionCard :global([class*="text-gray-600"]),
+:global(.dark) .sectionCard :global([class*="text-zinc-400"]),
+:global(.dark) .sectionCard :global([class*="text-zinc-500"]),
+:global(.dark) .sectionCard :global([class*="text-zinc-600"]),
+:global(.dark) .sectionCard :global([class*="text-zinc-700"]) {
+  color: var(--muted-foreground) !important;
+}
+
+/* Fondos zinc/negros que el modo claro convertía a blanco. */
+:global(.dark) .sectionCard :global([class*="bg-zinc-950"]),
+:global(.dark) .sectionCard :global([class*="bg-zinc-900"]),
+:global(.dark) .sectionCard :global([class*="bg-zinc-800"]),
+:global(.dark) .sectionCard :global([class*="bg-black"]) {
+  background-color: var(--muted) !important;
+}
+
+/* Inputs y selects dentro de las tarjetas. */
+:global(.dark) .sectionCard :global(input),
+:global(.dark) .sectionCard :global(button[role="combobox"]),
+:global(.dark) .sectionCard :global([role="combobox"]) {
+  background-color: var(--background) !important;
+  border-color: var(--border) !important;
+  color: var(--foreground) !important;
+}
+
+/* El modo claro fuerza un fondo claro en hover de cualquier botón. */
+:global(.dark) .sectionCard :global(button:not([data-state="active"]):hover) {
+  background-color: var(--muted) !important;
+}
+
+/* --- Tarjetas de partidos (pestaña "Partidos") --- */
+:global(.dark) .matchCard,
+:global(.dark) .matchCardCancelled {
+  background: var(--card);
+  border-color: var(--border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+:global(.dark) .matchCard:hover {
+  border-color: var(--primary);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.4);
+}
+
+:global(.dark) .matchCardLive {
+  border-color: rgba(249, 115, 22, 0.45);
+}
+
+:global(.dark) .matchCardLive:hover {
+  border-color: rgba(249, 115, 22, 0.7);
+}
+
+:global(.dark) .matchTeam,
+:global(.dark) .matchTeamCopy strong,
+:global(.dark) .matchDate {
+  color: var(--foreground);
+}
+
+:global(.dark) .matchTeamCopy small,
+:global(.dark) .matchCourt,
+:global(.dark) .matchTime,
+:global(.dark) .matchScore small,
+:global(.dark) .matchPagination,
+:global(.dark) .matchEmpty,
+:global(.dark) .matchEmpty p {
+  color: var(--muted-foreground);
+}
+
+:global(.dark) .matchTeamMark {
+  background: var(--muted);
+  border-color: var(--border);
+  color: var(--primary);
+}
+
+:global(.dark) .matchDateIcon {
+  background: rgba(5, 150, 105, 0.16);
+  color: var(--primary);
+}
+
+:global(.dark) .matchScore {
+  background: rgba(59, 130, 246, 0.14);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #93c5fd;
+}
+
+:global(.dark) .matchIconButton {
+  background: var(--card);
+  border-color: var(--border);
+  color: var(--muted-foreground);
+}
+
+:global(.dark) .matchIconButton:hover {
+  border-color: var(--primary);
+  background: var(--muted);
+  color: var(--primary);
+}
+
+:global(.dark) .matchEventButton {
+  background: rgba(249, 115, 22, 0.12);
+  border-color: rgba(249, 115, 22, 0.35);
+  color: #fdba74;
+}
+
+:global(.dark) .matchEventButton:hover {
+  background: rgba(249, 115, 22, 0.2);
+}
+
+:global(.dark) .matchDeleteButton,
+:global(.dark) .matchDeleteButton:hover {
+  color: var(--destructive);
+}
+
+:global(.dark) .matchDeleteButton:hover {
+  border-color: rgba(244, 63, 94, 0.4);
+  background: rgba(244, 63, 94, 0.12);
+}
+
+:global(.dark) .matchPagination {
+  border-top-color: var(--border);
 }
