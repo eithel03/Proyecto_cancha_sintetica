@@ -18,6 +18,7 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 
 import { ConfirmationDialog } from '@/components/ConfirmationDialog'
+import { TournamentVisibilityToggle } from '@/components/TournamentVisibilityToggle'
 import { cn, formatTime12h } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
@@ -160,6 +161,7 @@ export default function TournamentClient({
   initialEvents,
   courts,
   initialClassificationZones,
+  initialShowTournament,
 }: { 
   businessId: string, 
   slug: string,
@@ -169,6 +171,7 @@ export default function TournamentClient({
   initialEvents: TournamentEvent[],
   courts: Court[]
   initialClassificationZones: InitialClassificationZone[]
+  initialShowTournament: boolean
 }) {
   const [activeTab, setActiveTab] = useState('teams')
   const [selectedGender, setSelectedGender] = useState<Gender>('masculino')
@@ -216,7 +219,7 @@ export default function TournamentClient({
   const [zonesDirty, setZonesDirty] = useState(false)
   const [zonesSaveState, setZonesSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
-  const [selectedViewTeam, setSelectedViewTeam] = useState<any>(null)
+  const [selectedViewTeam, setSelectedViewTeam] = useState<Team | null>(null)
   const [isViewTeamModalOpen, setIsViewTeamModalOpen] = useState(false)
 
   const [isUploading, setIsUploading] = useState(false)
@@ -568,6 +571,7 @@ export default function TournamentClient({
           </div>
           <div>
             <h2 className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Torneo activo</h2>
+            <TournamentVisibilityToggle businessId={businessId} initialShow={initialShowTournament} />
             <p className="mt-2 text-3xl font-black uppercase tracking-tight text-white">{tournamentTitle}</p>
             <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
               <TournamentMetric value={currentTeams.length} label="Equipos" />
@@ -748,8 +752,8 @@ export default function TournamentClient({
             {/* Desktop: tabla */}
             <div className="hidden overflow-x-auto md:block">
             <Table className="min-w-[820px]">
-              <TableHeader className="bg-slate-50">
-                <TableRow className="border-slate-200">
+              <TableHeader className="bg-slate-50 dark:bg-white/5">
+                <TableRow className="border-slate-200 dark:border-white/10">
                   <TableHead className="w-16 px-6 font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Logo</TableHead>
                   <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Nombre</TableHead>
                   <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 italic">Capitán</TableHead>
@@ -780,10 +784,10 @@ export default function TournamentClient({
                         openTeamDetail(team)
                       }
                     }}
-                    className="cursor-pointer border-slate-100 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 group"
+                    className="cursor-pointer border-slate-100 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 group dark:border-white/10 dark:hover:bg-white/5"
                   >
                     <TableCell className="px-6">
-                       <div className="w-10 h-10 bg-slate-100 rounded-full border border-slate-200 flex items-center justify-center overflow-hidden">
+                       <div className="w-10 h-10 bg-slate-100 rounded-full border border-slate-200 flex items-center justify-center overflow-hidden dark:border-white/10">
                         {team.logo_url ? (
                           <img src={team.logo_url} className="w-full h-full object-contain" alt={team.name} />
                         ) : (
@@ -791,7 +795,7 @@ export default function TournamentClient({
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium text-slate-900 group-hover:text-emerald-700 transition-colors">{team.name}</TableCell>
+                    <TableCell className="font-medium text-slate-900 group-hover:text-emerald-700 transition-colors dark:text-foreground dark:group-hover:text-emerald-400">{team.name}</TableCell>
                     <TableCell>{team.captain_name || '-'}</TableCell>
                     <TableCell>{team.captain_phone || '-'}</TableCell>
                     <TableCell className="py-4">
@@ -800,9 +804,9 @@ export default function TournamentClient({
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center font-semibold text-slate-700">{stats.pj}</TableCell>
-                    <TableCell className="text-center font-semibold text-emerald-600">{stats.g}</TableCell>
-                    <TableCell className="text-center font-semibold text-amber-600">{stats.e}</TableCell>
-                    <TableCell className="text-center font-semibold text-rose-600">{stats.p}</TableCell>
+                    <TableCell className="text-center font-semibold text-emerald-600 dark:text-emerald-400">{stats.g}</TableCell>
+                    <TableCell className="text-center font-semibold text-amber-600 dark:text-amber-400">{stats.e}</TableCell>
+                    <TableCell className="text-center font-semibold text-rose-600 dark:text-rose-400">{stats.p}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
                         <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" title="Victorias" />
@@ -814,10 +818,10 @@ export default function TournamentClient({
                       </div>
                     </TableCell>
                     <TableCell className="text-right space-x-2" onClick={(event) => event.stopPropagation()}>
-                      <Button variant="outline" size="icon" className="border-slate-200 bg-white hover:bg-slate-50" onClick={() => { setEditingTeam(team); setLogoUrl(team.logo_url || ''); setIsTeamDialogOpen(true); }}>
+                      <Button variant="outline" size="icon" className="border-slate-200 bg-white hover:bg-slate-50 dark:border-white/15 dark:bg-white/5 dark:text-foreground dark:hover:bg-white/10" onClick={() => { setEditingTeam(team); setLogoUrl(team.logo_url || ''); setIsTeamDialogOpen(true); }}>
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Button variant="outline" size="icon" className="border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100" onClick={(e) => { e.stopPropagation(); handleDeleteTeam(team.id); }}>
+                      <Button variant="outline" size="icon" className="border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20" onClick={(e) => { e.stopPropagation(); handleDeleteTeam(team.id); }}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </TableCell>
@@ -1868,11 +1872,11 @@ export default function TournamentClient({
                           </div>
                         ) : (
                           <div className="grid gap-3">
-                            {teamPlayers.sort((a: any, b: any) => {
+                            {teamPlayers.sort((a: Player, b: Player) => {
                                const aGoals = initialEvents.filter(s => s.player_id === a.id && s.event_type === 'goal').length
                                const bGoals = initialEvents.filter(s => s.player_id === b.id && s.event_type === 'goal').length
                                return bGoals - aGoals
-                            }).map((player: any, idx: number) => {
+                            }).map((player: Player, idx: number) => {
                                const pGoals = initialEvents.filter(s => s.player_id === player.id && s.event_type === 'goal').length
                                const pYellow = initialEvents.filter(s => s.player_id === player.id && s.event_type === 'yellow_card').length
                                const pRed = initialEvents.filter(s => s.player_id === player.id && s.event_type === 'red_card').length

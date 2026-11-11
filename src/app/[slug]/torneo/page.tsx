@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import TournamentPublicClient from './TournamentPublicClient'
 import { PublicNav } from '@/components/PublicNav'
@@ -14,11 +14,16 @@ export default async function PublicTournamentPage({ params }: PageProps) {
 
   const { data: business } = await supabase
     .from('businesses_public')
-    .select('id, name, slug, logo_url, branding, is_active')
+    .select('id, name, slug, logo_url, branding, is_active, show_tournament')
     .eq('slug', slug)
     .single()
 
   if (!business) notFound()
+
+  // SECURITY: el toggle del negocio bloquea el acceso público al torneo.
+  if (business.show_tournament === false) {
+    redirect(`/${slug}`)
+  }
 
   const { data: matches } = await supabase
     .from('tournament_matches')
@@ -54,7 +59,7 @@ export default async function PublicTournamentPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col selection:bg-primary/30">
-      <PublicNav slug={business.slug} businessName={business.name} />
+      <PublicNav slug={business.slug} businessName={business.name} showTournament={business.show_tournament ?? true} />
 
       <main className="flex-1 w-full overflow-x-clip animate-in fade-in slide-in-from-bottom-4 duration-700">
         <TournamentPublicClient 

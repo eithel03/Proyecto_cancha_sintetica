@@ -710,17 +710,17 @@ export default function TournamentPublicClient({ businessId: _businessId, busine
 
       {/* Match Details Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden bg-white border-slate-200 text-foreground rounded-2xl shadow-2xl">
+        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden bg-white dark:bg-card border-slate-200 dark:border-white/10 text-foreground rounded-2xl shadow-2xl">
           {selectedMatch && (
             <div className="flex flex-col h-[85vh]">
-              <div className="relative bg-gradient-to-b from-green-50 to-white p-8 sm:p-10 flex flex-col items-center border-b border-slate-200">
+              <div className="relative bg-gradient-to-b from-green-50 to-white dark:from-emerald-950/60 dark:to-card p-8 sm:p-10 flex flex-col items-center border-b border-slate-200 dark:border-white/10">
                 <div className="absolute top-5 left-6 sm:left-8 flex items-center gap-1.5 text-xs font-medium text-slate-500">
                   <MapPin className="w-3.5 h-3.5 text-primary" /> {selectedMatch.court?.name}
                 </div>
                 
                 <div className="flex items-center justify-between w-full mt-4">
                   <div className="flex-1 flex flex-col items-center gap-3 text-center min-w-0">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-2xl flex items-center justify-center p-2.5 shadow-sm border border-slate-100">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white dark:bg-white/5 rounded-2xl flex items-center justify-center p-2.5 shadow-sm border border-slate-100 dark:border-white/10">
                       {selectedMatch.home?.logo_url ? <img src={selectedMatch.home.logo_url} className="w-full h-full object-contain" alt={selectedMatch.home.name} /> : <Shield className="w-8 h-8 text-slate-300" />}
                     </div>
                     <span className="font-semibold text-sm sm:text-base text-foreground truncate max-w-[130px] sm:max-w-[180px]">{selectedMatch.home?.name}</span>
@@ -738,7 +738,7 @@ export default function TournamentPublicClient({ businessId: _businessId, busine
                   </div>
 
                   <div className="flex-1 flex flex-col items-center gap-3 text-center min-w-0">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-2xl flex items-center justify-center p-2.5 shadow-sm border border-slate-100">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white dark:bg-white/5 rounded-2xl flex items-center justify-center p-2.5 shadow-sm border border-slate-100 dark:border-white/10">
                       {selectedMatch.away?.logo_url ? <img src={selectedMatch.away.logo_url} className="w-full h-full object-contain" alt={selectedMatch.away.name} /> : <Shield className="w-8 h-8 text-slate-300" />}
                     </div>
                     <span className="font-semibold text-sm sm:text-base text-foreground truncate max-w-[130px] sm:max-w-[180px]">{selectedMatch.away?.name}</span>
@@ -750,7 +750,7 @@ export default function TournamentPublicClient({ businessId: _businessId, busine
                 <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 mb-8 text-center">Timeline</h3>
                 
                 <div className="relative space-y-6">
-                  <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-200 -translate-x-1/2" />
+                  <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-200 dark:bg-white/10 -translate-x-1/2" />
 
                   {stats
                     .filter(e => e.match_id === selectedMatch.id)
@@ -777,7 +777,7 @@ export default function TournamentPublicClient({ businessId: _businessId, busine
                             </p>
                           </div>
                           
-                          <div className="relative z-10 w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                          <div className="relative z-10 w-10 h-10 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/15 flex items-center justify-center shadow-sm">
                             {event.event_type === 'goal' && <span className="text-base">⚽</span>}
                             {event.event_type === 'own_goal' && <span className="text-base">⚽❌</span>}
                             {event.event_type === 'assist' && <span className="text-base">👟</span>}
@@ -799,7 +799,7 @@ export default function TournamentPublicClient({ businessId: _businessId, busine
 
       {/* Team Details Modal */}
       <Dialog open={isTeamModalOpen} onOpenChange={setIsTeamModalOpen}>
-        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden bg-white border-slate-200 text-foreground rounded-2xl shadow-2xl">
+        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden bg-white dark:bg-card border-slate-200 dark:border-white/10 text-foreground rounded-2xl shadow-2xl">
           {selectedTeam && (() => {
             let pj = 0, g = 0, e = 0, p = 0, gf = 0, gc = 0
             const teamMatches = matches.filter(m => m.home_team_id === selectedTeam.id || m.away_team_id === selectedTeam.id)
@@ -823,12 +823,12 @@ export default function TournamentPublicClient({ businessId: _businessId, busine
 
             return (
               <div className="flex flex-col h-[90vh]">
-                <div className="relative bg-gradient-to-b from-green-50 to-white p-6 sm:p-10 flex flex-col items-center border-b border-slate-200">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-2xl flex items-center justify-center p-3 sm:p-4 shadow-sm border border-slate-100 mb-4">
+                <div className="relative bg-gradient-to-b from-green-50 to-white dark:from-emerald-950/60 dark:to-card p-6 sm:p-10 flex flex-col items-center border-b border-slate-200 dark:border-white/10">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white dark:bg-white/5 rounded-2xl flex items-center justify-center p-3 sm:p-4 shadow-sm border border-slate-100 dark:border-white/10 mb-4">
                     {selectedTeam.logo_url ? <img src={selectedTeam.logo_url} className="w-full h-full object-contain" alt={selectedTeam.name} /> : <Shield className="w-10 h-10 sm:w-12 sm:h-12 text-slate-300" />}
                   </div>
                   <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mb-2 text-center">{selectedTeam.name}</h2>
-                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 text-slate-500 text-xs font-medium shadow-sm">
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-300 text-xs font-medium shadow-sm">
                     <User className="w-3.5 h-3.5 text-primary" /> Capitán: {selectedTeam.captain_name || 'Sin capitán'}
                   </div>
                 </div>

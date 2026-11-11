@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { CalendarDays, Trophy, Swords, User, Flag } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 
-export function PublicNav({ slug, businessName }: { slug: string; businessName: string }) {
+export function PublicNav({ slug, businessName, showTournament = true }: { slug: string; businessName: string; showTournament?: boolean }) {
   const pathname = usePathname()
 
   const tabs = [
@@ -13,7 +13,7 @@ export function PublicNav({ slug, businessName }: { slug: string; businessName: 
     { label: 'Torneo', icon: Trophy, href: `/${slug}/torneo` },
     { label: 'Retos', icon: Swords, href: `/${slug}/retos` },
     { label: 'Mi perfil', icon: User, href: `/${slug}/perfil` },
-  ]
+  ].filter((tab) => showTournament || tab.label !== 'Torneo')
 
   const isActiveTab = (tab: { label: string; href: string }) =>
     pathname === tab.href ||

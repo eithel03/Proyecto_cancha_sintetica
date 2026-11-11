@@ -219,6 +219,7 @@ export type Database = {
           name: string
           owner_id: string | null
           phone: string | null
+          show_tournament: boolean | null
           slug: string
           whatsapp: string | null
         }
@@ -239,6 +240,7 @@ export type Database = {
           name: string
           owner_id?: string | null
           phone?: string | null
+          show_tournament?: boolean | null
           slug: string
           whatsapp?: string | null
         }
@@ -259,6 +261,7 @@ export type Database = {
           name?: string
           owner_id?: string | null
           phone?: string | null
+          show_tournament?: boolean | null
           slug?: string
           whatsapp?: string | null
         }
@@ -1017,6 +1020,7 @@ export type Database = {
           max_courts: number | null
           name: string | null
           phone: string | null
+          show_tournament: boolean | null
           slug: string | null
           whatsapp: string | null
         }
@@ -1034,6 +1038,7 @@ export type Database = {
           max_courts?: number | null
           name?: string | null
           phone?: string | null
+          show_tournament?: boolean | null
           slug?: string | null
           whatsapp?: string | null
         }
@@ -1051,6 +1056,7 @@ export type Database = {
           max_courts?: number | null
           name?: string | null
           phone?: string | null
+          show_tournament?: boolean | null
           slug?: string | null
           whatsapp?: string | null
         }

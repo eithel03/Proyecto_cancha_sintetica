@@ -59,6 +59,7 @@ export default async function TournamentPage({ params }: PageProps) {
       initialEvents={events || []}
       courts={courts || []}
       initialClassificationZones={classificationZones || []}
+      initialShowTournament={business.show_tournament ?? true}
     />
   )
 }

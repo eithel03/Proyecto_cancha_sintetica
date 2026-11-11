@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { validatePhone } from '@/lib/phone'
-import { verifyBusinessAccess } from '@/lib/auth'
+import { verifyBusinessAccess, verifyBusinessAdminAccess } from '@/lib/auth'
 
 type MatchPayload = {
   business_id: string
@@ -459,4 +459,44 @@ export async function autoStartMatches(businessId: string) {
     revalidatePath(`/${biz.slug}/torneo`, 'page')
   }
   return { success: true, count: ids.length }
+}
+
+// --- CONFIGURACIÓN ---
+
+export async function updateTournamentVisibility(businessId: string, show: boolean) {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autorizado' }
+
+  // SECURITY: requires admin-level access (owner, admin/manager staff, or super_admin)
+  const access = await verifyBusinessAdminAccess(supabase, user.id, businessId)
+  if (access.error) return { error: access.error }
+
+  const { data: business, error: businessError } = await supabase
+    .from('businesses')
+    .select('slug')
+    .eq('id', businessId)
+    .single()
+
+  if (businessError || !business) {
+    return { error: 'Negocio no encontrado' }
+  }
+
+  // SECURITY: scoped to the business the caller administers
+  const { error } = await supabase
+    .from('businesses')
+    .update({ show_tournament: show })
+    .eq('id', businessId)
+
+  if (error) {
+    console.error('Error updating tournament visibility:', error)
+    return { error: 'Error al actualizar configuración' }
+  }
+
+  revalidatePath(`/${business.slug}/admin/tournament`)
+  revalidatePath(`/${business.slug}/torneo`, 'page')
+  revalidatePath(`/${business.slug}`, 'page')
+
+  return { success: true }
 }

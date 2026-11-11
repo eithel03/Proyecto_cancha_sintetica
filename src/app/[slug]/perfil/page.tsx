@@ -17,7 +17,7 @@ export default async function ProfilePage({ params }: PageProps) {
 
   const { data: business } = await supabase
     .from('businesses_public')
-    .select('id, name, slug, logo_url, branding, is_active')
+    .select('id, name, slug, logo_url, branding, is_active, show_tournament')
     .eq('slug', slug)
     .single()
 
@@ -54,7 +54,7 @@ export default async function ProfilePage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col selection:bg-primary/30">
-      <PublicNav slug={business.slug} businessName={business.name} />
+      <PublicNav slug={business.slug} businessName={business.name} showTournament={business.show_tournament ?? true} />
 
       <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full space-y-8 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <ProfileClient 

@@ -67,7 +67,7 @@ export default async function SlugLayout({
 
   const { data: business } = await supabase
     .from('businesses_public')
-    .select('name, logo_url, branding, is_active')
+    .select('name, logo_url, branding, is_active, show_tournament')
     .eq('slug', slug)
     .single()
 

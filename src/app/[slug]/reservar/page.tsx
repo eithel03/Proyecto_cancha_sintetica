@@ -17,7 +17,7 @@ export default async function BookingPage({ params, searchParams }: PageProps) {
 
   const { data: business } = await supabase
     .from('businesses_public')
-    .select('id, name, slug, location, phone, whatsapp, logo_url, branding, is_active')
+    .select('id, name, slug, location, phone, whatsapp, logo_url, branding, is_active, show_tournament')
     .eq('slug', slug)
     .single()
 
@@ -32,7 +32,7 @@ export default async function BookingPage({ params, searchParams }: PageProps) {
   if (!courts || courts.length === 0) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <PublicNav slug={business.slug} businessName={business.name} />
+        <PublicNav slug={business.slug} businessName={business.name} showTournament={business.show_tournament ?? true} />
         <div className="flex-1 flex items-center justify-center p-4">
           <p className="text-xl text-muted-foreground">Este negocio no tiene canchas disponibles por el momento.</p>
         </div>

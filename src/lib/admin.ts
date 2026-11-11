@@ -28,6 +28,7 @@ export type AdminBusiness = {
   logo_url: string | null
   cover_image_url: string | null
   branding: Record<string, string> | null
+  show_tournament: boolean | null
 }
 
 export type AdminSession = {

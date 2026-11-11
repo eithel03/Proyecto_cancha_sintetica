@@ -23,7 +23,7 @@ export default async function PublicBusinessPage({ params }: PageProps) {
   // Lectura pública: la vista excluye owner_id, email y admin_notes.
   const { data: business } = await supabase
     .from('businesses_public')
-    .select('id, name, slug, location, phone, whatsapp, description, logo_url, cover_image_url, latitude, longitude, branding, is_active')
+    .select('id, name, slug, location, phone, whatsapp, description, logo_url, cover_image_url, latitude, longitude, branding, is_active, show_tournament')
     .eq('slug', slug)
     .single()
 
@@ -60,7 +60,7 @@ export default async function PublicBusinessPage({ params }: PageProps) {
 
   return (
     <div className="flex flex-col font-sans">
-      <PublicNav slug={business.slug} businessName={business.name} />
+      <PublicNav slug={business.slug} businessName={business.name} showTournament={business.show_tournament ?? true} />
 
       {isAdmin && (
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-center gap-4 sticky top-16 z-40">
