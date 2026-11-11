@@ -49,3 +49,8 @@ k6-next-dev.err.log
 k6-next-dev.out.log
 dev-new.log
 dev-new-error.log
+.tmp-full-scan.mjs
+backup_*.sql
+schema_*.sql
+supabase/.temp/
+docs/
