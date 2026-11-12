@@ -29,7 +29,7 @@ function TeamLogo({ logoUrl, name, size = 'md' }: { logoUrl?: string | null; nam
 
   if (logoUrl && !imageError) {
     return (
-      <div className={cn(sizeClasses, 'rounded-full bg-white p-1 border border-slate-100 flex-shrink-0 shadow-sm')}>
+      <div className={cn(sizeClasses, 'rounded-full bg-card dark:bg-surface p-1 border border-border dark:border-white/10 flex-shrink-0 shadow-sm')}>
         {/* Plain img keeps the onError fallback independent of remote image config. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -62,15 +62,15 @@ export function MatchRow({ match, isToday = false, onClick }: MatchRowProps) {
       className={cn(
         "relative px-4 sm:px-5 py-3.5 sm:py-4 transition-colors cursor-pointer",
         isToday
-          ? "m-2 rounded-xl border border-[#86D9B7] bg-[#F0FBF6] hover:bg-[#E7F9F2] shadow-[0_6px_18px_rgba(22,101,52,0.06)]"
-          : "hover:bg-[#FBF9F3]",
+          ? "m-2 rounded-xl border border-emerald-300 dark:border-emerald-700/70 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 shadow-[0_6px_18px_rgba(22,101,52,0.06)]"
+          : "hover:bg-surface",
         !isToday && "border-b border-border/60 last:border-b-0"
       )}
     >
       {/* Today badge */}
       {isToday && (
         <div className="mb-2.5">
-          <span className="inline-flex items-center rounded-full bg-[#FFF4D6] border border-[#EAD9A8] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#B7791F]">
+          <span className="inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-700/60 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-200">
             Partido de hoy
           </span>
         </div>
@@ -81,7 +81,7 @@ export function MatchRow({ match, isToday = false, onClick }: MatchRowProps) {
         {/* Home team */}
         <div className="flex items-center gap-3 min-w-0 justify-start">
           <TeamLogo logoUrl={match.home?.logo_url} name={homeName} />
-          <span className="font-semibold text-sm text-foreground truncate">{homeName}</span>
+          <span className="font-semibold text-sm text-foreground dark:text-slate-100 truncate">{homeName}</span>
         </div>
 
         {/* Score / VS */}
@@ -90,23 +90,23 @@ export function MatchRow({ match, isToday = false, onClick }: MatchRowProps) {
             <div className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-bold text-base tabular-nums",
               isToday
-                ? "bg-white border-green-300 text-foreground shadow-sm"
-                : "bg-white border-slate-200 text-foreground"
+                ? "bg-card dark:bg-surface border-green-300 dark:border-emerald-700/60 text-foreground dark:text-slate-100 shadow-sm"
+                : "bg-card dark:bg-surface border-border text-foreground dark:text-slate-100"
             )}>
               <span>{match.home_score}</span>
               <span className="text-slate-300 text-sm font-semibold">-</span>
               <span>{match.away_score}</span>
             </div>
           ) : (
-            <div className="flex items-center px-4 py-1.5 rounded-lg border border-slate-200 bg-slate-50">
-              <span className="text-sm font-bold text-slate-400 tracking-wide">VS</span>
+            <div className="flex items-center px-4 py-1.5 rounded-lg border border-border bg-surface">
+              <span className="text-sm font-bold text-muted-foreground tracking-wide">VS</span>
             </div>
           )}
         </div>
 
         {/* Away team */}
         <div className="flex items-center gap-3 min-w-0 justify-end">
-          <span className="font-semibold text-sm text-foreground truncate text-right">{awayName}</span>
+          <span className="font-semibold text-sm text-foreground dark:text-slate-100 truncate text-right">{awayName}</span>
           <TeamLogo logoUrl={match.away?.logo_url} name={awayName} />
         </div>
 
@@ -142,7 +142,7 @@ export function MatchRow({ match, isToday = false, onClick }: MatchRowProps) {
         {/* Teams row */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
           <div className="flex flex-col items-center gap-1.5 min-w-0">
-            <span className="font-semibold text-sm text-foreground truncate max-w-full">{homeName}</span>
+            <span className="font-semibold text-sm text-foreground dark:text-slate-100 truncate max-w-full">{homeName}</span>
             <TeamLogo logoUrl={match.home?.logo_url} name={homeName} size="sm" />
           </div>
 
@@ -150,21 +150,21 @@ export function MatchRow({ match, isToday = false, onClick }: MatchRowProps) {
             <div className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-bold text-base tabular-nums flex-shrink-0",
               isToday
-                ? "bg-white border-green-300 text-foreground shadow-sm"
-                : "bg-white border-slate-200 text-foreground"
+                ? "bg-card dark:bg-surface border-green-300 dark:border-emerald-700/60 text-foreground dark:text-slate-100 shadow-sm"
+                : "bg-card dark:bg-surface border-border text-foreground dark:text-slate-100"
             )}>
               <span>{match.home_score}</span>
               <span className="text-slate-300 text-sm">-</span>
               <span>{match.away_score}</span>
             </div>
           ) : (
-            <div className="flex items-center px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 flex-shrink-0">
-              <span className="text-xs font-bold text-slate-400">VS</span>
+            <div className="flex items-center px-3 py-1.5 rounded-lg border border-border bg-surface flex-shrink-0">
+              <span className="text-xs font-bold text-muted-foreground">VS</span>
             </div>
           )}
 
           <div className="flex flex-col items-center gap-1.5 min-w-0">
-            <span className="font-semibold text-sm text-foreground truncate max-w-full text-center">{awayName}</span>
+            <span className="font-semibold text-sm text-foreground dark:text-slate-100 truncate max-w-full text-center">{awayName}</span>
             <TeamLogo logoUrl={match.away?.logo_url} name={awayName} size="sm" />
           </div>
         </div>

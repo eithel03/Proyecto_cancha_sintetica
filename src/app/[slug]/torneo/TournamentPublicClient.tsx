@@ -336,7 +336,7 @@ export default function TournamentPublicClient({ businessId: _businessId, busine
       <div className="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 space-y-5 sm:space-y-6">
       <Tabs defaultValue="jornada" className="w-full">
         <div className="sticky top-16 sm:top-20 z-30 py-2 sm:py-3 bg-background/80 backdrop-blur-md mb-4 sm:mb-5 px-1">
-          <TabsList className="flex w-full h-12 bg-white border border-border rounded-[14px] p-[5px] gap-1 shadow-soft overflow-x-auto no-scrollbar">
+          <TabsList className="flex w-full h-12 bg-card border border-border rounded-[14px] p-[5px] gap-1 shadow-soft overflow-x-auto no-scrollbar">
             {[
               { id: 'jornada', label: 'Partidos', icon: CalendarDays },
               { id: 'clasificacion', label: 'Tabla', icon: Trophy },
@@ -347,7 +347,7 @@ export default function TournamentPublicClient({ businessId: _businessId, busine
                 key={tab.id}
                 value={tab.id}
                 data-value={tab.id}
-                className="flex-1 min-w-[88px] rounded-[10px] font-semibold text-xs sm:text-sm text-[#52646A] hover:text-primary-green hover:bg-primary-green-subtle data-[state=active]:bg-primary-green data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:font-bold transition-all whitespace-nowrap px-2"
+                className="flex-1 min-w-[88px] rounded-[10px] font-semibold text-xs sm:text-sm text-muted-foreground dark:text-slate-300 hover:text-primary-green hover:bg-primary-green-subtle data-[state=active]:bg-primary-green data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:font-bold transition-all whitespace-nowrap px-2"
               >
                 <tab.icon className="w-3.5 h-3.5 mr-1.5" /> {tab.label}
               </TabsTrigger>
@@ -356,7 +356,7 @@ export default function TournamentPublicClient({ businessId: _businessId, busine
         </div>
 
         <TabsContent value="jornada" className="space-y-5 sm:space-y-6">
-          <Card className="gap-0 rounded-2xl border border-border bg-white py-0 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
+          <Card className="gap-0 rounded-2xl border border-border bg-card py-0 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
             <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-border px-4 sm:px-5 py-4">
               <CardTitle className="flex items-center gap-2.5 text-lg sm:text-xl font-bold tracking-tight text-foreground">
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary-green-light text-primary-green">
@@ -365,7 +365,7 @@ export default function TournamentPublicClient({ businessId: _businessId, busine
                 Próximos partidos
               </CardTitle>
               {hasTodayMatch && (
-                <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-900/40 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-200">
                   Partido de hoy
                 </span>
               )}
@@ -380,7 +380,7 @@ export default function TournamentPublicClient({ businessId: _businessId, busine
 
             return (
               <div key={date} className="border-b border-border/70 last:border-b-0">
-                <h3 className="bg-[#FBF9F3] px-4 sm:px-5 py-2 text-xs sm:text-[13px] font-bold uppercase tracking-[0.12em] text-[#5D7076]">
+                <h3 className="bg-surface dark:bg-surface px-4 sm:px-5 py-2 text-xs sm:text-[13px] font-bold uppercase tracking-[0.12em] text-muted-foreground dark:text-slate-300">
                   {dateLabel}
                 </h3>
                 <div>
