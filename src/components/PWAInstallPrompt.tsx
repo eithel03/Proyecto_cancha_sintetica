@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
 import { Share, Download, X, Smartphone, Info, Apple, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
@@ -121,15 +120,8 @@ export function PWAInstallPrompt({ businessName, businessLogo, slug }: PWAInstal
 
   return (
     <>
-      <AnimatePresence>
-        {isVisible && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            transition={{ duration: 0.25 }}
-            className="fixed z-50 inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-5 sm:right-5 sm:w-[21rem]"
-          >
+      {isVisible && (
+          <div className="fixed z-50 inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-5 sm:right-5 sm:w-[21rem] animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="relative bg-white sm:rounded-2xl rounded-t-2xl sm:border border-slate-200 border-t border-slate-200 shadow-[0_-4px_24px_rgba(23,33,30,0.08)] sm:shadow-lg px-4 sm:px-5 pt-3 pb-4 sm:py-4">
               {/* Handle visual en móvil */}
               <div className="sm:hidden mx-auto mb-2 h-1 w-10 rounded-full bg-slate-200" />
@@ -169,9 +161,8 @@ export function PWAInstallPrompt({ businessName, businessLogo, slug }: PWAInstal
                 </Button>
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+      )}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-md bg-white border-slate-200 rounded-2xl overflow-hidden p-0">

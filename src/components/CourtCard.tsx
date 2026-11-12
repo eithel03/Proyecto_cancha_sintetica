@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Clock, Users, ChevronRight } from 'lucide-react'
+import { getOptimizedImageUrl } from '@/lib/images'
 
 interface CourtCardProps {
   court: {
@@ -53,7 +54,7 @@ export function CourtCard({ court, slug, priority = false }: CourtCardProps) {
         )}
         {hasImage && !imageFailed && court.image_url && (
           <Image
-            src={court.image_url}
+            src={getOptimizedImageUrl(court.image_url, { width: 800, quality: 75 })}
             alt={court.name}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"

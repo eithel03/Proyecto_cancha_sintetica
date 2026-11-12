@@ -1,16 +1,14 @@
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
-import { MapPin, Phone, Flag, ShieldCheck } from 'lucide-react'
+import { MapPin, Phone, Flag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { BusinessHeaderActions } from '@/components/BusinessHeaderActions'
 import { PublicFooter } from '@/components/PublicFooter'
 import { PublicNav } from '@/components/PublicNav'
 import { CourtCard } from '@/components/CourtCard'
 import { PublicPageContainer, SectionHeader, EmptyState } from '@/components/portal'
+import { getPublicBusiness, getPublicCourts } from '@/lib/public-data'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+export const revalidate = 60
 
 type PageProps = {
   params: Promise<{ slug: string }>
@@ -18,39 +16,13 @@ type PageProps = {
 
 export default async function PublicBusinessPage({ params }: PageProps) {
   const { slug } = await params
-  const supabase = await createClient()
-
-  // Lectura pública: la vista excluye owner_id, email y admin_notes.
-  const { data: business } = await supabase
-    .from('businesses_public')
-    .select('id, name, slug, location, phone, whatsapp, description, logo_url, cover_image_url, latitude, longitude, branding, is_active, show_tournament')
-    .eq('slug', slug)
-    .single()
+  const business = await getPublicBusiness(slug)
 
   if (!business) {
     notFound()
   }
 
-  const { data: { user } } = await supabase.auth.getUser()
-  let isAdmin = false
-
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile && (profile.role === 'owner' || profile.role === 'super_admin')) {
-      isAdmin = true
-    }
-  }
-
-  const { data: courts } = await supabase
-    .from('courts')
-    .select('*')
-    .eq('business_id', business.id)
-    .eq('is_active', true)
+  const courts = await getPublicCourts(business.id)
 
   const mapsUrl = business.latitude && business.longitude
     ? `https://www.google.com/maps?q=${business.latitude},${business.longitude}`
@@ -61,18 +33,6 @@ export default async function PublicBusinessPage({ params }: PageProps) {
   return (
     <div className="flex flex-col font-sans">
       <PublicNav slug={business.slug} businessName={business.name} showTournament={business.show_tournament ?? true} />
-
-      {isAdmin && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-center gap-4 sticky top-16 z-40">
-          <div className="flex items-center gap-2 text-xs font-semibold text-amber-700">
-            <ShieldCheck className="w-4 h-4" />
-            <span>Panel de administración activo</span>
-          </div>
-          <Link href="/dashboard" className="rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white hover:bg-amber-400 transition-colors">
-            Entrar
-          </Link>
-        </div>
-      )}
 
       {/* HERO */}
       <section className="relative overflow-hidden bg-navy">
@@ -153,7 +113,7 @@ export default async function PublicBusinessPage({ params }: PageProps) {
           title="Canchas"
           description="Elige tu cancha, selecciona tu horario y reserva en segundos."
           action={
-            courts && courts.length > 0 ? (
+            courts.length > 0 ? (
               <span className="inline-flex items-center gap-2 rounded-full bg-green-50 border border-green-200/70 px-3.5 py-1.5 text-xs font-semibold text-green-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-green-600" />
                 {courts.length} cancha{courts.length !== 1 ? 's' : ''} disponible{courts.length !== 1 ? 's' : ''}
@@ -163,7 +123,7 @@ export default async function PublicBusinessPage({ params }: PageProps) {
         />
 
         <div className="mt-6 flex flex-wrap gap-5">
-          {courts && courts.length > 0 ? (
+          {courts.length > 0 ? (
             courts.map((court, i) => (
               <CourtCard key={court.id} court={court} slug={business.slug} priority={i === 0} />
             ))

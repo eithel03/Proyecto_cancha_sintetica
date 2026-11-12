@@ -1,12 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import Image from 'next/image'
 import { Heart, MapPin, ArrowRight, Phone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { toggleFavorite } from '@/app/cliente/actions'
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { getOptimizedImageUrl } from '@/lib/images'
 import { toast } from 'sonner'
@@ -31,7 +30,6 @@ interface BusinessCardProps {
 }
 
 export function BusinessCard({ business, isFavorite, distance }: BusinessCardProps) {
-  const router = useRouter()
   const [favorite, setFavorite] = useState(isFavorite)
   const [loading, setLoading] = useState(false)
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false)
@@ -55,21 +53,15 @@ export function BusinessCard({ business, isFavorite, distance }: BusinessCardPro
   }
 
   return (
-    <motion.div
-      whileHover={{ y: -5 }}
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3 }}
-    >
+    <div>
       <Card className="overflow-hidden border-white/10 bg-card/40 backdrop-blur-md group hover:border-primary/50 transition-all h-full flex flex-col rounded-[24px] sm:rounded-[32px]">
         <div className="relative h-40 sm:h-48 overflow-hidden">
-          <img
+          <Image
             src={getOptimizedImageUrl(business.cover_image_url, { width: 600, quality: 75 }) || 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=800&auto=format&fit=crop'}
             alt={business.name}
-            width={800}
-            height={480}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             loading="lazy"
-            decoding="async"
             className="w-full h-full object-cover transition-transform duration-700 sm:group-hover:scale-110"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
@@ -135,6 +127,6 @@ export function BusinessCard({ business, isFavorite, distance }: BusinessCardPro
         description="Inicia sesión para guardar este local en tu lista de favoritos y acceder más rápido."
         redirectTo="/"
       />
-    </motion.div>
+    </div>
   )
 }

@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Trophy, CalendarDays, Users, BarChart3, User, Shield, X, Activity, Target, ShieldAlert, Clock, MapPin } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { cn, formatTime12h } from '@/lib/utils'
 import { HeroSection, MatchRow, EmptyState } from '@/components/portal'
 
@@ -680,9 +679,8 @@ export default function TournamentPublicClient({ businessId: _businessId, busine
         <TabsContent value="equipos">
           <div className="grid gap-4 sm:gap-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {filteredTeams.map((team, idx) => (
-              <motion.div
+              <div
                 key={team.id}
-                whileHover={{ y: -4 }}
                 onClick={() => { setSelectedTeam(team); setIsTeamModalOpen(true); }}
                 className="cursor-pointer"
               >
@@ -695,7 +693,7 @@ export default function TournamentPublicClient({ businessId: _businessId, busine
                     <User className="w-3 h-3 text-primary" /> {team.captain_name || 'Sin capitán'}
                   </div>
                 </Card>
-              </motion.div>
+              </div>
             ))}
           </div>
           {filteredTeams.length === 0 && (

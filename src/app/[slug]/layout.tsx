@@ -1,17 +1,12 @@
-import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { Metadata, Viewport } from 'next'
-import { PWAInstallPrompt } from '@/components/PWAInstallPrompt'
+import { DeferredPWAInstallPrompt } from '@/components/DeferredPWAInstallPrompt'
 import { SuspensionCheck } from '@/components/SuspensionCheck'
+import { getPublicBusiness } from '@/lib/public-data'
 
 export async function generateViewport({ params }: { params: Promise<{ slug: string }> }): Promise<Viewport> {
   const { slug } = await params
-  const supabase = await createClient()
-  const { data: business } = await supabase
-    .from('businesses_public')
-    .select('branding')
-    .eq('slug', slug)
-    .single()
+  const business = await getPublicBusiness(slug)
 
   return {
     themeColor: business?.branding?.primary || '#10b981',
@@ -23,13 +18,7 @@ export async function generateViewport({ params }: { params: Promise<{ slug: str
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const supabase = await createClient()
-
-  const { data: business } = await supabase
-    .from('businesses_public')
-    .select('name, logo_url, branding')
-    .eq('slug', slug)
-    .single()
+  const business = await getPublicBusiness(slug)
 
   if (!business) return {}
 
@@ -63,13 +52,7 @@ export default async function SlugLayout({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const supabase = await createClient()
-
-  const { data: business } = await supabase
-    .from('businesses_public')
-    .select('name, logo_url, branding, is_active, show_tournament')
-    .eq('slug', slug)
-    .single()
+  const business = await getPublicBusiness(slug)
 
   if (!business) {
     notFound()
@@ -92,7 +75,7 @@ export default async function SlugLayout({
     <SuspensionCheck isActive={business.is_active ?? true} businessName={business.name}>
       <div style={customStyles} className="min-h-screen bg-background text-foreground selection:bg-primary/30 pb-20 md:pb-0">
         {children}
-        <PWAInstallPrompt 
+        <DeferredPWAInstallPrompt
           businessName={business.name} 
           businessLogo={business.logo_url || ''} 
           slug={slug} 

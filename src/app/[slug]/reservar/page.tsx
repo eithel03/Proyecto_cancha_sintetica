@@ -23,7 +23,7 @@ export default async function BookingPage({ params, searchParams }: PageProps) {
 
   const { data: courts } = await supabase
     .from('courts')
-    .select('*')
+    .select('id, business_id, name, description, price_per_hour, price_per_person, capacity, image_url, is_active')
     .eq('business_id', business.id)
     .eq('is_active', true)
 
@@ -38,23 +38,27 @@ export default async function BookingPage({ params, searchParams }: PageProps) {
     )
   }
 
-  const { data: pricingRules } = await supabase
-    .from('court_pricing_rules')
-    .select('*')
-    .in('court_id', courts.map(c => c.id))
-
-  const { data: businessHours, error: businessHoursError } = await supabase
-    .from('business_hours')
-    .select('*')
-    .eq('business_id', business.id)
-
-  const { data: exceptions } = await supabase
-    .from('business_exceptions')
-    .select('*')
-    .eq('business_id', business.id)
-    .eq('is_closed', true)
-
-  const { data: { user } } = await supabase.auth.getUser()
+  const [
+    { data: pricingRules },
+    { data: businessHours, error: businessHoursError },
+    { data: exceptions },
+    { data: { user } },
+  ] = await Promise.all([
+    supabase
+      .from('court_pricing_rules')
+      .select('*')
+      .in('court_id', courts.map(c => c.id)),
+    supabase
+      .from('business_hours')
+      .select('*')
+      .eq('business_id', business.id),
+    supabase
+      .from('business_exceptions')
+      .select('*')
+      .eq('business_id', business.id)
+      .eq('is_closed', true),
+    supabase.auth.getUser(),
+  ])
   let profileData = null
 
   if (user) {

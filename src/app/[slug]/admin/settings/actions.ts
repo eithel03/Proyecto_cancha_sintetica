@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { validatePhone } from '@/lib/phone'
 import { verifyBusinessAccess } from '@/lib/auth'
+import { invalidatePublicBusiness } from '@/lib/public-data'
 
 export async function updateBusiness(formData: FormData) {
   const supabase = await createClient()
@@ -53,6 +54,7 @@ export async function updateBusiness(formData: FormData) {
 
   const { data: biz } = await supabase.from('businesses').select('slug').eq('id', id).single()
   if (biz?.slug) {
+    invalidatePublicBusiness(biz.slug)
     revalidatePath(`/${biz.slug}/admin/settings`)
     revalidatePath(`/${biz.slug}`, 'layout')
   }
@@ -94,7 +96,10 @@ export async function updateBusinessHours(businessId: string, hours: BusinessHou
   }
 
   const { data: biz } = await supabase.from('businesses').select('slug').eq('id', businessId).single()
-  if (biz?.slug) revalidatePath(`/${biz.slug}/admin/settings`)
+  if (biz?.slug) {
+    invalidatePublicBusiness(biz.slug)
+    revalidatePath(`/${biz.slug}/admin/settings`)
+  }
   return { success: true }
 }
 
@@ -115,7 +120,10 @@ export async function createException(data: { business_id: string, exception_dat
   if (error) return { error: 'Error al crear excepción: ' + error.message }
   
   const { data: biz } = await supabase.from('businesses').select('slug').eq('id', data.business_id).single()
-  if (biz?.slug) revalidatePath(`/${biz.slug}/admin/settings`)
+  if (biz?.slug) {
+    invalidatePublicBusiness(biz.slug)
+    revalidatePath(`/${biz.slug}/admin/settings`)
+  }
   return { success: true, data: newException }
 }
 
@@ -141,7 +149,10 @@ export async function deleteException(id: string) {
   
   if (exception?.business_id) {
     const { data: biz } = await supabase.from('businesses').select('slug').eq('id', exception.business_id).single()
-    if (biz?.slug) revalidatePath(`/${biz.slug}/admin/settings`)
+    if (biz?.slug) {
+      invalidatePublicBusiness(biz.slug)
+      revalidatePath(`/${biz.slug}/admin/settings`)
+    }
   }
   return { success: true }
 }
@@ -163,6 +174,7 @@ export async function updateBranding(businessId: string, branding: Record<string
 
   const { data: biz } = await supabase.from('businesses').select('slug').eq('id', businessId).single()
   if (biz?.slug) {
+    invalidatePublicBusiness(biz.slug)
     revalidatePath(`/${biz.slug}/admin/settings`)
     revalidatePath(`/${biz.slug}`, 'layout')
   }
@@ -185,6 +197,7 @@ export async function updateCoverImage(businessId: string, coverImageUrl: string
   if (error) return { error: 'Error al actualizar la portada: ' + error.message }
   const { data: biz } = await supabase.from('businesses').select('slug').eq('id', businessId).single()
   if (biz?.slug) {
+    invalidatePublicBusiness(biz.slug)
     revalidatePath(`/${biz.slug}/admin/settings`)
     revalidatePath(`/${biz.slug}`, 'layout')
   }

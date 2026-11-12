@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { verifyBusinessAccess } from '@/lib/auth'
+import { invalidatePublicCourts } from '@/lib/public-data'
 
 export async function createCourt(formData: FormData) {
   const supabase = await createClient()
@@ -43,7 +44,10 @@ export async function createCourt(formData: FormData) {
     return { error: 'Error al crear la cancha: ' + error.message }
   }
 
-  if (slug) revalidatePath(`/${slug}/admin/courts`)
+  if (slug) {
+    invalidatePublicCourts(businessId)
+    revalidatePath(`/${slug}/admin/courts`)
+  }
   return { success: true, data: court }
 }
 
@@ -90,7 +94,10 @@ export async function updateCourt(formData: FormData) {
     return { error: 'Error al actualizar la cancha: ' + error.message }
   }
 
-  if (slug) revalidatePath(`/${slug}/admin/courts`)
+  if (slug) {
+    if (existingCourt?.business_id) invalidatePublicCourts(existingCourt.business_id)
+    revalidatePath(`/${slug}/admin/courts`)
+  }
   return { success: true, data: court }
 }
 
@@ -115,7 +122,10 @@ export async function updateCourtStatus(id: string, isActive: boolean, slug?: st
     return { error: 'Error al actualizar el estado de la cancha: ' + error.message }
   }
 
-  if (slug) revalidatePath(`/${slug}/admin/courts`)
+  if (slug) {
+    invalidatePublicCourts(existingCourt.business_id)
+    revalidatePath(`/${slug}/admin/courts`)
+  }
   return { success: true, data: court }
 }
 
@@ -147,7 +157,10 @@ export async function deleteCourt(id: string, slug?: string) {
     return { error: 'Error al eliminar la cancha: ' + error.message }
   }
 
-  if (slug) revalidatePath(`/${slug}/admin/courts`)
+  if (slug) {
+    invalidatePublicCourts(existingCourt.business_id)
+    revalidatePath(`/${slug}/admin/courts`)
+  }
   return { success: true }
 }
 

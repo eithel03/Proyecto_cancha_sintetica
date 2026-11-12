@@ -4,8 +4,7 @@ import { useState } from 'react'
 import { BusinessCard } from './BusinessCard'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Search, Trophy, MapPin, LayoutGrid, Sparkles, Navigation } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { Search, Sparkles, Navigation } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface BusinessDirectoryProps {
@@ -112,13 +111,8 @@ export function BusinessDirectory({ businesses, favorites, totalCount }: Busines
 
         {filteredBusinesses.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {filteredBusinesses.map((business, index) => (
-              <motion.div
-                key={business.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
+            {filteredBusinesses.map((business) => (
+              <div key={business.id}>
                 <BusinessCard 
                   business={business} 
                   isFavorite={favorites.includes(business.id)}
@@ -127,15 +121,11 @@ export function BusinessDirectory({ businesses, favorites, totalCount }: Busines
                     : undefined
                   }
                 />
-              </motion.div>
+              </div>
             ))}
           </div>
         ) : (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-32 border-2 border-dashed border-white/5 rounded-[3rem] bg-card/20 backdrop-blur-sm"
-          >
+          <div className="text-center py-32 border-2 border-dashed border-white/5 rounded-[3rem] bg-card/20 backdrop-blur-sm">
             <div className="inline-flex p-6 rounded-3xl bg-primary/5 border border-primary/10 mb-6">
               <Search className="h-12 w-12 text-primary opacity-50" />
             </div>
@@ -144,7 +134,7 @@ export function BusinessDirectory({ businesses, favorites, totalCount }: Busines
               No pudimos encontrar locales que coincidan con "<span className="text-foreground font-medium">{searchTerm}</span>". 
               Intenta con otros términos.
             </p>
-          </motion.div>
+          </div>
         )}
       </div>
     </section>
