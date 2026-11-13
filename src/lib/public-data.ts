@@ -30,6 +30,22 @@ export type PublicCourt = {
   is_active: boolean | null
 }
 
+type PublicTournamentRow = Record<string, unknown>
+
+export type PublicTournamentClassificationZone = {
+  gender: string | null
+  direct_count: number | null
+  playoff_count: number | null
+  eliminated_count: number | null
+}
+
+export type PublicTournamentData = {
+  matches: PublicTournamentRow[]
+  teams: PublicTournamentRow[]
+  stats: PublicTournamentRow[]
+  classificationZones: PublicTournamentClassificationZone[]
+}
+
 const publicSupabase = createSupabaseClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -95,6 +111,74 @@ export function getPublicCourts(businessId: string) {
     {
       revalidate: 60,
       tags: [`public-courts:${businessId}`],
+    },
+  )()
+}
+
+export function getPublicTournamentData(businessId: string) {
+  return unstable_cache(
+    async (): Promise<PublicTournamentData> => {
+      const [matchesResult, teamsResult, statsResult, zonesResult] = await Promise.all([
+        publicSupabase
+          .from('tournament_matches')
+          .select(`
+            id,
+            business_id,
+            match_date,
+            match_time,
+            status,
+            gender,
+            home_team_id,
+            away_team_id,
+            home_score,
+            away_score,
+            live_started_at,
+            elapsed_seconds,
+            court_id,
+            home:home_team_id(name, logo_url),
+            away:away_team_id(name, logo_url),
+            court:court_id(name)
+          `)
+          .eq('business_id', businessId)
+          .order('match_date', { ascending: false }),
+        publicSupabase
+          .from('tournament_teams')
+          .select(`
+            id,
+            name,
+            logo_url,
+            captain_name,
+            gender,
+            players:tournament_players(id, first_name, last_name, position, team_id)
+          `)
+          .eq('business_id', businessId)
+          .eq('is_active', true),
+        publicSupabase
+          .from('tournament_match_events')
+          .select('id, event_type, player_id, team_id, quantity, minute, player:player_id(first_name, last_name), team:team_id(name, gender)')
+          .eq('business_id', businessId),
+        publicSupabase
+          .from('tournament_classification_zones')
+          .select('gender, direct_count, playoff_count, eliminated_count')
+          .eq('business_id', businessId),
+      ])
+
+      if (matchesResult.error) console.error('Error loading public tournament matches:', matchesResult.error)
+      if (teamsResult.error) console.error('Error loading public tournament teams:', teamsResult.error)
+      if (statsResult.error) console.error('Error loading public tournament stats:', statsResult.error)
+      if (zonesResult.error) console.error('Error loading public tournament zones:', zonesResult.error)
+
+      return {
+        matches: matchesResult.data ?? [],
+        teams: teamsResult.data ?? [],
+        stats: statsResult.data ?? [],
+        classificationZones: zonesResult.data ?? [],
+      }
+    },
+    ['public-tournament', businessId],
+    {
+      revalidate: 15,
+      tags: [`public-tournament:${businessId}`],
     },
   )()
 }

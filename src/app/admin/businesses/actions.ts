@@ -90,24 +90,47 @@ export async function deleteBusiness(businessId: string, ownerId: string) {
   const adminClient = createAdminClient()
 
   try {
-    // 1. Eliminar primero el usuario dueño (si falla, el negocio queda intacto)
-    if (ownerId) {
-      const { error: authError } = await adminClient.auth.admin.deleteUser(ownerId)
-      if (authError) {
-        console.error('Failed to delete owner user:', authError.message)
-        return { error: 'Error al eliminar el usuario del dueño: ' + authError.message }
-      }
-    }
+    // Resolver el dueño desde la base y no confiar en un ownerId enviado por el cliente.
+    const { data: business, error: lookupError } = await adminClient
+      .from('businesses')
+      .select('id, owner_id')
+      .eq('id', businessId)
+      .maybeSingle()
 
-    // 2. Eliminar el negocio (cascada a reservas, canchas, etc.)
+    if (lookupError) return { error: 'No se pudo consultar el negocio: ' + lookupError.message }
+    if (!business) return { error: 'El negocio ya no existe' }
+
+    const resolvedOwnerId = business.owner_id || ownerId
+
+    // 1. Eliminar únicamente el negocio seleccionado y sus datos en cascada.
     const { error: businessError } = await adminClient
       .from('businesses')
       .delete()
       .eq('id', businessId)
 
     if (businessError) {
-      console.error('Business deleted owner user but failed to delete business:', businessError.message)
-      return { error: 'El usuario del dueño se eliminó, pero el negocio no pudo eliminarse: ' + businessError.message + '. Contacta soporte para limpiar manualmente.' }
+      console.error('Business deletion failed:', businessError.message)
+      return { error: 'El negocio no pudo eliminarse: ' + businessError.message }
+    }
+
+    // 2. Nunca eliminar un dueño compartido con otros negocios.
+    if (resolvedOwnerId) {
+      const { count: remainingBusinesses, error: remainingError } = await adminClient
+      .from('businesses')
+        .select('id', { count: 'exact', head: true })
+        .eq('owner_id', resolvedOwnerId)
+
+      if (remainingError) {
+        console.warn('No se pudo comprobar si el dueño tiene otros negocios:', remainingError.message)
+      } else if ((remainingBusinesses ?? 0) === 0) {
+        const { error: authError } = await adminClient.auth.admin.deleteUser(resolvedOwnerId)
+        const authNotFound = authError?.message.toLowerCase().includes('not found')
+
+        // El negocio ya fue eliminado; una cuenta Auth ausente no debe revertirlo.
+        if (authError && !authNotFound) {
+          console.warn('El negocio se eliminó, pero no se pudo eliminar la cuenta del dueño:', authError.message)
+        }
+      }
     }
 
     revalidatePath('/admin/businesses')

@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getPublicBusiness } from '@/lib/public-data'
 import ChallengesClient from './ChallengesClient'
 import { PublicNav } from '@/components/PublicNav'
 import { PublicFooter } from '@/components/PublicFooter'
@@ -12,23 +13,48 @@ export default async function ChallengesPage({ params }: PageProps) {
   const { slug } = await params
   const supabase = await createClient()
 
-  const { data: business } = await supabase
-    .from('businesses_public')
-    .select('id, name, slug, logo_url, branding, is_active, show_tournament')
-    .eq('slug', slug)
-    .single()
+  const business = await getPublicBusiness(slug)
 
   if (!business) notFound()
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const query = supabase
+  const challengeQuery = supabase
     .from('challenges_public')
-    .select('*')
+    .select('id, business_id, court_id, court_name, creator_id, opponent_id, customer_name, challenge_date, challenge_time, notes, status, gender, men_count, women_count')
     .eq('business_id', business.id)
-    .in('status', ['open', 'confirmed'])
+    // Confirmed challenges are private to the admin panel. Clients only see
+    // challenges that can still be accepted, plus their own active challenges.
+    .in('status', ['open', 'accepted'])
 
-  const { data: challenges } = await query.order('challenge_date', { ascending: true })
+  const visibleChallengesQuery = user?.id
+    ? challengeQuery.or(`status.eq.open,creator_id.eq.${user.id}`)
+    : challengeQuery.eq('status', 'open')
+
+  const [
+    { data: challenges },
+    { data: courts },
+    { data: businessHours },
+    { data: exceptions },
+  ] = await Promise.all([
+    visibleChallengesQuery
+      .order('challenge_date', { ascending: true })
+      .order('challenge_time', { ascending: true }),
+    supabase
+      .from('courts')
+      .select('id, name, capacity')
+      .eq('business_id', business.id)
+      .eq('is_active', true),
+    supabase
+      .from('business_hours')
+      .select('day_of_week, open_time, close_time, is_closed')
+      .eq('business_id', business.id),
+    supabase
+      .from('business_exceptions')
+      .select('exception_date, reason, is_closed')
+      .eq('business_id', business.id)
+      .eq('is_closed', true),
+  ])
 
   const opponentIds = Array.from(new Set(
     (challenges || [])
@@ -55,23 +81,6 @@ export default async function ChallengesPage({ params }: PageProps) {
       ? { full_name: opponentNames.get(challenge.opponent_id) ?? null }
       : null,
   }))
-
-  const { data: courts } = await supabase
-    .from('courts')
-    .select('*')
-    .eq('business_id', business.id)
-    .eq('is_active', true)
-
-  const { data: businessHours } = await supabase
-    .from('business_hours')
-    .select('*')
-    .eq('business_id', business.id)
-
-  const { data: exceptions } = await supabase
-    .from('business_exceptions')
-    .select('*')
-    .eq('business_id', business.id)
-    .eq('is_closed', true)
 
   return (
     <div className="min-h-screen bg-background flex flex-col selection:bg-primary/30">

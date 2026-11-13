@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getPublicBusiness, getPublicCourts } from '@/lib/public-data'
 import BookingClient from './BookingClient'
 import { PublicNav } from '@/components/PublicNav'
 
@@ -11,23 +12,19 @@ type PageProps = {
 export default async function BookingPage({ params, searchParams }: PageProps) {
   const { slug } = await params
   const { courtId } = await searchParams
-  const supabase = await createClient()
-
-  const { data: business } = await supabase
-    .from('businesses_public')
-    .select('id, name, slug, location, phone, whatsapp, logo_url, branding, is_active, show_tournament')
-    .eq('slug', slug)
-    .single()
+  const [business, supabase] = await Promise.all([
+    getPublicBusiness(slug),
+    createClient(),
+  ])
 
   if (!business) notFound()
 
-  const { data: courts } = await supabase
-    .from('courts')
-    .select('id, business_id, name, description, price_per_hour, price_per_person, capacity, image_url, is_active')
-    .eq('business_id', business.id)
-    .eq('is_active', true)
+  const [{ data: { user } }, courts] = await Promise.all([
+    supabase.auth.getUser(),
+    getPublicCourts(business.id),
+  ])
 
-  if (!courts || courts.length === 0) {
+  if (courts.length === 0) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <PublicNav slug={business.slug} businessName={business.name} showTournament={business.show_tournament ?? true} />
@@ -38,43 +35,40 @@ export default async function BookingPage({ params, searchParams }: PageProps) {
     )
   }
 
+  const profileQuery = user
+    ? supabase
+        .from('profiles')
+        .select('id, full_name, phone, role')
+        .eq('id', user.id)
+        .maybeSingle()
+    : Promise.resolve({ data: null, error: null })
+
   const [
     { data: pricingRules },
     { data: businessHours, error: businessHoursError },
     { data: exceptions },
-    { data: { user } },
+    { data: profile },
   ] = await Promise.all([
     supabase
       .from('court_pricing_rules')
-      .select('*')
+      .select('court_id, day_of_week, start_time, end_time, price')
       .in('court_id', courts.map(c => c.id)),
     supabase
       .from('business_hours')
-      .select('*')
+      .select('day_of_week, open_time, close_time, is_closed')
       .eq('business_id', business.id),
     supabase
       .from('business_exceptions')
-      .select('*')
+      .select('exception_date, reason, is_closed')
       .eq('business_id', business.id)
       .eq('is_closed', true),
-    supabase.auth.getUser(),
+    profileQuery,
   ])
-  let profileData = null
-
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
-    if (profile && profile.role === 'customer') {
-      profileData = profile
-    }
-  }
+  const profileData = profile?.role === 'customer' ? profile : null
 
   return (
     <div className="min-h-screen bg-background flex flex-col selection:bg-primary/30">
-      <PublicNav slug={business.slug} businessName={business.name} />
+      <PublicNav slug={business.slug} businessName={business.name} showTournament={business.show_tournament ?? true} />
 
       <main className="flex-1 p-4 md:p-10 flex items-start justify-center relative overflow-hidden">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-gold/10 rounded-full blur-[120px] -z-10" />

@@ -107,7 +107,7 @@ export function BusinessActions({ business }: { business: any }) {
     if (res.error) {
       toast.error(res.error)
     } else {
-      toast.success('Negocio y dueño eliminados exitosamente')
+      toast.success('Negocio eliminado exitosamente')
       setIsDeleteDialogOpen(false)
     }
   }
@@ -283,7 +283,7 @@ export function BusinessActions({ business }: { business: any }) {
             <DialogDescription className="pt-2 text-foreground">
               Estás a punto de eliminar permanentemente el negocio <strong>{business.name}</strong>.
               <br/><br/>
-              Esta acción <strong>eliminará en cascada</strong> todo lo asociado: la cuenta del usuario dueño, sus canchas, reservas, estadísticas y torneos. Esta acción NO se puede deshacer.
+              Esta acción <strong>eliminará en cascada</strong> todo lo asociado a este negocio: canchas, reservas, estadísticas y torneos. Si el dueño administra otros negocios, su cuenta se conservará. Esta acción NO se puede deshacer.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4 flex flex-wrap sm:flex-nowrap gap-2 sm:justify-end">

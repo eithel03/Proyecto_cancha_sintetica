@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getPublicBusiness } from '@/lib/public-data'
 import ProfileClient from './ProfileClient'
 import { PublicNav } from '@/components/PublicNav'
 import { PublicFooter } from '@/components/PublicFooter'
@@ -13,13 +14,10 @@ type PageProps = {
 
 export default async function ProfilePage({ params }: PageProps) {
   const { slug } = await params
-  const supabase = await createClient()
-
-  const { data: business } = await supabase
-    .from('businesses_public')
-    .select('id, name, slug, logo_url, branding, is_active, show_tournament')
-    .eq('slug', slug)
-    .single()
+  const [business, supabase] = await Promise.all([
+    getPublicBusiness(slug),
+    createClient(),
+  ])
 
   if (!business) notFound()
 
@@ -36,21 +34,25 @@ export default async function ProfilePage({ params }: PageProps) {
 
   if (!profile) redirect('/cliente/login')
 
-  const { data: reservations } = await supabase
-    .from('reservations')
-    .select('*, courts(name)')
-    .eq('customer_id', user.id)
-    .eq('business_id', business.id)
-    .eq('hidden_by_customer', false)
-    .order('reservation_date', { ascending: false })
-
-  const { data: challenges } = await supabase
-    .from('challenges')
-    .select('*, courts(name)')
-    .or(`creator_id.eq.${user.id},opponent_id.eq.${user.id}`)
-    .eq('business_id', business.id)
-    .or('hidden_by_customer.eq.false,hidden_by_customer.is.null')
-    .order('challenge_date', { ascending: false })
+  const [
+    { data: reservations },
+    { data: challenges },
+  ] = await Promise.all([
+    supabase
+      .from('reservations')
+      .select('id, business_id, court_id, reservation_date, start_time, status, hidden_by_customer, courts(name)')
+      .eq('customer_id', user.id)
+      .eq('business_id', business.id)
+      .eq('hidden_by_customer', false)
+      .order('reservation_date', { ascending: false }),
+    supabase
+      .from('challenges')
+      .select('id, business_id, court_id, creator_id, opponent_id, challenge_date, challenge_time, notes, status, hidden_by_customer, courts(name)')
+      .or(`creator_id.eq.${user.id},opponent_id.eq.${user.id}`)
+      .eq('business_id', business.id)
+      .or('hidden_by_customer.eq.false,hidden_by_customer.is.null')
+      .order('challenge_date', { ascending: false }),
+  ])
 
   return (
     <div className="min-h-screen bg-background flex flex-col selection:bg-primary/30">

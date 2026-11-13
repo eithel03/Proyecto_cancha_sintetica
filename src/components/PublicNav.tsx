@@ -1,9 +1,45 @@
 'use client'
 
-import Link from 'next/link'
+import Link, { useLinkStatus } from 'next/link'
 import { usePathname } from 'next/navigation'
 import { CalendarDays, Trophy, Swords, User, Flag } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
+
+type NavTab = {
+  label: string
+  icon: typeof CalendarDays
+  href: string
+}
+
+function NavLinkContent({ tab, isActive, mobile = false }: { tab: NavTab; isActive: boolean; mobile?: boolean }) {
+  const { pending } = useLinkStatus()
+  const Icon = tab.icon
+
+  if (mobile) {
+    return (
+      <span className={`relative flex flex-col items-center justify-center gap-1 rounded-full px-4 py-1 transition-colors ${
+        isActive ? 'bg-primary-green-light/80' : ''
+      }`}>
+        <Icon className={`h-5 w-5 ${isActive ? 'text-primary-green-dark' : ''} ${pending ? 'animate-pulse' : ''}`} />
+        <span className={`text-[10px] font-semibold ${isActive ? 'text-primary-green-dark' : ''}`}>
+          {tab.label}
+        </span>
+        {pending && <span className="absolute inset-x-3 -bottom-1 h-0.5 animate-pulse rounded-full bg-primary" />}
+      </span>
+    )
+  }
+
+  return (
+    <>
+      <Icon className={`h-4 w-4 ${isActive ? 'text-gold' : ''} ${pending ? 'animate-pulse' : ''}`} />
+      {tab.label}
+      {pending && <span className="h-1.5 w-1.5 animate-ping rounded-full bg-gold" aria-hidden="true" />}
+      {isActive && (
+        <span className="absolute -bottom-[11px] left-3 right-3 h-[3px] rounded-full bg-gold" />
+      )}
+    </>
+  )
+}
 
 export function PublicNav({ slug, businessName, showTournament = true }: { slug: string; businessName: string; showTournament?: boolean }) {
   const pathname = usePathname()
@@ -45,17 +81,15 @@ export function PublicNav({ slug, businessName, showTournament = true }: { slug:
                 <Link
                   key={tab.label}
                   href={tab.href}
+                  prefetch="auto"
+                  aria-current={isActive ? 'page' : undefined}
                   className={`relative px-4 py-2 rounded-xl text-sm transition-all duration-200 flex items-center gap-2 ${
                     isActive
                       ? 'bg-gold/10 text-gold font-semibold'
                       : 'text-white/55 font-medium hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  <tab.icon className={`w-4 h-4 ${isActive ? 'text-gold' : ''}`} />
-                  {tab.label}
-                  {isActive && (
-                    <span className="absolute -bottom-[11px] left-3 right-3 h-[3px] rounded-full bg-gold" />
-                  )}
+                  <NavLinkContent tab={tab} isActive={isActive} />
                 </Link>
               )
             })}
@@ -76,18 +110,13 @@ export function PublicNav({ slug, businessName, showTournament = true }: { slug:
               <Link
                 key={tab.label}
                 href={tab.href}
+                prefetch="auto"
+                aria-current={isActive ? 'page' : undefined}
                 className={`flex flex-col items-center justify-center min-w-0 flex-1 py-1.5 transition-colors relative ${
                   isActive ? 'text-primary-green-dark' : 'text-muted-foreground'
                 }`}
               >
-                <span className={`flex flex-col items-center justify-center gap-1 px-4 py-1 rounded-full transition-colors ${
-                  isActive ? 'bg-primary-green-light/80' : ''
-                }`}>
-                  <tab.icon className={`w-5 h-5 ${isActive ? 'text-primary-green-dark' : ''}`} />
-                  <span className={`text-[10px] font-semibold ${isActive ? 'text-primary-green-dark' : ''}`}>
-                    {tab.label}
-                  </span>
-                </span>
+                <NavLinkContent tab={tab} isActive={isActive} mobile />
               </Link>
             )
           })}

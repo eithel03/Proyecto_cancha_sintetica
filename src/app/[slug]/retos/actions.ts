@@ -119,21 +119,6 @@ async function getChallengeContext(challengeId: string): Promise<ChallengeContex
   }
 }
 
-async function validateCourtForBusiness(courtId: string, businessId: string) {
-  const supabase = await createClient()
-  const { data: court, error } = await supabase
-    .from('courts')
-    .select('id, business_id, is_active')
-    .eq('id', courtId)
-    .maybeSingle()
-
-  if (error || !court || court.business_id !== businessId || !court.is_active) {
-    return { error: 'La cancha seleccionada no está disponible para este negocio.' }
-  }
-
-  return { court }
-}
-
 function revalidateChallengePaths() {
   revalidatePath('/[slug]/retos', 'page')
   revalidatePath('/[slug]/reservar', 'page')
@@ -164,15 +149,21 @@ export async function createChallenge(formData: FormData): Promise<ActionResult>
   const slot = normalizeChallengeTime(time)
   if (!slot) return { error: 'Selecciona una hora válida con al menos una hora de duración.' }
 
-  const [{ data: profile }, courtResult] = await Promise.all([
+  const [{ data: profile }, { data: court, error: courtError }] = await Promise.all([
     supabase.from('profiles').select('full_name, phone, role').eq('id', user.id).maybeSingle(),
-    validateCourtForBusiness(courtId, businessId),
+    supabase
+      .from('courts')
+      .select('id, business_id, is_active')
+      .eq('id', courtId)
+      .maybeSingle(),
   ])
 
   if (!profile || profile.role !== 'customer') {
     return { error: 'Debes iniciar sesión con una cuenta de cliente para publicar un reto.' }
   }
-  if (courtResult.error) return { error: courtResult.error }
+  if (courtError || !court || court.business_id !== businessId || !court.is_active) {
+    return { error: 'La cancha seleccionada no está disponible para este negocio.' }
+  }
 
   // Disponibilidad por RPC SECURITY DEFINER: devuelve sólo horario, estado y
   // tipo de bloque, sin filas de reservas ni datos de clientes. Las RLS de

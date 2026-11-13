@@ -6,13 +6,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { createReservation, checkAvailability, type AvailabilitySlot } from './actions'
+import { createReservation, type AvailabilitySlot } from './actions'
 import { acceptChallenge } from '@/app/[slug]/retos/actions'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { AlertCircle, ArrowRight, Calendar, CalendarCheck, Check, CheckCircle2, CircleDollarSign, Clock, Loader2, MapPin, ShieldCheck, Swords, Timer, X } from 'lucide-react'
 import { AuthPromptDialog } from '@/components/AuthPromptDialog'
 import { cn, formatTime12h } from '@/lib/utils'
+import { getCachedAvailability } from '@/lib/availability-client'
 
 type BookingBusiness = {
   id: string
@@ -156,15 +157,22 @@ export default function BookingClient({
       url.searchParams.set('courtId', selectedCourt)
       window.history.replaceState({}, '', url.toString())
 
-      const result = await checkAvailability(selectedCourt, selectedDate)
-      if (cancelled) return
-      if (Array.isArray(result)) {
-        setOccupiedSlots(result)
-      } else if (!Array.isArray(result)) {
-        toast.error('Error al cargar disponibilidad: ' + result.error)
-        setOccupiedSlots([])
+      try {
+        const result = await getCachedAvailability(selectedCourt, selectedDate)
+        if (cancelled) return
+        if (Array.isArray(result)) {
+          setOccupiedSlots(result)
+        } else {
+          toast.error('Error al cargar disponibilidad: ' + result.error)
+          setOccupiedSlots([])
+        }
+      } catch {
+        if (!cancelled) {
+          toast.error('No se pudo cargar la disponibilidad. Intenta de nuevo.')
+          setOccupiedSlots([])
+        }
       }
-      setLoadingSlots(false)
+      if (!cancelled) setLoadingSlots(false)
     }
     loadAvailability()
     return () => { cancelled = true }

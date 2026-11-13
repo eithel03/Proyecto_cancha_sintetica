@@ -68,11 +68,10 @@ function getClassificationZone(index: number, totalRows: number, zones: ZoneCoun
   return null
 }
 
-export default function TournamentPublicClient({ businessId: _businessId, businessName: _businessName, matches: initialMatches, standings: initialStandings, teams: initialTeams, stats, classificationZones }: {
+export default function TournamentPublicClient({ businessId: _businessId, businessName: _businessName, matches: initialMatches, teams: initialTeams, stats, classificationZones }: {
   businessId: string,
   businessName: string,
   matches: any[],
-  standings: any[],
   teams: any[],
   stats: any[],
   classificationZones?: ClassificationZoneRow[]
@@ -103,10 +102,6 @@ export default function TournamentPublicClient({ businessId: _businessId, busine
   }, [])
 
   useEffect(() => {
-    if (matches.length === 0) return;
-    const activeBusinessId = matches[0]?.business_id;
-    if (!activeBusinessId) return;
-
     let cancelled = false
     let removeRealtimeChannel: (() => void) | undefined
 
@@ -114,11 +109,11 @@ export default function TournamentPublicClient({ businessId: _businessId, busine
       const { createClient } = await import('@/lib/supabase/client')
       const supabase = createClient()
       
-      const channelId = `public_tournament_matches_${Math.random()}`
+      const channelId = `public_tournament_matches_${_businessId}`
       const channel = supabase.channel(channelId)
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'tournament_matches', filter: `business_id=eq.${activeBusinessId}` },
+          { event: '*', schema: 'public', table: 'tournament_matches', filter: `business_id=eq.${_businessId}` },
           (payload: RealtimePostgresChangesPayload<{ id: string } & Record<string, unknown>>) => {
             if (payload.eventType !== 'UPDATE') return
             const updated = payload.new
@@ -149,14 +144,13 @@ export default function TournamentPublicClient({ businessId: _businessId, busine
       // SECURITY: prevent realtime channel leak on unmount / matches.length change
       removeRealtimeChannel?.()
     }
-  }, [matches.length])
+  }, [_businessId])
 
   // SECURITY: removed anonymous call to protected server action
   // (autoStartMatches now requires an authenticated admin session, so the public
   // tournament page must not trigger it for visitors).
 
   const filteredMatches = matches.filter(m => (m.gender || 'masculino') === selectedGender)
-  const filteredStandings = initialStandings.filter(s => (s.gender || 'masculino') === selectedGender)
   const filteredTeams = initialTeams.filter(t => (t.gender || 'masculino') === selectedGender)
   const filteredStats = (stats || []).filter(s => (s.team?.gender || 'masculino') === selectedGender)
 
@@ -347,7 +341,7 @@ export default function TournamentPublicClient({ businessId: _businessId, busine
                 key={tab.id}
                 value={tab.id}
                 data-value={tab.id}
-                className="flex-1 min-w-[88px] rounded-[10px] font-semibold text-xs sm:text-sm text-muted-foreground dark:text-slate-300 hover:text-primary-green hover:bg-primary-green-subtle data-[state=active]:bg-primary-green data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:font-bold transition-all whitespace-nowrap px-2"
+                className="flex-1 min-w-[88px] rounded-[10px] font-semibold text-xs sm:text-sm text-muted-foreground dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:font-bold transition-all whitespace-nowrap px-2"
               >
                 <tab.icon className="w-3.5 h-3.5 mr-1.5" /> {tab.label}
               </TabsTrigger>
@@ -835,10 +829,10 @@ export default function TournamentPublicClient({ businessId: _businessId, busine
                   <Tabs defaultValue="general" className="flex-1 min-h-0 flex flex-col">
                     <div className="px-5 sm:px-10 pt-5 flex-shrink-0">
                       <TabsList className="grid w-full grid-cols-4 h-11 bg-surface rounded-xl p-1 gap-1">
-                        <TabsTrigger value="general" className="rounded-lg text-xs font-medium text-muted-foreground hover:text-primary-green hover:bg-primary-green-subtle data-[state=active]:bg-primary-green data-[state=active]:text-white data-[state=active]:font-semibold">General</TabsTrigger>
-                        <TabsTrigger value="partidos" className="rounded-lg text-xs font-medium text-muted-foreground hover:text-primary-green hover:bg-primary-green-subtle data-[state=active]:bg-primary-green data-[state=active]:text-white data-[state=active]:font-semibold">Partidos</TabsTrigger>
-                        <TabsTrigger value="disciplina" className="rounded-lg text-xs font-medium text-muted-foreground hover:text-primary-green hover:bg-primary-green-subtle data-[state=active]:bg-primary-green data-[state=active]:text-white data-[state=active]:font-semibold">Disciplina</TabsTrigger>
-                        <TabsTrigger value="plantilla" className="rounded-lg text-xs font-medium text-muted-foreground hover:text-primary-green hover:bg-primary-green-subtle data-[state=active]:bg-primary-green data-[state=active]:text-white data-[state=active]:font-semibold">Plantilla</TabsTrigger>
+                        <TabsTrigger value="general" className="rounded-lg text-xs font-medium text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:font-semibold">General</TabsTrigger>
+                        <TabsTrigger value="partidos" className="rounded-lg text-xs font-medium text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:font-semibold">Partidos</TabsTrigger>
+                        <TabsTrigger value="disciplina" className="rounded-lg text-xs font-medium text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:font-semibold">Disciplina</TabsTrigger>
+                        <TabsTrigger value="plantilla" className="rounded-lg text-xs font-medium text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:font-semibold">Plantilla</TabsTrigger>
                       </TabsList>
                     </div>
 

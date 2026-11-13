@@ -39,33 +39,36 @@ export async function checkAvailability(courtId: string, date: string): Promise<
   }
 
   const supabase = await createClient()
-  const { data: court, error: courtError } = await supabase
-    .from('courts')
-    .select('business_id')
-    .eq('id', courtId)
-    .maybeSingle()
+  const [
+    { data: court, error: courtError },
+    { data: slots, error: slotsError },
+  ] = await Promise.all([
+    supabase
+      .from('courts')
+      .select('business_id')
+      .eq('id', courtId)
+      .maybeSingle(),
+    supabase.rpc('get_court_availability', { p_court_id: courtId, p_date: date }),
+  ])
 
   if (courtError || !court) {
     return { error: 'No se encontró la cancha solicitada.' }
   }
 
-  const [{ data: slots, error: slotsError }, { data: allMatches, error: matchError }] = await Promise.all([
-    supabase.rpc('get_court_availability', { p_court_id: courtId, p_date: date }),
-    supabase
-      .from('tournament_matches')
-      .select(`
-        id,
-        match_time,
-        status,
-        gender,
-        court_id,
-        home:home_team_id ( name, logo_url ),
-        away:away_team_id ( name, logo_url )
-      `)
-      .eq('match_date', date)
-      .eq('business_id', court.business_id)
-      .in('status', ['scheduled', 'live', 'halftime']),
-  ])
+  const { data: allMatches, error: matchError } = await supabase
+    .from('tournament_matches')
+    .select(`
+      id,
+      match_time,
+      status,
+      gender,
+      court_id,
+      home:home_team_id ( name, logo_url ),
+      away:away_team_id ( name, logo_url )
+    `)
+    .eq('match_date', date)
+    .eq('business_id', court.business_id)
+    .in('status', ['scheduled', 'live', 'halftime'])
 
   if (slotsError) {
     return { error: 'No se pudo consultar la disponibilidad.' }
@@ -129,26 +132,10 @@ function mapReservationRpcError(message: string) {
 }
 
 export async function createReservation(formData: FormData) {
-  const supabase = await createClient()
-
-  // Verify auth again
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Debes iniciar sesión para reservar.' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, phone, id, role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile || profile.role !== 'customer') {
-    return { error: 'Debes iniciar sesión con una cuenta de cliente para reservar.' }
-  }
-
-  const businessId = formData.get('business_id') as string
-  const courtId = formData.get('court_id') as string
-  const date = formData.get('date') as string
-  const timeSlot = formData.get('time_slot') as string // Formato "08:00-09:00"
+  const businessId = String(formData.get('business_id') || '')
+  const courtId = String(formData.get('court_id') || '')
+  const date = String(formData.get('date') || '')
+  const timeSlot = String(formData.get('time_slot') || '') // Formato "08:00-09:00"
   
   if (!businessId || !courtId || !date || !timeSlot) {
     return { error: 'Faltan datos obligatorios para la reserva.' }
@@ -162,14 +149,39 @@ export async function createReservation(formData: FormData) {
     return { error: 'La fecha seleccionada no es válida.' }
   }
 
-  const { data: court } = await supabase
-    .from('courts')
-    .select('id, business_id, is_active')
-    .eq('id', courtId)
-    .maybeSingle()
+  const supabase = await createClient()
+  const [
+    { data: { user } },
+    { data: court },
+    { data: business },
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase
+      .from('courts')
+      .select('id, business_id, is_active')
+      .eq('id', courtId)
+      .maybeSingle(),
+    supabase
+      .from('businesses_public')
+      .select('name')
+      .eq('id', businessId)
+      .maybeSingle(),
+  ])
+
+  if (!user) return { error: 'Debes iniciar sesión para reservar.' }
 
   if (!court || court.business_id !== businessId || !court.is_active) {
     return { error: 'La cancha seleccionada no pertenece a este negocio o no está disponible.' }
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, phone, id, role')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (!profile || profile.role !== 'customer') {
+    return { error: 'Debes iniciar sesión con una cuenta de cliente para reservar.' }
   }
 
   const { error } = await supabase.rpc('create_customer_reservation', {
@@ -187,14 +199,15 @@ export async function createReservation(formData: FormData) {
     return { error: mapReservationRpcError(error.message) }
   }
 
-  // Notificar al administrador
-  const { data: biz } = await supabase.from('businesses_public').select('name').eq('id', businessId).maybeSingle()
-  import('@/lib/notifications').then(n => n.notifyAdminNewReservation(
-    biz?.name || 'Tu local',
+  // Notificar al administrador sin bloquear la respuesta de la reserva.
+  void import('@/lib/notifications').then(n => n.notifyAdminNewReservation(
+    business?.name || 'Tu local',
     profile.full_name || 'Un cliente',
     date,
     start
-  ))
+  )).catch((notificationError) => {
+    console.error('Error notifying admin about reservation:', notificationError)
+  })
 
   revalidatePath('/[slug]/reservar', 'page')
   revalidatePath('/[slug]/perfil', 'page')

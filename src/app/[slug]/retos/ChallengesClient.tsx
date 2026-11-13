@@ -13,10 +13,11 @@ import { createChallenge, acceptChallenge, cancelChallenge } from '@/app/[slug]/
 import { toast } from 'sonner'
 import { AuthPromptDialog } from '@/components/AuthPromptDialog'
 import { useRouter } from 'next/navigation'
-import { checkAvailability } from '@/app/[slug]/reservar/actions'
 import { formatTime12h } from '@/lib/utils'
 import { ConfirmationDialog } from '@/components/ConfirmationDialog'
 import { HeroSection, ChallengeCard, EmptyState } from '@/components/portal'
+import { PublicSectionSkeleton } from '@/components/portal/PublicSectionSkeleton'
+import { getCachedAvailability } from '@/lib/availability-client'
 
 function getInitials(name?: string) {
   return (name || '?').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
@@ -54,10 +55,6 @@ export default function ChallengesClient({
   const [loadingAvailability, setLoadingAvailability] = useState(false)
   const router = useRouter()
 
-  useEffect(() => {
-    setChallenges(initialChallenges)
-  }, [initialChallenges])
-
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean,
     title: string,
@@ -87,22 +84,31 @@ export default function ChallengesClient({
   }, [initialChallenges])
 
   useEffect(() => {
+    let cancelled = false
+
     async function checkBusySlots() {
-      if (!selectedCourt || !selectedDate) return
+      if (!isDialogOpen || !selectedCourt || !selectedDate) return
       setLoadingAvailability(true)
       try {
-        const busy = await checkAvailability(selectedCourt, selectedDate)
+        const busy = await getCachedAvailability(selectedCourt, selectedDate)
+        if (cancelled) return
         if (Array.isArray(busy)) {
           setOccupiedSlots(busy)
+        } else {
+          setOccupiedSlots([])
+          toast.error(busy.error)
         }
       } catch (error) {
+        if (cancelled) return
         console.error("Error checking availability:", error)
+        setOccupiedSlots([])
       } finally {
-        setLoadingAvailability(false)
+        if (!cancelled) setLoadingAvailability(false)
       }
     }
     checkBusySlots()
-  }, [selectedCourt, selectedDate])
+    return () => { cancelled = true }
+  }, [isDialogOpen, selectedCourt, selectedDate])
 
   const currentException = useMemo(() => {
     return (exceptions || []).find(ex => ex.exception_date === selectedDate)
@@ -234,9 +240,8 @@ export default function ChallengesClient({
           toast.error(result.error)
         } else {
           toast.success('Reto aceptado y confirmado.')
-          setChallenges((prev: any) => prev.map((c: any) => 
-            c.id === challengeId ? { ...c, status: 'confirmed', opponent_id: userId } : c
-          ))
+          // Confirmed challenges are private to the admin panel.
+          setChallenges((prev: any) => prev.filter((c: any) => c.id !== challengeId))
           router.refresh()
         }
       }
@@ -263,7 +268,7 @@ export default function ChallengesClient({
     )
   }
 
-  if (!isMounted) return null
+  if (!isMounted) return <PublicSectionSkeleton variant="challenges" />
 
   const selectedCourtName = courts.find(c => c.id === selectedCourt)?.name
 
